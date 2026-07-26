@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Outfit, Manrope } from "next/font/google";
+import { QueryProvider } from "@/components/providers/QueryProvider";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -36,7 +37,7 @@ export default function RootLayout({
         >
           Aller au contenu
         </a>
-        {children}
+        <QueryProvider>{children}</QueryProvider>
       </body>
     </html>
   );
