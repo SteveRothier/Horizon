@@ -1,0 +1,76 @@
+"use client";
+
+import type { ReactNode } from "react";
+import { Search, MapPin, Menu } from "lucide-react";
+import { TemperatureToggle } from "@/components/ui/TemperatureToggle";
+import { cn } from "@/utils/cn";
+
+type HeaderProps = {
+  searchSlot?: ReactNode;
+  geolocationSlot?: ReactNode;
+  /** Extra controls after the °C/°F toggle */
+  settingsSlot?: ReactNode;
+  onMenuClick?: () => void;
+  className?: string;
+};
+
+export function Header({
+  searchSlot,
+  geolocationSlot,
+  settingsSlot,
+  onMenuClick,
+  className,
+}: HeaderProps) {
+  return (
+    <header
+      className={cn(
+        "z-40 flex h-[var(--header-height)] shrink-0 items-center gap-2 px-[var(--page-gutter)] sm:gap-3",
+        className,
+      )}
+    >
+      <button
+        type="button"
+        onClick={onMenuClick}
+        className="glass glass-sm flex h-9 w-9 items-center justify-center lg:hidden"
+        aria-label="Ouvrir le menu"
+      >
+        <Menu className="h-4 w-4" aria-hidden />
+      </button>
+
+      <div className="hidden items-baseline gap-2 sm:flex">
+        <span className="font-[family-name:var(--font-horizon-display)] text-lg font-semibold tracking-tight text-[var(--text-primary)] xl:text-xl">
+          Horizon
+        </span>
+      </div>
+
+      <div className="mx-auto flex w-full max-w-xl flex-1 items-center gap-2">
+        {searchSlot ?? (
+          <div
+            className="glass glass-sm flex h-9 w-full items-center gap-2 px-3 text-[var(--text-muted)] sm:h-10 sm:gap-3 sm:px-4"
+            role="search"
+            aria-label="Recherche de ville (bientôt disponible)"
+          >
+            <Search className="h-4 w-4 shrink-0" aria-hidden />
+            <span className="truncate text-sm">Rechercher une ville…</span>
+          </div>
+        )}
+        {geolocationSlot ?? (
+          <button
+            type="button"
+            className="glass glass-sm flex h-9 w-9 shrink-0 items-center justify-center sm:h-10 sm:w-10"
+            aria-label="Utiliser ma position"
+            disabled
+            title="Bientôt disponible"
+          >
+            <MapPin className="h-4 w-4" aria-hidden />
+          </button>
+        )}
+      </div>
+
+      <div className="flex items-center gap-1.5 sm:gap-2">
+        <TemperatureToggle />
+        {settingsSlot}
+      </div>
+    </header>
+  );
+}

@@ -1,0 +1,163 @@
+/* Horizon design tokens — glassmorphism + palettes météo */
+
+:root {
+  /* Glass */
+  --glass-bg: rgba(255, 255, 255, 0.08);
+  --glass-bg-strong: rgba(255, 255, 255, 0.12);
+  --glass-bg-hover: rgba(255, 255, 255, 0.14);
+  --glass-border: rgba(255, 255, 255, 0.15);
+  --glass-border-strong: rgba(255, 255, 255, 0.25);
+  --glass-blur: 20px;
+  --glass-radius: 30px;
+  --glass-radius-sm: 20px;
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.22);
+  --glass-shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.28);
+
+  /* Surfaces */
+  --surface-error: rgba(220, 60, 60, 0.18);
+  --surface-error-border: rgba(255, 120, 120, 0.35);
+  --surface-skeleton: rgba(255, 255, 255, 0.1);
+
+  /* Text */
+  --text-primary: rgba(255, 255, 255, 0.96);
+  --text-secondary: rgba(255, 255, 255, 0.72);
+  --text-muted: rgba(255, 255, 255, 0.48);
+  --text-inverse: rgba(10, 16, 28, 0.9);
+
+  /* Accents (default sunny) */
+  --accent: #f5c542;
+  --accent-soft: rgba(245, 197, 66, 0.25);
+  --accent-cool: #6ec8ff;
+  --accent-warm: #ff9a4a;
+
+  /* Focus */
+  --focus-ring: 0 0 0 2px rgba(255, 255, 255, 0.35),
+    0 0 0 4px rgba(110, 200, 255, 0.45);
+
+  /* Spacing / layout — densifié pour un dashboard sans scroll */
+  --header-height: 3.5rem;
+  --sidebar-width: 14rem;
+  --page-gutter: 0.75rem;
+  --grid-gap: 0.625rem;
+  --card-pad: 0.875rem;
+  --glass-radius: 22px;
+  --glass-radius-sm: 16px;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 180ms;
+  --duration-base: 320ms;
+
+  /* Scene background (default: clear day) */
+  --scene-from: #3d8fd9;
+  --scene-via: #6bb3e8;
+  --scene-to: #f2b45a;
+  --scene-glow: rgba(255, 210, 100, 0.35);
+}
+
+/* Weather scene palettes */
+[data-weather="clear"][data-period="day"] {
+  --scene-from: #3d8fd9;
+  --scene-via: #6bb3e8;
+  --scene-to: #f2b45a;
+  --scene-glow: rgba(255, 210, 100, 0.4);
+  --accent: #f5c542;
+}
+
+[data-weather="clear"][data-period="night"] {
+  --scene-from: #0b1226;
+  --scene-via: #1a2744;
+  --scene-to: #2c3e6b;
+  --scene-glow: rgba(180, 200, 255, 0.2);
+  --accent: #a8c4ff;
+}
+
+[data-weather="cloudy"] {
+  --scene-from: #5a6f86;
+  --scene-via: #7d8fa3;
+  --scene-to: #a8b4c0;
+  --scene-glow: rgba(255, 255, 255, 0.18);
+  --accent: #d0dae6;
+}
+
+[data-weather="rain"] {
+  --scene-from: #1a2f45;
+  --scene-via: #2d4a63;
+  --scene-to: #3d6a7a;
+  --scene-glow: rgba(100, 200, 220, 0.22);
+  --accent: #6ec8ff;
+}
+
+[data-weather="storm"] {
+  --scene-from: #0d1020;
+  --scene-via: #1e1635;
+  --scene-to: #2a3048;
+  --scene-glow: rgba(160, 140, 255, 0.2);
+  --accent: #b8a4ff;
+}
+
+[data-weather="snow"] {
+  --scene-from: #6a8fa8;
+  --scene-via: #9bb5c8;
+  --scene-to: #e8f1f6;
+  --scene-glow: rgba(255, 255, 255, 0.35);
+  --accent: #e8f4ff;
+}
+
+[data-weather="fog"] {
+  --scene-from: #7a8088;
+  --scene-via: #9aa0a8;
+  --scene-to: #c4c8cc;
+  --scene-glow: rgba(255, 255, 255, 0.28);
+  --accent: #eceef0;
+}
+
+/* Breakpoints — densités responsive (CDC) */
+@media (min-width: 768px) {
+  :root {
+    --header-height: 3.75rem;
+    --page-gutter: 1rem;
+    --grid-gap: 0.75rem;
+    --card-pad: 1rem;
+    --sidebar-width: 15rem;
+    --glass-radius: 24px;
+  }
+}
+
+@media (min-width: 1280px) {
+  :root {
+    --header-height: 4rem;
+    --page-gutter: 1.15rem;
+    --grid-gap: 0.85rem;
+    --card-pad: 1.15rem;
+    --sidebar-width: 15.5rem;
+    --glass-radius: 28px;
+  }
+}
+
+@media (min-width: 1440px) {
+  :root {
+    --page-gutter: 1.25rem;
+    --grid-gap: 1rem;
+    --card-pad: 1.25rem;
+    --glass-radius: 30px;
+  }
+}
+
+@theme inline {
+  --color-glass: var(--glass-bg);
+  --color-glass-strong: var(--glass-bg-strong);
+  --color-glass-border: var(--glass-border);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-accent: var(--accent);
+  --color-accent-cool: var(--accent-cool);
+  --color-accent-warm: var(--accent-warm);
+  --color-surface-error: var(--surface-error);
+  --radius-glass: var(--glass-radius);
+  --radius-glass-sm: var(--glass-radius-sm);
+  --shadow-glass: var(--glass-shadow);
+  --font-sans: var(--font-horizon);
+  --font-display: var(--font-horizon-display);
+}
