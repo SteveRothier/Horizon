@@ -1,10 +1,5 @@
-import { AppShell } from "@/components/layout/AppShell";
-import { DashboardSkeleton } from "@/components/ui/skeletons";
+import { WeatherDashboard } from "@/features/weather/WeatherDashboard";
 
 export default function Home() {
-  return (
-    <AppShell weather="clear" period="day">
-      <DashboardSkeleton />
-    </AppShell>
-  );
+  return <WeatherDashboard />;
 }
