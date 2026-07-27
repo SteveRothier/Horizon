@@ -150,49 +150,47 @@ export function SearchBar({ className, onSelect }: SearchBarProps) {
       </div>
 
       {showDropdown ? (
-        <ul
-          id={listId}
-          role="listbox"
-          className="glass absolute left-0 right-0 top-[calc(100%+0.35rem)] z-50 max-h-64 overflow-auto rounded-[var(--glass-radius-sm)] p-1 shadow-[var(--glass-shadow)]"
-        >
-          {isError ? (
-            <li className="px-3 py-2 text-sm text-red-200">
-              {error instanceof Error
-                ? error.message
-                : t("header.searchFailed")}
-            </li>
-          ) : results.length === 0 ? (
-            <li className="px-3 py-2 text-sm text-[var(--text-muted)]">
-              {t("header.noResults")}
-            </li>
-          ) : (
-            results.map((loc, i) => (
-              <li key={loc.id} role="option" aria-selected={i === activeIndex}>
-                <button
-                  type="button"
-                  id={`${listId}-opt-${i}`}
-                  className={cn(
-                    "flex w-full flex-col items-start rounded-[calc(var(--glass-radius-sm)-4px)] px-3 py-2 text-left text-sm transition-colors",
-                    "bg-transparent isolate",
-                    i === activeIndex
-                      ? "bg-white/15 text-[var(--text-primary)]"
-                      : "text-[var(--text-secondary)] hover:bg-white/10",
-                  )}
-                  onMouseEnter={() => setActiveIndex(i)}
-                  onClick={() => choose(loc)}
-                >
-                  <span className="font-medium text-[var(--text-primary)]">
-                    {loc.name}
-                  </span>
-                  <span className="w-full truncate text-xs text-[var(--text-muted)]">
-                    {[loc.admin1, loc.country].filter(Boolean).join(", ") ||
-                      loc.displayName}
-                  </span>
-                </button>
+        <div className="glass-menu absolute left-0 right-0 top-[calc(100%+0.35rem)] z-50">
+          <ul id={listId} role="listbox" className="glass-menu-scroll p-1">
+            {isError ? (
+              <li className="px-3 py-2 text-sm text-red-200">
+                {error instanceof Error
+                  ? error.message
+                  : t("header.searchFailed")}
               </li>
-            ))
-          )}
-        </ul>
+            ) : results.length === 0 ? (
+              <li className="px-3 py-2 text-sm text-[var(--text-muted)]">
+                {t("header.noResults")}
+              </li>
+            ) : (
+              results.map((loc, i) => (
+                <li key={loc.id} role="option" aria-selected={i === activeIndex}>
+                  <button
+                    type="button"
+                    id={`${listId}-opt-${i}`}
+                    className={cn(
+                      "flex w-full flex-col items-start rounded-[calc(var(--glass-radius-sm)-4px)] px-3 py-2 text-left text-sm transition-colors",
+                      "bg-transparent isolate",
+                      i === activeIndex
+                        ? "bg-white/15 text-[var(--text-primary)]"
+                        : "text-[var(--text-secondary)] hover:bg-white/10",
+                    )}
+                    onMouseEnter={() => setActiveIndex(i)}
+                    onClick={() => choose(loc)}
+                  >
+                    <span className="font-medium text-[var(--text-primary)]">
+                      {loc.name}
+                    </span>
+                    <span className="w-full truncate text-xs text-[var(--text-muted)]">
+                      {[loc.admin1, loc.country].filter(Boolean).join(", ") ||
+                        loc.displayName}
+                    </span>
+                  </button>
+                </li>
+              ))
+            )}
+          </ul>
+        </div>
       ) : null}
     </div>
   );
