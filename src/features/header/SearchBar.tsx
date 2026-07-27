@@ -173,6 +173,7 @@ export function SearchBar({ className, onSelect }: SearchBarProps) {
                   id={`${listId}-opt-${i}`}
                   className={cn(
                     "flex w-full flex-col items-start rounded-[calc(var(--glass-radius-sm)-4px)] px-3 py-2 text-left text-sm transition-colors",
+                    "bg-transparent isolate",
                     i === activeIndex
                       ? "bg-white/15 text-[var(--text-primary)]"
                       : "text-[var(--text-secondary)] hover:bg-white/10",
@@ -183,8 +184,9 @@ export function SearchBar({ className, onSelect }: SearchBarProps) {
                   <span className="font-medium text-[var(--text-primary)]">
                     {loc.name}
                   </span>
-                  <span className="truncate text-xs text-[var(--text-muted)]">
-                    {[loc.admin1, loc.country].filter(Boolean).join(", ")}
+                  <span className="w-full truncate text-xs text-[var(--text-muted)]">
+                    {[loc.admin1, loc.country].filter(Boolean).join(", ") ||
+                      loc.displayName}
                   </span>
                 </button>
               </li>

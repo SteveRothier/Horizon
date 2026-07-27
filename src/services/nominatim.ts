@@ -58,6 +58,24 @@ function toGeoLocation(item: NominatimItem): GeoLocation {
   };
 }
 
+/** Drop near-identical Nominatim hits (same city label / same rounded coords). */
+function dedupeLocations(places: GeoLocation[]): GeoLocation[] {
+  const seen = new Set<string>();
+  const unique: GeoLocation[] = [];
+
+  for (const place of places) {
+    const labelKey = place.displayName.toLowerCase();
+    const coordKey = `${place.latitude.toFixed(2)},${place.longitude.toFixed(2)}`;
+    const key = `${labelKey}|${coordKey}`;
+    if (seen.has(key) || seen.has(labelKey)) continue;
+    seen.add(key);
+    seen.add(labelKey);
+    unique.push(place);
+  }
+
+  return unique;
+}
+
 const nominatimHeaders = {
   Accept: "application/json",
   "User-Agent": NOMINATIM_USER_AGENT,
@@ -74,21 +92,24 @@ export async function searchCities(
   url.searchParams.set("q", q);
   url.searchParams.set("format", "json");
   url.searchParams.set("addressdetails", "1");
-  url.searchParams.set("limit", String(limit));
+  // Fetch a few extra so dedupe still fills the list
+  url.searchParams.set("limit", String(Math.max(limit * 2, limit)));
 
   const data = await fetchJson<NominatimItem[]>(url.toString(), {
     headers: nominatimHeaders,
     next: { revalidate: 3600 },
   });
 
-  const places = data
-    .map(toGeoLocation)
-    .filter(
-      (p) =>
-        Number.isFinite(p.latitude) &&
-        Number.isFinite(p.longitude) &&
-        p.name.length > 0,
-    );
+  const places = dedupeLocations(
+    data
+      .map(toGeoLocation)
+      .filter(
+        (p) =>
+          Number.isFinite(p.latitude) &&
+          Number.isFinite(p.longitude) &&
+          p.name.length > 0,
+      ),
+  ).slice(0, limit);
 
   if (places.length === 0) {
     throw new AppApiError(
