@@ -65,15 +65,9 @@ export function WeatherHero({ location, current, className }: WeatherHeroProps) 
     >
       <div className="flex min-h-0 flex-1 items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <p className="truncate text-xs text-[var(--text-muted)] sm:text-sm">
-              {location.displayName}
-            </p>
-            <div className="flex shrink-0 items-center gap-1">
-              <ShareButton className="h-8 w-8" />
-              <FavoriteButton location={location} className="h-8 w-8" />
-            </div>
-          </div>
+          <p className="truncate text-xs text-[var(--text-muted)] sm:text-sm">
+            {location.displayName}
+          </p>
           <p className="mt-1 font-[family-name:var(--font-horizon-display)] text-5xl font-light leading-none tracking-tight sm:text-6xl xl:text-7xl">
             {formatTemp(current.temperature, temperatureUnit)}
           </p>
@@ -85,12 +79,18 @@ export function WeatherHero({ location, current, className }: WeatherHeroProps) 
             {formatTemp(current.feelsLike, temperatureUnit)}
           </p>
         </div>
-        <WeatherIcon
-          condition={current.condition}
-          isDay={current.isDay}
-          size={72}
-          className="sm:h-20 sm:w-20 xl:h-24 xl:w-24"
-        />
+        <div className="flex shrink-0 flex-col items-end gap-3">
+          <div className="flex items-center gap-1">
+            <ShareButton className="h-8 w-8" />
+            <FavoriteButton location={location} className="h-8 w-8" />
+          </div>
+          <WeatherIcon
+            condition={current.condition}
+            isDay={current.isDay}
+            size={72}
+            className="mt-1 sm:mt-2 sm:h-20 sm:w-20 xl:h-24 xl:w-24"
+          />
+        </div>
       </div>
 
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
