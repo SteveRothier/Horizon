@@ -48,19 +48,20 @@ export function Header({
             <Menu className="h-4 w-4" aria-hidden />
           </button>
 
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            {searchSlot ?? (
-              <div
-                className="glass glass-sm flex h-9 w-full items-center gap-2 px-3 text-[var(--text-muted)] sm:h-10 sm:gap-3 sm:px-4"
-                role="search"
-                aria-label={t("header.searchLabel")}
-              >
-                <Search className="h-4 w-4 shrink-0" aria-hidden />
-                <span className="truncate text-sm">
-                  {t("header.searchPlaceholder")}
-                </span>
-              </div>
-            )}
+          <div className="min-w-0 flex-1">{searchSlot ?? (
+            <div
+              className="glass glass-sm flex h-9 w-full items-center gap-2 px-3 text-[var(--text-muted)] sm:h-10 sm:gap-3 sm:px-4"
+              role="search"
+              aria-label={t("header.searchLabel")}
+            >
+              <Search className="h-4 w-4 shrink-0" aria-hidden />
+              <span className="truncate text-sm">
+                {t("header.searchPlaceholder")}
+              </span>
+            </div>
+          )}</div>
+
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             {geolocationSlot ?? (
               <button
                 type="button"
@@ -71,10 +72,7 @@ export function Header({
                 <MapPin className="h-4 w-4" aria-hidden />
               </button>
             )}
-          </div>
-
-          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-            <TemperatureToggle />
+            <TemperatureToggle className="hidden sm:flex" />
             {settingsSlot}
           </div>
         </div>
