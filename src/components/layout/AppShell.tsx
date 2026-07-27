@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { WeatherBackground } from "@/features/background/WeatherBackground";
 import { cn } from "@/utils/cn";
 import type { WeatherCondition, DayPeriod } from "@/types/weather";
 import { DEFAULT_PERIOD, DEFAULT_WEATHER } from "@/constants/design";
@@ -51,22 +52,7 @@ export function AppShell({
         aria-hidden
       >
         {backgroundSlot ?? (
-          <>
-            <div
-              className="absolute inset-0 transition-[background] duration-700"
-              style={{
-                background: `linear-gradient(145deg, var(--scene-from) 0%, var(--scene-via) 48%, var(--scene-to) 100%)`,
-              }}
-            />
-            <div
-              className="absolute -left-1/4 top-0 h-[60vmax] w-[60vmax] rounded-full opacity-60 blur-3xl"
-              style={{ background: "var(--scene-glow)" }}
-            />
-            <div
-              className="absolute -right-1/4 bottom-0 h-[50vmax] w-[50vmax] rounded-full opacity-40 blur-3xl"
-              style={{ background: "var(--scene-glow)" }}
-            />
-          </>
+          <WeatherBackground condition={weather} period={period} />
         )}
       </div>
 
