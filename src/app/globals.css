@@ -178,6 +178,21 @@ body {
   animation: skeleton-shimmer 1.6s var(--ease-out) infinite;
 }
 
+/* Dedicated spin animation */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.search-spinner {
+  animation: spin 1s linear infinite !important;
+  transform-origin: center;
+}
+
 /* Hide scrollbar but keep scroll (hourly forecast) */
 .scrollbar-none {
   scrollbar-width: none;
@@ -201,5 +216,11 @@ body {
   .skeleton-shimmer {
     animation: none;
     background: var(--surface-skeleton);
+  }
+
+  /* Keep the search spinner visibly rotating (it's a core UX feedback). */
+  .search-spinner {
+    animation-duration: 1s !important;
+    animation-iteration-count: infinite !important;
   }
 }

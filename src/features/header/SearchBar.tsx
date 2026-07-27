@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { Search, Loader2, X } from "lucide-react";
+import { Search, LoaderCircle, X } from "lucide-react";
 import { useCitySearch } from "@/hooks/useGeocode";
 import { useT } from "@/hooks/useT";
 import type { GeoLocation } from "@/types/weather";
@@ -31,6 +31,11 @@ export function SearchBar({ className, onSelect }: SearchBarProps) {
     debounced,
     open && debounced.length >= 2,
   );
+
+  const trimmed = input.trim();
+  const isDebouncing = trimmed.length >= 2 && trimmed !== debounced;
+  const isSearching = isDebouncing || isFetching;
+  const showDropdown = open && debounced.length >= 2 && !isSearching;
 
   useEffect(() => {
     setActiveIndex(0);
@@ -86,9 +91,9 @@ export function SearchBar({ className, onSelect }: SearchBarProps) {
         {t("header.searchLabel")}
       </label>
       <div className="glass glass-sm flex h-9 w-full items-center gap-2 px-3 sm:h-10 sm:gap-3 sm:px-4">
-        {isFetching ? (
-          <Loader2
-            className="h-4 w-4 shrink-0 animate-spin text-[var(--text-muted)]"
+        {isSearching ? (
+          <LoaderCircle
+            className="h-4 w-4 shrink-0 text-[var(--text-muted)] search-spinner"
             aria-hidden
           />
         ) : (
@@ -101,7 +106,8 @@ export function SearchBar({ className, onSelect }: SearchBarProps) {
           id="city-search"
           type="search"
           role="combobox"
-          aria-expanded={open && results.length > 0}
+          aria-expanded={showDropdown && (results.length > 0 || isError)}
+          aria-busy={isSearching}
           aria-controls={listId}
           aria-autocomplete="list"
           aria-activedescendant={
@@ -143,7 +149,7 @@ export function SearchBar({ className, onSelect }: SearchBarProps) {
         ) : null}
       </div>
 
-      {open && debounced.length >= 2 ? (
+      {showDropdown ? (
         <ul
           id={listId}
           role="listbox"
@@ -155,7 +161,7 @@ export function SearchBar({ className, onSelect }: SearchBarProps) {
                 ? error.message
                 : t("header.searchFailed")}
             </li>
-          ) : results.length === 0 && !isFetching ? (
+          ) : results.length === 0 ? (
             <li className="px-3 py-2 text-sm text-[var(--text-muted)]">
               {t("header.noResults")}
             </li>

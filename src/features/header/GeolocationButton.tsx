@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, MapPin } from "lucide-react";
+import { LoaderCircle, MapPin } from "lucide-react";
 import { useT } from "@/hooks/useT";
 import { clientFetchJson } from "@/services/client-api";
 import type { GeoLocation } from "@/types/weather";
@@ -79,7 +79,10 @@ export function GeolocationButton({
       title={t("header.geolocate")}
     >
       {loading ? (
-        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+        <LoaderCircle
+          className="h-4 w-4 search-spinner"
+          aria-hidden
+        />
       ) : (
         <MapPin className="h-4 w-4" aria-hidden />
       )}
