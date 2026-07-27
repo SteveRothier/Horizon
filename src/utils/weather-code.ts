@@ -1,4 +1,6 @@
 import type { WeatherCondition } from "@/types/weather";
+import type { AppLocale } from "@/stores/settingsStore";
+import { translate, type MessageKey } from "@/i18n/messages";
 
 /** Map WMO weather interpretation codes (Open-Meteo) to app conditions */
 export function conditionFromWeatherCode(code: number): WeatherCondition {
@@ -22,7 +24,14 @@ export function conditionFromWeatherCode(code: number): WeatherCondition {
   ) {
     return "rain";
   }
-  if (code === 71 || code === 73 || code === 75 || code === 77 || code === 85 || code === 86) {
+  if (
+    code === 71 ||
+    code === 73 ||
+    code === 75 ||
+    code === 77 ||
+    code === 85 ||
+    code === 86
+  ) {
     return "snow";
   }
   if (code === 95 || code === 96 || code === 99) return "storm";
@@ -56,35 +65,32 @@ export function weatherCodeFromOpenWeather(
   return 2;
 }
 
-const FR_DESCRIPTIONS: Record<WeatherCondition, { day: string; night: string }> =
-  {
-    clear: { day: "Ensoleillé", night: "Ciel dégagé" },
-    cloudy: { day: "Nuageux", night: "Nuageux" },
-    rain: { day: "Pluvieux", night: "Pluvieux" },
-    storm: { day: "Orageux", night: "Orageux" },
-    snow: { day: "Neigeux", night: "Neigeux" },
-    fog: { day: "Brouillard", night: "Brouillard" },
-  };
-
 export function descriptionFromCondition(
   condition: WeatherCondition,
   isDay: boolean,
   override?: string,
+  locale: AppLocale = "fr",
 ): string {
   if (override) return override;
-  const entry = FR_DESCRIPTIONS[condition];
-  return isDay ? entry.day : entry.night;
+  const key =
+    `condition.${condition}.${isDay ? "day" : "night"}` satisfies string as MessageKey;
+  return translate(locale, key);
 }
 
 /** European AQI (0–100+) rough label */
-export function aqiLabelFromIndex(aqi: number | null): string {
-  if (aqi == null || Number.isNaN(aqi)) return "Indisponible";
-  if (aqi <= 20) return "Excellente";
-  if (aqi <= 40) return "Bonne";
-  if (aqi <= 60) return "Moyenne";
-  if (aqi <= 80) return "Mauvaise";
-  if (aqi <= 100) return "Très mauvaise";
-  return "Extrêmement mauvaise";
+export function aqiLabelFromIndex(
+  aqi: number | null,
+  locale: AppLocale = "fr",
+): string {
+  if (aqi == null || Number.isNaN(aqi)) {
+    return translate(locale, "aqi.unavailable");
+  }
+  if (aqi <= 20) return translate(locale, "aqi.excellent");
+  if (aqi <= 40) return translate(locale, "aqi.good");
+  if (aqi <= 60) return translate(locale, "aqi.moderate");
+  if (aqi <= 80) return translate(locale, "aqi.poor");
+  if (aqi <= 100) return translate(locale, "aqi.veryPoor");
+  return translate(locale, "aqi.extreme");
 }
 
 export function slugifyCity(name: string): string {

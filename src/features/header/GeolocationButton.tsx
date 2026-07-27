@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Loader2, MapPin } from "lucide-react";
+import { useT } from "@/hooks/useT";
 import { clientFetchJson } from "@/services/client-api";
 import type { GeoLocation } from "@/types/weather";
 import { AppApiError } from "@/types/api";
@@ -19,11 +20,12 @@ export function GeolocationButton({
   className,
   onError,
 }: GeolocationButtonProps) {
+  const t = useT();
   const [loading, setLoading] = useState(false);
 
   async function locate() {
     if (!navigator.geolocation) {
-      onError?.("La géolocalisation n’est pas supportée.");
+      onError?.(t("geo.unsupported"));
       return;
     }
 
@@ -47,16 +49,16 @@ export function GeolocationButton({
     } catch (err) {
       if (err instanceof GeolocationPositionError) {
         if (err.code === err.PERMISSION_DENIED) {
-          onError?.("Géolocalisation refusée. Autorisez l’accès à la position.");
+          onError?.(t("geo.denied"));
         } else if (err.code === err.TIMEOUT) {
-          onError?.("Délai de géolocalisation dépassé.");
+          onError?.(t("geo.timeout"));
         } else {
-          onError?.("Impossible d’obtenir votre position.");
+          onError?.(t("geo.failed"));
         }
       } else if (err instanceof AppApiError) {
         onError?.(err.message);
       } else {
-        onError?.("Impossible d’obtenir votre position.");
+        onError?.(t("geo.failed"));
       }
     } finally {
       setLoading(false);
@@ -73,8 +75,8 @@ export function GeolocationButton({
         "disabled:opacity-60",
         className,
       )}
-      aria-label="Utiliser ma position"
-      title="Utiliser ma position"
+      aria-label={t("header.geolocate")}
+      title={t("header.geolocate")}
     >
       {loading ? (
         <Loader2 className="h-4 w-4 animate-spin" aria-hidden />

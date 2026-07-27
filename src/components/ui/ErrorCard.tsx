@@ -2,6 +2,7 @@
 
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
+import { useT } from "@/hooks/useT";
 import { cn } from "@/utils/cn";
 
 type ErrorCardProps = {
@@ -11,6 +12,8 @@ type ErrorCardProps = {
 };
 
 export function ErrorCard({ message, onRetry, className }: ErrorCardProps) {
+  const t = useT();
+
   return (
     <GlassCard
       interactive={false}
@@ -29,7 +32,7 @@ export function ErrorCard({ message, onRetry, className }: ErrorCardProps) {
           className="glass glass-sm inline-flex items-center gap-2 px-3 py-1.5 text-sm"
         >
           <RefreshCw className="h-3.5 w-3.5" aria-hidden />
-          Réessayer
+          {t("error.retry")}
         </button>
       ) : null}
     </GlassCard>

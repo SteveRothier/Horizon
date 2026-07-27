@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { Search, MapPin, Menu } from "lucide-react";
 import { TemperatureToggle } from "@/components/ui/TemperatureToggle";
+import { useT } from "@/hooks/useT";
 import { cn } from "@/utils/cn";
 
 type HeaderProps = {
@@ -21,6 +22,8 @@ export function Header({
   onMenuClick,
   className,
 }: HeaderProps) {
+  const t = useT();
+
   return (
     <header
       className={cn(
@@ -32,14 +35,14 @@ export function Header({
         type="button"
         onClick={onMenuClick}
         className="glass glass-sm flex h-9 w-9 items-center justify-center lg:hidden"
-        aria-label="Ouvrir le menu"
+        aria-label={t("sidebar.openMenu")}
       >
         <Menu className="h-4 w-4" aria-hidden />
       </button>
 
       <div className="hidden items-baseline gap-2 sm:flex">
         <span className="font-[family-name:var(--font-horizon-display)] text-lg font-semibold tracking-tight text-[var(--text-primary)] xl:text-xl">
-          Horizon
+          {t("header.brand")}
         </span>
       </div>
 
@@ -48,19 +51,20 @@ export function Header({
           <div
             className="glass glass-sm flex h-9 w-full items-center gap-2 px-3 text-[var(--text-muted)] sm:h-10 sm:gap-3 sm:px-4"
             role="search"
-            aria-label="Recherche de ville (bientôt disponible)"
+            aria-label={t("header.searchLabel")}
           >
             <Search className="h-4 w-4 shrink-0" aria-hidden />
-            <span className="truncate text-sm">Rechercher une ville…</span>
+            <span className="truncate text-sm">
+              {t("header.searchPlaceholder")}
+            </span>
           </div>
         )}
         {geolocationSlot ?? (
           <button
             type="button"
             className="glass glass-sm flex h-9 w-9 shrink-0 items-center justify-center sm:h-10 sm:w-10"
-            aria-label="Utiliser ma position"
+            aria-label={t("header.geolocate")}
             disabled
-            title="Bientôt disponible"
           >
             <MapPin className="h-4 w-4" aria-hidden />
           </button>

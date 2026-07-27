@@ -16,17 +16,24 @@ import {
   Navigation,
   X,
 } from "lucide-react";
+import { useT } from "@/hooks/useT";
+import type { MessageKey } from "@/i18n/messages";
 import { useLocationStore } from "@/stores/locationStore";
 import { cn } from "@/utils/cn";
 
-const NAV_ITEMS = [
-  { id: "home", label: "Accueil", icon: Home, active: true },
-  { id: "map", label: "Carte météo", icon: Map, active: false },
-  { id: "favorites", label: "Favoris", icon: Star, active: false },
-  { id: "history", label: "Historique", icon: Clock, active: false },
-  { id: "alerts", label: "Alertes", icon: Bell, active: false },
-  { id: "settings", label: "Réglages", icon: Settings, active: false },
-] as const;
+const NAV_ITEMS: {
+  id: string;
+  labelKey: MessageKey;
+  icon: typeof Home;
+  active: boolean;
+}[] = [
+  { id: "home", labelKey: "nav.home", icon: Home, active: true },
+  { id: "map", labelKey: "nav.map", icon: Map, active: false },
+  { id: "favorites", labelKey: "nav.favorites", icon: Star, active: false },
+  { id: "history", labelKey: "nav.history", icon: Clock, active: false },
+  { id: "alerts", labelKey: "nav.alerts", icon: Bell, active: false },
+  { id: "settings", labelKey: "nav.settings", icon: Settings, active: false },
+];
 
 type SlotWithSelect = {
   onSelect?: () => void;
@@ -61,13 +68,13 @@ export function Sidebar({
   historySlot,
   className,
 }: SidebarProps) {
+  const t = useT();
   const location = useLocationStore((s) => s.location);
   const history = withCloseOnSelect(historySlot, onClose);
   const favorites = withCloseOnSelect(favoritesSlot, onClose);
 
   return (
     <>
-      {/* Mobile overlay */}
       <div
         className={cn(
           "fixed inset-0 z-40 bg-black/40 backdrop-blur-sm transition-opacity lg:hidden",
@@ -87,17 +94,17 @@ export function Sidebar({
           open ? "translate-x-0" : "-translate-x-full",
           className,
         )}
-        aria-label="Navigation principale"
+        aria-label={t("nav.main")}
       >
         <div className="flex h-[var(--header-height)] items-center justify-between px-4 lg:hidden">
           <span className="font-[family-name:var(--font-horizon-display)] text-lg font-semibold">
-            Horizon
+            {t("header.brand")}
           </span>
           <button
             type="button"
             onClick={onClose}
             className="glass glass-sm flex h-8 w-8 items-center justify-center"
-            aria-label="Fermer le menu"
+            aria-label={t("sidebar.closeMenu")}
           >
             <X className="h-4 w-4" aria-hidden />
           </button>
@@ -105,10 +112,10 @@ export function Sidebar({
 
         <nav
           className="flex min-h-0 flex-1 flex-col overflow-y-auto px-2 pb-3 pt-2 lg:px-[var(--page-gutter)] lg:pb-[var(--page-gutter)] lg:pt-[var(--page-gutter)]"
-          aria-label="Menu"
+          aria-label={t("nav.menu")}
         >
           <ul className="space-y-0.5">
-            {NAV_ITEMS.map(({ id, label, icon: Icon, active }) => (
+            {NAV_ITEMS.map(({ id, labelKey, icon: Icon, active }) => (
               <li key={id}>
                 <a
                   href={id === "home" ? "#" : `#${id}`}
@@ -122,7 +129,7 @@ export function Sidebar({
                   onClick={onClose}
                 >
                   <Icon className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
-                  {label}
+                  {t(labelKey)}
                 </a>
               </li>
             ))}
@@ -136,11 +143,11 @@ export function Sidebar({
               id="sidebar-history-title"
               className="mb-1.5 px-2 text-[0.65rem] font-medium uppercase tracking-wider text-[var(--text-muted)]"
             >
-              Récentes
+              {t("sidebar.recent")}
             </h2>
             {history ?? (
               <p className="px-2 text-xs text-[var(--text-muted)]">
-                Aucune recherche récente
+                {t("sidebar.noRecent")}
               </p>
             )}
           </section>
@@ -150,11 +157,11 @@ export function Sidebar({
               id="sidebar-fav-title"
               className="mb-1.5 px-2 text-[0.65rem] font-medium uppercase tracking-wider text-[var(--text-muted)]"
             >
-              Favoris
+              {t("sidebar.favorites")}
             </h2>
             {favorites ?? (
               <p className="px-2 text-xs text-[var(--text-muted)]">
-                Aucun favori
+                {t("sidebar.noFavorites")}
               </p>
             )}
           </section>
@@ -168,7 +175,7 @@ export function Sidebar({
             />
             <div className="min-w-0">
               <p className="text-[0.65rem] text-[var(--text-muted)]">
-                Position actuelle
+                {t("sidebar.currentPosition")}
               </p>
               <p className="truncate text-xs text-[var(--text-secondary)]">
                 {location.displayName}

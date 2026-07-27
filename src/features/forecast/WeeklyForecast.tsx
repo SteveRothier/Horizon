@@ -2,6 +2,7 @@
 
 import { GlassCard } from "@/components/ui/GlassCard";
 import { WeatherIcon } from "@/components/ui/WeatherIcon";
+import { useLocale, useT } from "@/hooks/useT";
 import { useSettingsStore } from "@/stores/settingsStore";
 import type { DailyForecastItem } from "@/types/weather";
 import { formatDayShort } from "@/utils/format";
@@ -14,6 +15,8 @@ type WeeklyForecastProps = {
 };
 
 export function WeeklyForecast({ items, className }: WeeklyForecastProps) {
+  const t = useT();
+  const locale = useLocale();
   const unit = useSettingsStore((s) => s.temperatureUnit);
   const days = items.slice(0, 7);
 
@@ -34,7 +37,7 @@ export function WeeklyForecast({ items, className }: WeeklyForecastProps) {
       )}
     >
       <h2 className="mb-2 shrink-0 text-sm font-medium text-[var(--text-secondary)]">
-        7 jours
+        {t("forecast.weekly")}
       </h2>
       <ul className="flex min-h-0 flex-1 flex-col justify-between gap-0.5">
         {days.map((day) => {
@@ -49,7 +52,7 @@ export function WeeklyForecast({ items, className }: WeeklyForecastProps) {
               className="flex min-h-0 flex-1 items-center gap-2"
             >
               <span className="w-9 shrink-0 text-xs text-[var(--text-secondary)]">
-                {formatDayShort(day.date)}
+                {formatDayShort(day.date, locale)}
               </span>
               <WeatherIcon condition={day.condition} isDay size={18} />
               <span className="w-8 shrink-0 text-right text-xs text-[var(--text-muted)]">

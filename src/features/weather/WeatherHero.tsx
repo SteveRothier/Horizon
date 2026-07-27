@@ -4,9 +4,11 @@ import { Droplets, Eye, Gauge, Wind } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { WeatherIcon } from "@/components/ui/WeatherIcon";
 import { FavoriteButton } from "@/features/favorites/FavoriteButton";
+import { useLocale, useT } from "@/hooks/useT";
 import { useSettingsStore } from "@/stores/settingsStore";
 import type { CurrentWeather, GeoLocation } from "@/types/weather";
 import { formatSpeed, formatTemp } from "@/utils/units";
+import { descriptionFromCondition } from "@/utils/weather-code";
 import { cn } from "@/utils/cn";
 
 type WeatherHeroProps = {
@@ -16,28 +18,37 @@ type WeatherHeroProps = {
 };
 
 export function WeatherHero({ location, current, className }: WeatherHeroProps) {
+  const t = useT();
+  const locale = useLocale();
   const temperatureUnit = useSettingsStore((s) => s.temperatureUnit);
   const speedUnit = useSettingsStore((s) => s.speedUnit);
+
+  const description = descriptionFromCondition(
+    current.condition,
+    current.isDay,
+    undefined,
+    locale,
+  );
 
   const metrics = [
     {
       icon: Wind,
-      label: "Vent",
+      label: t("hero.wind"),
       value: formatSpeed(current.windSpeed, speedUnit),
     },
     {
       icon: Droplets,
-      label: "Humidité",
+      label: t("hero.humidity"),
       value: `${Math.round(current.humidity)}%`,
     },
     {
       icon: Gauge,
-      label: "Pression",
+      label: t("hero.pressure"),
       value: `${Math.round(current.pressure)} hPa`,
     },
     {
       icon: Eye,
-      label: "UV",
+      label: t("hero.uv"),
       value:
         current.uvIndex != null ? String(Math.round(current.uvIndex)) : "—",
     },
@@ -63,10 +74,10 @@ export function WeatherHero({ location, current, className }: WeatherHeroProps) 
             {formatTemp(current.temperature, temperatureUnit)}
           </p>
           <p className="mt-2 text-sm font-medium text-[var(--text-primary)] sm:text-base">
-            {current.description}
+            {description}
           </p>
           <p className="text-xs text-[var(--text-secondary)] sm:text-sm">
-            Ressenti {formatTemp(current.feelsLike, temperatureUnit)}
+            {t("hero.feelsLike")} {formatTemp(current.feelsLike, temperatureUnit)}
           </p>
         </div>
         <WeatherIcon

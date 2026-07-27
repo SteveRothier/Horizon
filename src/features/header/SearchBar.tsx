@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Search, Loader2 } from "lucide-react";
 import { useCitySearch } from "@/hooks/useGeocode";
+import { useT } from "@/hooks/useT";
 import type { GeoLocation } from "@/types/weather";
 import { cn } from "@/utils/cn";
 import { selectLocation } from "@/utils/selectLocation";
@@ -13,6 +14,7 @@ type SearchBarProps = {
 };
 
 export function SearchBar({ className, onSelect }: SearchBarProps) {
+  const t = useT();
   const listId = useId();
   const [input, setInput] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -75,7 +77,7 @@ export function SearchBar({ className, onSelect }: SearchBarProps) {
   return (
     <div ref={rootRef} className={cn("relative w-full", className)}>
       <label className="sr-only" htmlFor="city-search">
-        Rechercher une ville
+        {t("header.searchLabel")}
       </label>
       <div className="glass glass-sm flex h-9 w-full items-center gap-2 px-3 sm:h-10 sm:gap-3 sm:px-4">
         {isFetching ? (
@@ -102,7 +104,7 @@ export function SearchBar({ className, onSelect }: SearchBarProps) {
               : undefined
           }
           autoComplete="off"
-          placeholder="Rechercher une ville…"
+          placeholder={t("header.searchPlaceholder")}
           value={input}
           onChange={(e) => {
             setInput(e.target.value);
@@ -124,11 +126,11 @@ export function SearchBar({ className, onSelect }: SearchBarProps) {
             <li className="px-3 py-2 text-sm text-red-200">
               {error instanceof Error
                 ? error.message
-                : "Recherche impossible"}
+                : t("header.searchFailed")}
             </li>
           ) : results.length === 0 && !isFetching ? (
             <li className="px-3 py-2 text-sm text-[var(--text-muted)]">
-              Aucune ville trouvée
+              {t("header.noResults")}
             </li>
           ) : (
             results.map((loc, i) => (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useSettingsStore } from "@/stores/settingsStore";
+import { useT } from "@/hooks/useT";
 import { cn } from "@/utils/cn";
 
 /**
@@ -9,11 +10,12 @@ import { cn } from "@/utils/cn";
 export function TemperatureToggle({ className }: { className?: string }) {
   const unit = useSettingsStore((s) => s.temperatureUnit);
   const setUnit = useSettingsStore((s) => s.setTemperatureUnit);
+  const t = useT();
 
   return (
     <div
       role="group"
-      aria-label="Unité de température"
+      aria-label={t("units.temp")}
       className={cn(
         "glass flex h-9 shrink-0 items-center rounded-full p-0.5 sm:h-10",
         className,

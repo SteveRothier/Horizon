@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ErrorCard } from "@/components/ui/ErrorCard";
@@ -9,42 +10,107 @@ import {
   GaugeSkeleton,
   MapSkeleton,
 } from "@/components/ui/skeletons";
+import { LocaleToggle } from "@/components/ui/LocaleToggle";
+import { SpeedUnitToggle } from "@/components/ui/SpeedUnitToggle";
 import { SearchBar } from "@/features/header/SearchBar";
 import { GeolocationButton } from "@/features/header/GeolocationButton";
 import { FavoritesList } from "@/features/favorites/FavoritesList";
 import { HistoryList } from "@/features/history/HistoryList";
 import { HourlyForecast } from "@/features/forecast/HourlyForecast";
 import { WeeklyForecast } from "@/features/forecast/WeeklyForecast";
-import { MapPlaceholder } from "@/features/map/MapPlaceholder";
+import { WeatherMap } from "@/features/map/WeatherMap";
 import { AirQuality } from "@/features/weather/AirQuality";
 import { UVIndex } from "@/features/weather/UVIndex";
 import { WeatherDetails } from "@/features/weather/WeatherDetails";
 import { WeatherHero } from "@/features/weather/WeatherHero";
-import { LocaleToggle } from "@/components/ui/LocaleToggle";
-import { SpeedUnitToggle } from "@/components/ui/SpeedUnitToggle";
+import { useT } from "@/hooks/useT";
 import { useAirQuality, useWeather } from "@/hooks/useWeather";
+import { clientFetchJson } from "@/services/client-api";
 import { useLocationStore } from "@/stores/locationStore";
 import { AppApiError } from "@/types/api";
-import type { DayPeriod } from "@/types/weather";
+import type { DayPeriod, GeoLocation } from "@/types/weather";
+import { queryFromSlug, toCityPath } from "@/utils/city-url";
+import { selectLocation } from "@/utils/selectLocation";
+import { slugifyCity } from "@/utils/weather-code";
 
-function errorMessage(error: unknown): string {
+type GeocodeSearchResponse = { results: GeoLocation[] };
+
+type WeatherDashboardProps = {
+  citySlug?: string;
+};
+
+function errorMessage(error: unknown, fallback: string): string {
   if (error instanceof AppApiError) return error.message;
   if (error instanceof Error) return error.message;
-  return "Impossible de charger la météo.";
+  return fallback;
 }
 
-export function WeatherDashboard() {
+export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
+  const t = useT();
+  const router = useRouter();
+  const pathname = usePathname();
   const location = useLocationStore((s) => s.location);
   const [geoError, setGeoError] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [slugResolving, setSlugResolving] = useState(Boolean(citySlug));
+  const resolvingSlug = useRef<string | null>(null);
 
   useEffect(() => {
     setHydrated(true);
   }, []);
 
-  const coords = hydrated
-    ? { lat: location.latitude, lon: location.longitude }
-    : null;
+  // Resolve /weather/[city] into the location store when the slug differs.
+  useEffect(() => {
+    if (!hydrated || !citySlug) {
+      setSlugResolving(false);
+      return;
+    }
+
+    const currentSlug = slugifyCity(location.name);
+    if (currentSlug === citySlug) {
+      setSlugResolving(false);
+      return;
+    }
+
+    if (resolvingSlug.current === citySlug) return;
+    resolvingSlug.current = citySlug;
+    let cancelled = false;
+
+    setSlugResolving(true);
+    (async () => {
+      try {
+        const data = await clientFetchJson<GeocodeSearchResponse>(
+          `/api/geocode?q=${encodeURIComponent(queryFromSlug(citySlug))}`,
+        );
+        if (cancelled) return;
+        const match = data.results[0];
+        if (match) selectLocation(match);
+      } catch {
+        // Keep current location; URL sync may correct the path.
+      } finally {
+        if (!cancelled) setSlugResolving(false);
+        if (resolvingSlug.current === citySlug) resolvingSlug.current = null;
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated, citySlug, location.name]);
+
+  // Keep the shareable SEO URL in sync with the selected city.
+  useEffect(() => {
+    if (!hydrated || slugResolving) return;
+    const path = toCityPath(location);
+    if (pathname !== path) {
+      router.replace(path);
+    }
+  }, [hydrated, slugResolving, location, pathname, router]);
+
+  const coords =
+    hydrated && !slugResolving
+      ? { lat: location.latitude, lon: location.longitude }
+      : null;
 
   const weatherQuery = useWeather(coords);
   const airQuery = useAirQuality(coords);
@@ -53,7 +119,7 @@ export function WeatherDashboard() {
   const period: DayPeriod = weather?.current.isDay ? "day" : "night";
   const condition = weather?.current.condition ?? "clear";
 
-  const isLoading = !hydrated || weatherQuery.isLoading;
+  const isLoading = !hydrated || slugResolving || weatherQuery.isLoading;
   const isError = weatherQuery.isError;
 
   return (
@@ -61,7 +127,11 @@ export function WeatherDashboard() {
       weather={condition}
       period={period}
       searchSlot={<SearchBar />}
-      geolocationSlot={<GeolocationButton onError={setGeoError} />}
+      geolocationSlot={
+        <GeolocationButton
+          onError={(message) => setGeoError(message)}
+        />
+      }
       settingsSlot={
         <>
           <SpeedUnitToggle className="hidden sm:flex" />
@@ -82,7 +152,7 @@ export function WeatherDashboard() {
             className="ml-2 underline"
             onClick={() => setGeoError(null)}
           >
-            Fermer
+            {t("error.close")}
           </button>
         </div>
       ) : null}
@@ -91,7 +161,7 @@ export function WeatherDashboard() {
         <DashboardSkeleton />
       ) : isError ? (
         <ErrorCard
-          message={errorMessage(weatherQuery.error)}
+          message={errorMessage(weatherQuery.error, t("error.weather"))}
           onRetry={() => weatherQuery.refetch()}
           className="min-h-[12rem]"
         />
@@ -105,16 +175,16 @@ export function WeatherDashboard() {
           details={<WeatherDetails current={weather.current} />}
           airQuality={
             airQuery.isLoading ? (
-              <GaugeSkeleton label="Qualité de l'air" />
+              <GaugeSkeleton label={t("aqi.title")} />
             ) : airQuery.isError ? (
               <ErrorCard
-                message={errorMessage(airQuery.error)}
+                message={errorMessage(airQuery.error, t("error.weather"))}
                 onRetry={() => airQuery.refetch()}
               />
             ) : airQuery.data ? (
               <AirQuality data={airQuery.data} />
             ) : (
-              <GaugeSkeleton label="Qualité de l'air" />
+              <GaugeSkeleton label={t("aqi.title")} />
             )
           }
           uv={
@@ -131,7 +201,7 @@ export function WeatherDashboard() {
             weatherQuery.isFetching && !weather ? (
               <MapSkeleton />
             ) : (
-              <MapPlaceholder location={weather.location} />
+              <WeatherMap location={weather.location} />
             )
           }
         />
@@ -141,4 +211,3 @@ export function WeatherDashboard() {
     </AppShell>
   );
 }
-

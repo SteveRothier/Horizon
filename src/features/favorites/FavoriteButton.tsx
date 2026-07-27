@@ -1,6 +1,7 @@
 "use client";
 
 import { Star } from "lucide-react";
+import { useT } from "@/hooks/useT";
 import { useFavoritesStore } from "@/stores/favoritesStore";
 import type { GeoLocation } from "@/types/weather";
 import { cn } from "@/utils/cn";
@@ -11,10 +12,12 @@ type FavoriteButtonProps = {
 };
 
 export function FavoriteButton({ location, className }: FavoriteButtonProps) {
+  const t = useT();
   const isFavorite = useFavoritesStore((s) =>
     s.favorites.some((f) => f.id === location.id),
   );
   const toggleFavorite = useFavoritesStore((s) => s.toggleFavorite);
+  const label = isFavorite ? t("favorites.remove") : t("favorites.add");
 
   return (
     <button
@@ -28,10 +31,8 @@ export function FavoriteButton({ location, className }: FavoriteButtonProps) {
         className,
       )}
       aria-pressed={isFavorite}
-      aria-label={
-        isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"
-      }
-      title={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+      aria-label={label}
+      title={label}
     >
       <Star
         className={cn("h-4 w-4", isFavorite && "fill-current")}

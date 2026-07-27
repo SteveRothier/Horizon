@@ -2,7 +2,9 @@
 
 import { GlassCard } from "@/components/ui/GlassCard";
 import { SemiGauge } from "@/components/ui/SemiGauge";
+import { useLocale, useT } from "@/hooks/useT";
 import type { AirQualityData } from "@/types/weather";
+import { aqiLabelFromIndex } from "@/utils/weather-code";
 import { cn } from "@/utils/cn";
 
 type AirQualityProps = {
@@ -22,7 +24,10 @@ function pollutant(label: string, value: number | null, unit = "µg/m³") {
 }
 
 export function AirQuality({ data, className }: AirQualityProps) {
+  const t = useT();
+  const locale = useLocale();
   const aqi = data.aqi ?? 0;
+  const label = aqiLabelFromIndex(data.aqi, locale);
   const color =
     aqi <= 40
       ? "#7ddea2"
@@ -41,13 +46,13 @@ export function AirQuality({ data, className }: AirQualityProps) {
       )}
     >
       <h2 className="mb-1 shrink-0 text-sm font-medium text-[var(--text-secondary)]">
-        Qualité de l’air
+        {t("aqi.title")}
       </h2>
       <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 sm:flex-row sm:items-center sm:gap-3">
         <SemiGauge
           value={aqi}
           max={100}
-          label={data.aqiLabel}
+          label={label}
           color={color}
           className="w-28 shrink-0 sm:w-32"
         />

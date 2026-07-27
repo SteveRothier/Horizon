@@ -11,10 +11,11 @@ import {
   Wind,
 } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
+import { useLocale, useT } from "@/hooks/useT";
 import { useSettingsStore } from "@/stores/settingsStore";
 import type { CurrentWeather } from "@/types/weather";
 import { formatTimeShort, windDirectionLabel } from "@/utils/format";
-import { formatSpeed, formatTemp } from "@/utils/units";
+import { formatSpeed, formatTemp, formatVisibility } from "@/utils/units";
 import { cn } from "@/utils/cn";
 
 type WeatherDetailsProps = {
@@ -23,52 +24,51 @@ type WeatherDetailsProps = {
 };
 
 export function WeatherDetails({ current, className }: WeatherDetailsProps) {
+  const t = useT();
+  const locale = useLocale();
   const temperatureUnit = useSettingsStore((s) => s.temperatureUnit);
   const speedUnit = useSettingsStore((s) => s.speedUnit);
 
   const items = [
     {
       icon: Thermometer,
-      label: "Ressenti",
+      label: t("details.feelsLike"),
       value: formatTemp(current.feelsLike, temperatureUnit),
     },
     {
       icon: Droplets,
-      label: "Humidité",
+      label: t("details.humidity"),
       value: `${Math.round(current.humidity)}%`,
     },
     {
       icon: Wind,
-      label: "Vent",
-      value: `${formatSpeed(current.windSpeed, speedUnit)} ${windDirectionLabel(current.windDirection)}`,
+      label: t("details.wind"),
+      value: `${formatSpeed(current.windSpeed, speedUnit)} ${windDirectionLabel(current.windDirection, locale)}`,
     },
     {
       icon: Gauge,
-      label: "Pression",
+      label: t("details.pressure"),
       value: `${Math.round(current.pressure)} hPa`,
     },
     {
       icon: Cloud,
-      label: "Nuages",
+      label: t("details.clouds"),
       value: `${Math.round(current.cloudCover)}%`,
     },
     {
       icon: Eye,
-      label: "Visibilité",
-      value:
-        current.visibility != null
-          ? `${(current.visibility / 1000).toFixed(1)} km`
-          : "—",
+      label: t("details.visibility"),
+      value: formatVisibility(current.visibility, speedUnit),
     },
     {
       icon: Sunrise,
-      label: "Lever",
-      value: formatTimeShort(current.sunrise),
+      label: t("details.sunrise"),
+      value: formatTimeShort(current.sunrise, locale),
     },
     {
       icon: Sunset,
-      label: "Coucher",
-      value: formatTimeShort(current.sunset),
+      label: t("details.sunset"),
+      value: formatTimeShort(current.sunset, locale),
     },
   ];
 
@@ -81,7 +81,7 @@ export function WeatherDetails({ current, className }: WeatherDetailsProps) {
       )}
     >
       <h2 className="mb-2 shrink-0 text-sm font-medium text-[var(--text-secondary)]">
-        Détails
+        {t("details.title")}
       </h2>
       <div className="grid min-h-0 flex-1 grid-cols-2 content-center gap-x-3 gap-y-2 overflow-auto scrollbar-none">
         {items.map(({ icon: Icon, label, value }) => (

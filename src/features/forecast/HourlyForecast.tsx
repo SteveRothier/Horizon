@@ -2,6 +2,7 @@
 
 import { GlassCard } from "@/components/ui/GlassCard";
 import { WeatherIcon } from "@/components/ui/WeatherIcon";
+import { useLocale, useT } from "@/hooks/useT";
 import { useSettingsStore } from "@/stores/settingsStore";
 import type { HourlyForecastItem } from "@/types/weather";
 import { formatHour } from "@/utils/format";
@@ -14,6 +15,8 @@ type HourlyForecastProps = {
 };
 
 export function HourlyForecast({ items, className }: HourlyForecastProps) {
+  const t = useT();
+  const locale = useLocale();
   const unit = useSettingsStore((s) => s.temperatureUnit);
 
   return (
@@ -25,7 +28,7 @@ export function HourlyForecast({ items, className }: HourlyForecastProps) {
       )}
     >
       <h2 className="mb-2 shrink-0 text-sm font-medium text-[var(--text-secondary)]">
-        Prévisions horaires
+        {t("forecast.hourly")}
       </h2>
       <div className="flex min-h-0 flex-1 items-stretch gap-1 overflow-x-auto scrollbar-none sm:gap-2">
         {items.slice(0, 24).map((item) => (
@@ -34,7 +37,7 @@ export function HourlyForecast({ items, className }: HourlyForecastProps) {
             className="flex w-12 shrink-0 flex-col items-center justify-center gap-1 sm:w-14"
           >
             <span className="text-[0.65rem] text-[var(--text-muted)] sm:text-xs">
-              {formatHour(item.time)}
+              {formatHour(item.time, locale)}
             </span>
             <WeatherIcon
               condition={item.condition}

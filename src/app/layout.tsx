@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Outfit, Manrope } from "next/font/google";
+import { DocumentLang } from "@/components/providers/DocumentLang";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import "./globals.css";
 
@@ -16,7 +17,10 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "Horizon",
+  title: {
+    default: "Horizon",
+    template: "%s | Horizon",
+  },
   description:
     "Application météo moderne — expérience immersive glassmorphism",
 };
@@ -37,7 +41,10 @@ export default function RootLayout({
         >
           Aller au contenu
         </a>
-        <QueryProvider>{children}</QueryProvider>
+        <QueryProvider>
+          <DocumentLang />
+          {children}
+        </QueryProvider>
       </body>
     </html>
   );

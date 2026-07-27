@@ -1,19 +1,21 @@
 "use client";
 
 import { useSettingsStore } from "@/stores/settingsStore";
+import { useT } from "@/hooks/useT";
 import { cn } from "@/utils/cn";
 
 /**
- * Segmented FR / EN locale control (strings wired in i18n phase).
+ * Segmented FR / EN locale control.
  */
 export function LocaleToggle({ className }: { className?: string }) {
   const locale = useSettingsStore((s) => s.locale);
   const setLocale = useSettingsStore((s) => s.setLocale);
+  const t = useT();
 
   return (
     <div
       role="group"
-      aria-label="Langue"
+      aria-label={t("units.locale")}
       className={cn(
         "glass flex h-9 shrink-0 items-center rounded-full p-0.5 sm:h-10",
         className,

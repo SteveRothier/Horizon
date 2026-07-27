@@ -37,3 +37,17 @@ export function formatSpeed(kmh: number, unit: SpeedUnit, digits = 0): string {
     digits === 0 ? Math.round(value) : Number(value.toFixed(digits));
   return `${rounded} ${unit === "mph" ? "mph" : "km/h"}`;
 }
+
+/** Distance display follows speed unit (metric km vs imperial mi). */
+export function formatVisibility(
+  meters: number | null,
+  unit: SpeedUnit,
+  digits = 1,
+): string {
+  if (meters == null) return "—";
+  if (unit === "mph") {
+    const miles = meters / 1609.344;
+    return `${miles.toFixed(digits)} mi`;
+  }
+  return `${(meters / 1000).toFixed(digits)} km`;
+}

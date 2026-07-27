@@ -2,6 +2,8 @@
 
 import { GlassCard } from "@/components/ui/GlassCard";
 import { SemiGauge } from "@/components/ui/SemiGauge";
+import { useT } from "@/hooks/useT";
+import type { MessageKey } from "@/i18n/messages";
 import { cn } from "@/utils/cn";
 
 type UVIndexProps = {
@@ -9,45 +11,49 @@ type UVIndexProps = {
   className?: string;
 };
 
-function uvMeta(uv: number): { label: string; advice: string; color: string } {
+function uvMeta(
+  uv: number,
+  t: (key: MessageKey) => string,
+): { label: string; advice: string; color: string } {
   if (uv < 3) {
     return {
-      label: "Faible",
-      advice: "Protection minimale nécessaire.",
+      label: t("uv.low"),
+      advice: t("uv.advice.low"),
       color: "#7ddea2",
     };
   }
   if (uv < 6) {
     return {
-      label: "Modéré",
-      advice: "Lunettes de soleil et crème solaire recommandées.",
+      label: t("uv.moderate"),
+      advice: t("uv.advice.moderate"),
       color: "#f5c542",
     };
   }
   if (uv < 8) {
     return {
-      label: "Élevé",
-      advice: "Évitez le soleil aux heures critiques.",
+      label: t("uv.high"),
+      advice: t("uv.advice.high"),
       color: "#ff9a4a",
     };
   }
   if (uv < 11) {
     return {
-      label: "Très élevé",
-      advice: "Protection maximale indispensable.",
+      label: t("uv.veryHigh"),
+      advice: t("uv.advice.veryHigh"),
       color: "#f07178",
     };
   }
   return {
-    label: "Extrême",
-    advice: "Restez à l’ombre autant que possible.",
+    label: t("uv.extreme"),
+    advice: t("uv.advice.extreme"),
     color: "#c084fc",
   };
 }
 
 export function UVIndex({ value, className }: UVIndexProps) {
+  const t = useT();
   const uv = value ?? 0;
-  const meta = uvMeta(uv);
+  const meta = uvMeta(uv, t);
 
   return (
     <GlassCard
@@ -58,7 +64,7 @@ export function UVIndex({ value, className }: UVIndexProps) {
       )}
     >
       <h2 className="mb-1 shrink-0 text-sm font-medium text-[var(--text-secondary)]">
-        Indice UV
+        {t("uv.title")}
       </h2>
       <div className="flex min-h-0 flex-1 flex-col items-center justify-center">
         <SemiGauge
