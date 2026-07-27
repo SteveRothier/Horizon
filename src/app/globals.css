@@ -157,6 +157,64 @@ body {
   border-radius: var(--glass-radius-sm);
 }
 
+/* Glass controls on map tiles — readable over light/dark backgrounds */
+.glass-control {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: rgba(12, 18, 30, 0.78);
+  backdrop-filter: blur(28px) saturate(150%);
+  -webkit-backdrop-filter: blur(28px) saturate(150%);
+  border: 1px solid var(--glass-border-strong);
+  border-radius: 9999px;
+  box-shadow:
+    var(--glass-shadow),
+    0 1px 0 rgba(255, 255, 255, 0.1) inset;
+  color: var(--text-primary);
+  transition:
+    border-color 0.45s var(--ease-out),
+    box-shadow 0.45s var(--ease-out),
+    backdrop-filter 0.45s var(--ease-out),
+    -webkit-backdrop-filter 0.45s var(--ease-out);
+}
+
+.glass-control::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.07);
+  opacity: 0;
+  transition: opacity 0.45s var(--ease-out);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.glass-control:hover,
+.glass-control:focus-visible {
+  border-color: rgba(255, 255, 255, 0.32);
+  backdrop-filter: blur(32px) saturate(158%);
+  -webkit-backdrop-filter: blur(32px) saturate(158%);
+  box-shadow:
+    var(--glass-shadow),
+    0 1px 0 rgba(255, 255, 255, 0.14) inset;
+}
+
+.glass-control:hover::before,
+.glass-control:focus-visible::before {
+  opacity: 1;
+}
+
+.glass-control:active::before {
+  opacity: 0.6;
+  transition-duration: 0.12s;
+}
+
+.glass-control > svg {
+  position: relative;
+  z-index: 1;
+}
+
 /* Frosted overlay panel — readable, still glass-like */
 @keyframes glass-menu-in {
   from {
