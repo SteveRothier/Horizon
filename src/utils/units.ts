@@ -1,4 +1,4 @@
-import type { TemperatureUnit } from "@/stores/settingsStore";
+import type { SpeedUnit, TemperatureUnit } from "@/stores/settingsStore";
 
 export function celsiusToFahrenheit(c: number): number {
   return (c * 9) / 5 + 32;
@@ -21,4 +21,19 @@ export function formatTemp(
 
 export function tempUnitLabel(unit: TemperatureUnit): string {
   return unit === "fahrenheit" ? "°F" : "°C";
+}
+
+export function kmhToMph(kmh: number): number {
+  return kmh * 0.621371;
+}
+
+export function toDisplaySpeed(kmh: number, unit: SpeedUnit): number {
+  return unit === "mph" ? kmhToMph(kmh) : kmh;
+}
+
+export function formatSpeed(kmh: number, unit: SpeedUnit, digits = 0): string {
+  const value = toDisplaySpeed(kmh, unit);
+  const rounded =
+    digits === 0 ? Math.round(value) : Number(value.toFixed(digits));
+  return `${rounded} ${unit === "mph" ? "mph" : "km/h"}`;
 }

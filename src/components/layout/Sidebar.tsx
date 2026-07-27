@@ -1,6 +1,11 @@
 "use client";
 
-import type { ReactNode } from "react";
+import {
+  cloneElement,
+  isValidElement,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 import {
   Home,
   Map,
@@ -11,6 +16,7 @@ import {
   Navigation,
   X,
 } from "lucide-react";
+import { useLocationStore } from "@/stores/locationStore";
 import { cn } from "@/utils/cn";
 
 const NAV_ITEMS = [
@@ -22,6 +28,10 @@ const NAV_ITEMS = [
   { id: "settings", label: "Réglages", icon: Settings, active: false },
 ] as const;
 
+type SlotWithSelect = {
+  onSelect?: () => void;
+};
+
 type SidebarProps = {
   open?: boolean;
   onClose?: () => void;
@@ -30,8 +40,19 @@ type SidebarProps = {
   className?: string;
 };
 
+function withCloseOnSelect(slot: ReactNode, onClose?: () => void): ReactNode {
+  if (!isValidElement(slot) || !onClose) return slot;
+  const element = slot as ReactElement<SlotWithSelect>;
+  return cloneElement(element, {
+    onSelect: () => {
+      element.props.onSelect?.();
+      onClose();
+    },
+  });
+}
+
 /**
- * Left navigation shell — glass panels with placeholder lists.
+ * Left navigation shell — glass panels with favorites / history slots.
  */
 export function Sidebar({
   open = false,
@@ -40,6 +61,10 @@ export function Sidebar({
   historySlot,
   className,
 }: SidebarProps) {
+  const location = useLocationStore((s) => s.location);
+  const history = withCloseOnSelect(historySlot, onClose);
+  const favorites = withCloseOnSelect(favoritesSlot, onClose);
+
   return (
     <>
       {/* Mobile overlay */}
@@ -113,7 +138,7 @@ export function Sidebar({
             >
               Récentes
             </h2>
-            {historySlot ?? (
+            {history ?? (
               <p className="px-2 text-xs text-[var(--text-muted)]">
                 Aucune recherche récente
               </p>
@@ -127,7 +152,7 @@ export function Sidebar({
             >
               Favoris
             </h2>
-            {favoritesSlot ?? (
+            {favorites ?? (
               <p className="px-2 text-xs text-[var(--text-muted)]">
                 Aucun favori
               </p>
@@ -143,10 +168,10 @@ export function Sidebar({
             />
             <div className="min-w-0">
               <p className="text-[0.65rem] text-[var(--text-muted)]">
-                Ma position
+                Position actuelle
               </p>
               <p className="truncate text-xs text-[var(--text-secondary)]">
-                Non définie
+                {location.displayName}
               </p>
             </div>
           </div>

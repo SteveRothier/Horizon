@@ -14,7 +14,7 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { useSettingsStore } from "@/stores/settingsStore";
 import type { CurrentWeather } from "@/types/weather";
 import { formatTimeShort, windDirectionLabel } from "@/utils/format";
-import { formatTemp } from "@/utils/units";
+import { formatSpeed, formatTemp } from "@/utils/units";
 import { cn } from "@/utils/cn";
 
 type WeatherDetailsProps = {
@@ -23,13 +23,14 @@ type WeatherDetailsProps = {
 };
 
 export function WeatherDetails({ current, className }: WeatherDetailsProps) {
-  const unit = useSettingsStore((s) => s.temperatureUnit);
+  const temperatureUnit = useSettingsStore((s) => s.temperatureUnit);
+  const speedUnit = useSettingsStore((s) => s.speedUnit);
 
   const items = [
     {
       icon: Thermometer,
       label: "Ressenti",
-      value: formatTemp(current.feelsLike, unit),
+      value: formatTemp(current.feelsLike, temperatureUnit),
     },
     {
       icon: Droplets,
@@ -39,7 +40,7 @@ export function WeatherDetails({ current, className }: WeatherDetailsProps) {
     {
       icon: Wind,
       label: "Vent",
-      value: `${Math.round(current.windSpeed)} km/h ${windDirectionLabel(current.windDirection)}`,
+      value: `${formatSpeed(current.windSpeed, speedUnit)} ${windDirectionLabel(current.windDirection)}`,
     },
     {
       icon: Gauge,

@@ -11,6 +11,8 @@ import {
 } from "@/components/ui/skeletons";
 import { SearchBar } from "@/features/header/SearchBar";
 import { GeolocationButton } from "@/features/header/GeolocationButton";
+import { FavoritesList } from "@/features/favorites/FavoritesList";
+import { HistoryList } from "@/features/history/HistoryList";
 import { HourlyForecast } from "@/features/forecast/HourlyForecast";
 import { WeeklyForecast } from "@/features/forecast/WeeklyForecast";
 import { MapPlaceholder } from "@/features/map/MapPlaceholder";
@@ -18,6 +20,8 @@ import { AirQuality } from "@/features/weather/AirQuality";
 import { UVIndex } from "@/features/weather/UVIndex";
 import { WeatherDetails } from "@/features/weather/WeatherDetails";
 import { WeatherHero } from "@/features/weather/WeatherHero";
+import { LocaleToggle } from "@/components/ui/LocaleToggle";
+import { SpeedUnitToggle } from "@/components/ui/SpeedUnitToggle";
 import { useAirQuality, useWeather } from "@/hooks/useWeather";
 import { useLocationStore } from "@/stores/locationStore";
 import { AppApiError } from "@/types/api";
@@ -58,6 +62,14 @@ export function WeatherDashboard() {
       period={period}
       searchSlot={<SearchBar />}
       geolocationSlot={<GeolocationButton onError={setGeoError} />}
+      settingsSlot={
+        <>
+          <SpeedUnitToggle className="hidden sm:flex" />
+          <LocaleToggle className="hidden md:flex" />
+        </>
+      }
+      favoritesSlot={<FavoritesList />}
+      historySlot={<HistoryList />}
     >
       {geoError ? (
         <div

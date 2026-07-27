@@ -3,9 +3,9 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Search, Loader2 } from "lucide-react";
 import { useCitySearch } from "@/hooks/useGeocode";
-import { useLocationStore } from "@/stores/locationStore";
 import type { GeoLocation } from "@/types/weather";
 import { cn } from "@/utils/cn";
+import { selectLocation } from "@/utils/selectLocation";
 
 type SearchBarProps = {
   className?: string;
@@ -14,7 +14,6 @@ type SearchBarProps = {
 
 export function SearchBar({ className, onSelect }: SearchBarProps) {
   const listId = useId();
-  const setLocation = useLocationStore((s) => s.setLocation);
   const [input, setInput] = useState("");
   const [debounced, setDebounced] = useState("");
   const [open, setOpen] = useState(false);
@@ -44,7 +43,7 @@ export function SearchBar({ className, onSelect }: SearchBarProps) {
   }, []);
 
   function choose(loc: GeoLocation) {
-    setLocation(loc);
+    selectLocation(loc);
     onSelect?.(loc);
     setInput(loc.name);
     setOpen(false);

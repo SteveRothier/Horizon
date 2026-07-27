@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { Loader2, MapPin } from "lucide-react";
 import { clientFetchJson } from "@/services/client-api";
-import { useLocationStore } from "@/stores/locationStore";
 import type { GeoLocation } from "@/types/weather";
 import { AppApiError } from "@/types/api";
 import { cn } from "@/utils/cn";
+import { selectLocation } from "@/utils/selectLocation";
 
 type GeocodeReverseResponse = { location: GeoLocation };
 
@@ -19,7 +19,6 @@ export function GeolocationButton({
   className,
   onError,
 }: GeolocationButtonProps) {
-  const setLocation = useLocationStore((s) => s.setLocation);
   const [loading, setLoading] = useState(false);
 
   async function locate() {
@@ -44,7 +43,7 @@ export function GeolocationButton({
       const data = await clientFetchJson<GeocodeReverseResponse>(
         `/api/geocode?lat=${latitude}&lon=${longitude}`,
       );
-      setLocation(data.location);
+      selectLocation(data.location);
     } catch (err) {
       if (err instanceof GeolocationPositionError) {
         if (err.code === err.PERMISSION_DENIED) {

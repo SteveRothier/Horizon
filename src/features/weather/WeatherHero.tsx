@@ -3,9 +3,10 @@
 import { Droplets, Eye, Gauge, Wind } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { WeatherIcon } from "@/components/ui/WeatherIcon";
+import { FavoriteButton } from "@/features/favorites/FavoriteButton";
 import { useSettingsStore } from "@/stores/settingsStore";
 import type { CurrentWeather, GeoLocation } from "@/types/weather";
-import { formatTemp } from "@/utils/units";
+import { formatSpeed, formatTemp } from "@/utils/units";
 import { cn } from "@/utils/cn";
 
 type WeatherHeroProps = {
@@ -15,13 +16,14 @@ type WeatherHeroProps = {
 };
 
 export function WeatherHero({ location, current, className }: WeatherHeroProps) {
-  const unit = useSettingsStore((s) => s.temperatureUnit);
+  const temperatureUnit = useSettingsStore((s) => s.temperatureUnit);
+  const speedUnit = useSettingsStore((s) => s.speedUnit);
 
   const metrics = [
     {
       icon: Wind,
       label: "Vent",
-      value: `${Math.round(current.windSpeed)} km/h`,
+      value: formatSpeed(current.windSpeed, speedUnit),
     },
     {
       icon: Droplets,
@@ -51,17 +53,20 @@ export function WeatherHero({ location, current, className }: WeatherHeroProps) 
     >
       <div className="flex min-h-0 flex-1 items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-xs text-[var(--text-muted)] sm:text-sm">
-            {location.displayName}
-          </p>
+          <div className="flex items-start justify-between gap-2">
+            <p className="truncate text-xs text-[var(--text-muted)] sm:text-sm">
+              {location.displayName}
+            </p>
+            <FavoriteButton location={location} className="h-8 w-8" />
+          </div>
           <p className="mt-1 font-[family-name:var(--font-horizon-display)] text-5xl font-light leading-none tracking-tight sm:text-6xl xl:text-7xl">
-            {formatTemp(current.temperature, unit)}
+            {formatTemp(current.temperature, temperatureUnit)}
           </p>
           <p className="mt-2 text-sm font-medium text-[var(--text-primary)] sm:text-base">
             {current.description}
           </p>
           <p className="text-xs text-[var(--text-secondary)] sm:text-sm">
-            Ressenti {formatTemp(current.feelsLike, unit)}
+            Ressenti {formatTemp(current.feelsLike, temperatureUnit)}
           </p>
         </div>
         <WeatherIcon
