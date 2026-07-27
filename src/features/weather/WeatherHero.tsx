@@ -1,9 +1,10 @@
 "use client";
 
-import { Droplets, Eye, Gauge, Wind } from "lucide-react";
+import { Droplets, Gauge, Sun, Wind } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { WeatherIcon } from "@/components/ui/WeatherIcon";
 import { FavoriteButton } from "@/features/favorites/FavoriteButton";
+import { ShareButton } from "@/features/weather/ShareButton";
 import { useLocale, useT } from "@/hooks/useT";
 import { useSettingsStore } from "@/stores/settingsStore";
 import type { CurrentWeather, GeoLocation } from "@/types/weather";
@@ -47,7 +48,7 @@ export function WeatherHero({ location, current, className }: WeatherHeroProps) 
       value: `${Math.round(current.pressure)} hPa`,
     },
     {
-      icon: Eye,
+      icon: Sun,
       label: t("hero.uv"),
       value:
         current.uvIndex != null ? String(Math.round(current.uvIndex)) : "—",
@@ -68,7 +69,10 @@ export function WeatherHero({ location, current, className }: WeatherHeroProps) 
             <p className="truncate text-xs text-[var(--text-muted)] sm:text-sm">
               {location.displayName}
             </p>
-            <FavoriteButton location={location} className="h-8 w-8" />
+            <div className="flex shrink-0 items-center gap-1">
+              <ShareButton className="h-8 w-8" />
+              <FavoriteButton location={location} className="h-8 w-8" />
+            </div>
           </div>
           <p className="mt-1 font-[family-name:var(--font-horizon-display)] text-5xl font-light leading-none tracking-tight sm:text-6xl xl:text-7xl">
             {formatTemp(current.temperature, temperatureUnit)}
@@ -77,7 +81,8 @@ export function WeatherHero({ location, current, className }: WeatherHeroProps) 
             {description}
           </p>
           <p className="text-xs text-[var(--text-secondary)] sm:text-sm">
-            {t("hero.feelsLike")} {formatTemp(current.feelsLike, temperatureUnit)}
+            {t("hero.feelsLike")}{" "}
+            {formatTemp(current.feelsLike, temperatureUnit)}
           </p>
         </div>
         <WeatherIcon

@@ -93,6 +93,7 @@ function buildForecastUrl(lat: number, lon: number): string {
       "pressure_msl",
       "wind_speed_10m",
       "wind_direction_10m",
+      "visibility",
     ].join(","),
   );
   url.searchParams.set(
@@ -181,7 +182,8 @@ function mapCurrent(
     windSpeed: data.current.wind_speed_10m,
     windDirection: data.current.wind_direction_10m,
     pressure: data.current.pressure_msl,
-    visibility: null,
+    visibility:
+      data.current.visibility != null ? data.current.visibility : null,
     cloudCover: data.current.cloud_cover,
     dewPoint: null,
     uvIndex: airUv ?? uvFromDaily,

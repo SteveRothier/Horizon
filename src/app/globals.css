@@ -36,12 +36,15 @@ body {
 .dashboard-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: minmax(0, 1.35fr) minmax(0, 0.75fr) minmax(0, 0.95fr) minmax(0, 0.95fr);
+  grid-template-rows:
+    minmax(0, 1.2fr) minmax(0, 0.7fr) minmax(0, 0.85fr) minmax(0, 0.85fr)
+    minmax(10rem, 0.9fr);
   grid-template-areas:
     "hero hero"
     "hourly hourly"
     "weekly aqi"
-    "details uv";
+    "details uv"
+    "map map";
 }
 
 .dashboard-area-hero {
@@ -70,21 +73,20 @@ body {
 
 .dashboard-area-map {
   grid-area: map;
-  display: none;
+  display: block;
+  min-height: 10rem;
 }
 
 @media (min-width: 768px) {
   .dashboard-grid {
     grid-template-columns: 1.4fr 1fr 1fr;
-    grid-template-rows: minmax(0, 1.4fr) minmax(0, 0.7fr) minmax(0, 1fr);
+    grid-template-rows:
+      minmax(0, 1.3fr) minmax(0, 0.65fr) minmax(0, 0.9fr) minmax(11rem, 0.85fr);
     grid-template-areas:
       "hero hero weekly"
       "hourly hourly weekly"
-      "details aqi uv";
-  }
-
-  .dashboard-area-map {
-    display: none;
+      "details aqi uv"
+      "map map map";
   }
 }
 
@@ -99,7 +101,7 @@ body {
   }
 
   .dashboard-area-map {
-    display: block;
+    min-height: 0;
   }
 }
 
@@ -118,7 +120,9 @@ body {
   .dashboard-grid {
     min-height: calc(100dvh - var(--header-height) - 1rem);
     height: auto;
-    grid-template-rows: minmax(140px, auto) minmax(88px, auto) minmax(140px, auto) minmax(120px, auto);
+    grid-template-rows:
+      minmax(140px, auto) minmax(88px, auto) minmax(140px, auto)
+      minmax(120px, auto) minmax(10rem, auto);
   }
 }
 
@@ -130,6 +134,13 @@ body {
 :focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
+}
+
+/* Search input: no nested focus ring inside the glass pill */
+#city-search:focus,
+#city-search:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 
 /* Glass utility */

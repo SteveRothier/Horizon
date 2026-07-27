@@ -43,7 +43,7 @@ export function HistoryList({ className, onSelect }: HistoryListProps) {
             </button>
             <button
               type="button"
-              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[var(--text-muted)] opacity-0 transition-opacity hover:bg-white/10 hover:text-[var(--text-primary)] group-hover:opacity-100 focus-visible:opacity-100"
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[var(--text-muted)] opacity-70 transition-opacity hover:bg-white/10 hover:text-[var(--text-primary)] hover:opacity-100 group-hover:opacity-100 focus-visible:opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
               aria-label={t("history.removeNamed", { name: loc.name })}
               onClick={() => removeFromHistory(loc.id)}
             >

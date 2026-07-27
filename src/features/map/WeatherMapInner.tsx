@@ -43,8 +43,10 @@ export default function WeatherMapInner({
   return (
     <GlassCard
       interactive={false}
+      id="weather-map"
+      tabIndex={-1}
       className={cn(
-        "flex h-full min-h-0 flex-col overflow-hidden p-0",
+        "flex h-full min-h-0 flex-col overflow-hidden p-0 outline-none",
         className,
       )}
     >

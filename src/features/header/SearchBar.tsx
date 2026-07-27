@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { Search, Loader2 } from "lucide-react";
+import { Search, Loader2, X } from "lucide-react";
 import { useCitySearch } from "@/hooks/useGeocode";
 import { useT } from "@/hooks/useT";
 import type { GeoLocation } from "@/types/weather";
@@ -23,8 +23,8 @@ export function SearchBar({ className, onSelect }: SearchBarProps) {
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const t = setTimeout(() => setDebounced(input.trim()), 280);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setDebounced(input.trim()), 280);
+    return () => clearTimeout(timer);
   }, [input]);
 
   const { data: results = [], isFetching, isError, error } = useCitySearch(
@@ -48,6 +48,12 @@ export function SearchBar({ className, onSelect }: SearchBarProps) {
     selectLocation(loc);
     onSelect?.(loc);
     setInput(loc.name);
+    setOpen(false);
+  }
+
+  function clearInput() {
+    setInput("");
+    setDebounced("");
     setOpen(false);
   }
 
@@ -112,8 +118,29 @@ export function SearchBar({ className, onSelect }: SearchBarProps) {
           }}
           onFocus={() => setOpen(true)}
           onKeyDown={onKeyDown}
-          className="min-w-0 flex-1 bg-transparent text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"
+          className={cn(
+            "min-w-0 flex-1 bg-transparent text-sm text-[var(--text-primary)]",
+            "border-0 outline-none ring-0 shadow-none",
+            "placeholder:text-[var(--text-muted)]",
+            "focus:border-0 focus:outline-none focus:ring-0 focus:shadow-none",
+            "focus-visible:border-0 focus-visible:outline-none focus-visible:ring-0 focus-visible:shadow-none",
+            "appearance-none",
+            "[&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-cancel-button]:hidden",
+            "[&::-webkit-search-decoration]:appearance-none",
+            "[&::-ms-clear]:hidden",
+          )}
         />
+        {input ? (
+          <button
+            type="button"
+            onClick={clearInput}
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-white/10 hover:text-[var(--text-primary)]"
+            aria-label={t("header.clearSearch")}
+            title={t("header.clearSearch")}
+          >
+            <X className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden />
+          </button>
+        ) : null}
       </div>
 
       {open && debounced.length >= 2 ? (

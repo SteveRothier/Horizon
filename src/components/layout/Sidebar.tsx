@@ -9,16 +9,7 @@ import {
   type ReactElement,
   type ReactNode,
 } from "react";
-import {
-  Home,
-  Map,
-  Star,
-  Clock,
-  Bell,
-  Settings,
-  Navigation,
-  X,
-} from "lucide-react";
+import { Home, Map, Star, Clock, Navigation, X } from "lucide-react";
 import { useT } from "@/hooks/useT";
 import type { MessageKey } from "@/i18n/messages";
 import { useLocationStore } from "@/stores/locationStore";
@@ -28,14 +19,22 @@ const NAV_ITEMS: {
   id: string;
   labelKey: MessageKey;
   icon: typeof Home;
-  active: boolean;
+  href: string;
 }[] = [
-  { id: "home", labelKey: "nav.home", icon: Home, active: true },
-  { id: "map", labelKey: "nav.map", icon: Map, active: false },
-  { id: "favorites", labelKey: "nav.favorites", icon: Star, active: false },
-  { id: "history", labelKey: "nav.history", icon: Clock, active: false },
-  { id: "alerts", labelKey: "nav.alerts", icon: Bell, active: false },
-  { id: "settings", labelKey: "nav.settings", icon: Settings, active: false },
+  { id: "home", labelKey: "nav.home", icon: Home, href: "#main-content" },
+  { id: "map", labelKey: "nav.map", icon: Map, href: "#weather-map" },
+  {
+    id: "favorites",
+    labelKey: "nav.favorites",
+    icon: Star,
+    href: "#sidebar-fav-title",
+  },
+  {
+    id: "history",
+    labelKey: "nav.history",
+    icon: Clock,
+    href: "#sidebar-history-title",
+  },
 ];
 
 type SlotWithSelect = {
@@ -61,6 +60,13 @@ function withCloseOnSelect(slot: ReactNode, onClose?: () => void): ReactNode {
   });
 }
 
+function activeNavIdFromHash(hash: string): string {
+  if (hash === "#weather-map") return "map";
+  if (hash === "#sidebar-fav-title") return "favorites";
+  if (hash === "#sidebar-history-title") return "history";
+  return "home";
+}
+
 /**
  * Left navigation shell — glass panels with favorites / history slots.
  * Mobile: drawer with Escape close + focus restore.
@@ -76,6 +82,7 @@ export function Sidebar({
   const closeRef = useRef<HTMLButtonElement>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [activeId, setActiveId] = useState("home");
   const location = useLocationStore((s) => s.location);
   const history = withCloseOnSelect(historySlot, onClose);
   const favorites = withCloseOnSelect(favoritesSlot, onClose);
@@ -89,6 +96,15 @@ export function Sidebar({
     sync();
     mq.addEventListener("change", sync);
     return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  useEffect(() => {
+    function syncHash() {
+      setActiveId(activeNavIdFromHash(window.location.hash));
+    }
+    syncHash();
+    window.addEventListener("hashchange", syncHash);
+    return () => window.removeEventListener("hashchange", syncHash);
   }, []);
 
   useEffect(() => {
@@ -111,6 +127,29 @@ export function Sidebar({
     };
   }, [drawerActive, onClose]);
 
+  function navigateTo(href: string, id: string) {
+    setActiveId(id);
+    onClose?.();
+
+    const targetId = href.replace(/^#/, "");
+    // Defer until drawer close animation / layout settle
+    requestAnimationFrame(() => {
+      const el = document.getElementById(targetId);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        if (el instanceof HTMLElement && el.tabIndex < 0) {
+          el.tabIndex = -1;
+        }
+        el.focus?.({ preventScroll: true });
+      }
+      if (href !== "#main-content") {
+        window.history.replaceState(null, "", href);
+      } else {
+        window.history.replaceState(null, "", window.location.pathname);
+      }
+    });
+  }
+
   return (
     <>
       <div
@@ -129,7 +168,9 @@ export function Sidebar({
           "bg-white/[0.06] backdrop-blur-[var(--glass-blur)]",
           "transition-transform duration-300 ease-[var(--ease-out)]",
           "lg:static lg:z-0 lg:h-full lg:shrink-0 lg:translate-x-0 lg:self-stretch lg:bg-transparent lg:backdrop-blur-none",
-          open ? "translate-x-0" : "-translate-x-full max-lg:invisible max-lg:pointer-events-none",
+          open
+            ? "translate-x-0"
+            : "-translate-x-full max-lg:invisible max-lg:pointer-events-none",
           className,
         )}
         aria-label={t("nav.main")}
@@ -157,24 +198,30 @@ export function Sidebar({
           aria-label={t("nav.menu")}
         >
           <ul className="space-y-0.5">
-            {NAV_ITEMS.map(({ id, labelKey, icon: Icon, active }) => (
-              <li key={id}>
-                <a
-                  href={id === "home" ? "#" : `#${id}`}
-                  className={cn(
-                    "flex items-center gap-2.5 rounded-[var(--glass-radius-sm)] px-2.5 py-2 text-sm transition-colors",
-                    active
-                      ? "bg-white/15 text-[var(--text-primary)]"
-                      : "text-[var(--text-secondary)] hover:bg-white/10 hover:text-[var(--text-primary)]",
-                  )}
-                  aria-current={active ? "page" : undefined}
-                  onClick={onClose}
-                >
-                  <Icon className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
-                  {t(labelKey)}
-                </a>
-              </li>
-            ))}
+            {NAV_ITEMS.map(({ id, labelKey, icon: Icon, href }) => {
+              const active = activeId === id;
+              return (
+                <li key={id}>
+                  <a
+                    href={href}
+                    className={cn(
+                      "flex items-center gap-2.5 rounded-[var(--glass-radius-sm)] px-2.5 py-2 text-sm transition-colors",
+                      active
+                        ? "bg-white/15 text-[var(--text-primary)]"
+                        : "text-[var(--text-secondary)] hover:bg-white/10 hover:text-[var(--text-primary)]",
+                    )}
+                    aria-current={active ? "page" : undefined}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      navigateTo(href, id);
+                    }}
+                  >
+                    <Icon className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
+                    {t(labelKey)}
+                  </a>
+                </li>
+              );
+            })}
           </ul>
 
           <section
@@ -183,7 +230,8 @@ export function Sidebar({
           >
             <h2
               id="sidebar-history-title"
-              className="mb-1.5 px-2 text-[0.65rem] font-medium uppercase tracking-wider text-[var(--text-muted)]"
+              tabIndex={-1}
+              className="mb-1.5 px-2 text-[0.65rem] font-medium uppercase tracking-wider text-[var(--text-muted)] outline-none"
             >
               {t("sidebar.recent")}
             </h2>
@@ -197,7 +245,8 @@ export function Sidebar({
           <section className="mt-3 px-1" aria-labelledby="sidebar-fav-title">
             <h2
               id="sidebar-fav-title"
-              className="mb-1.5 px-2 text-[0.65rem] font-medium uppercase tracking-wider text-[var(--text-muted)]"
+              tabIndex={-1}
+              className="mb-1.5 px-2 text-[0.65rem] font-medium uppercase tracking-wider text-[var(--text-muted)] outline-none"
             >
               {t("sidebar.favorites")}
             </h2>
