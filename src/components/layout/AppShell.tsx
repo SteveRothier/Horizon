@@ -60,6 +60,7 @@ export function AppShell({
         searchSlot={searchSlot}
         geolocationSlot={geolocationSlot}
         settingsSlot={settingsSlot}
+        menuOpen={sidebarOpen}
         onMenuClick={() => setSidebarOpen(true)}
       />
 

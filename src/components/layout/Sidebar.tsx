@@ -3,6 +3,9 @@
 import {
   cloneElement,
   isValidElement,
+  useEffect,
+  useRef,
+  useState,
   type ReactElement,
   type ReactNode,
 } from "react";
@@ -60,6 +63,7 @@ function withCloseOnSelect(slot: ReactNode, onClose?: () => void): ReactNode {
 
 /**
  * Left navigation shell — glass panels with favorites / history slots.
+ * Mobile: drawer with Escape close + focus restore.
  */
 export function Sidebar({
   open = false,
@@ -69,9 +73,43 @@ export function Sidebar({
   className,
 }: SidebarProps) {
   const t = useT();
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const previouslyFocused = useRef<HTMLElement | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
   const location = useLocationStore((s) => s.location);
   const history = withCloseOnSelect(historySlot, onClose);
   const favorites = withCloseOnSelect(favoritesSlot, onClose);
+  const drawerActive = isMobile && open;
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    function sync() {
+      setIsMobile(mq.matches);
+    }
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  useEffect(() => {
+    if (!drawerActive) return;
+
+    previouslyFocused.current = document.activeElement as HTMLElement | null;
+    closeRef.current?.focus();
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose?.();
+      }
+    }
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      previouslyFocused.current?.focus?.();
+    };
+  }, [drawerActive, onClose]);
 
   return (
     <>
@@ -91,16 +129,20 @@ export function Sidebar({
           "bg-white/[0.06] backdrop-blur-[var(--glass-blur)]",
           "transition-transform duration-300 ease-[var(--ease-out)]",
           "lg:static lg:z-0 lg:h-full lg:shrink-0 lg:translate-x-0 lg:self-stretch lg:bg-transparent lg:backdrop-blur-none",
-          open ? "translate-x-0" : "-translate-x-full",
+          open ? "translate-x-0" : "-translate-x-full max-lg:invisible max-lg:pointer-events-none",
           className,
         )}
         aria-label={t("nav.main")}
+        aria-modal={drawerActive || undefined}
+        aria-hidden={isMobile && !open ? true : undefined}
+        role={drawerActive ? "dialog" : undefined}
       >
         <div className="flex h-[var(--header-height)] items-center justify-between px-4 lg:hidden">
           <span className="font-[family-name:var(--font-horizon-display)] text-lg font-semibold">
             {t("header.brand")}
           </span>
           <button
+            ref={closeRef}
             type="button"
             onClick={onClose}
             className="glass glass-sm flex h-8 w-8 items-center justify-center"

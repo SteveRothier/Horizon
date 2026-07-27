@@ -11,6 +11,7 @@ type HeaderProps = {
   geolocationSlot?: ReactNode;
   /** Extra controls after the °C/°F toggle */
   settingsSlot?: ReactNode;
+  menuOpen?: boolean;
   onMenuClick?: () => void;
   className?: string;
 };
@@ -19,6 +20,7 @@ export function Header({
   searchSlot,
   geolocationSlot,
   settingsSlot,
+  menuOpen = false,
   onMenuClick,
   className,
 }: HeaderProps) {
@@ -27,7 +29,7 @@ export function Header({
   return (
     <header
       className={cn(
-        "z-40 flex h-[var(--header-height)] shrink-0 items-center gap-2 px-[var(--page-gutter)] sm:gap-3",
+        "sticky top-0 z-40 flex h-[var(--header-height)] shrink-0 items-center gap-2 px-[var(--page-gutter)] sm:gap-3",
         className,
       )}
     >
@@ -36,6 +38,8 @@ export function Header({
         onClick={onMenuClick}
         className="glass glass-sm flex h-9 w-9 items-center justify-center lg:hidden"
         aria-label={t("sidebar.openMenu")}
+        aria-expanded={menuOpen}
+        aria-controls="app-sidebar"
       >
         <Menu className="h-4 w-4" aria-hidden />
       </button>

@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ErrorCard } from "@/components/ui/ErrorCard";
+import { OfflineBanner } from "@/components/ui/OfflineBanner";
 import {
   DashboardSkeleton,
   GaugeSkeleton,
@@ -27,8 +28,8 @@ import { useT } from "@/hooks/useT";
 import { useAirQuality, useWeather } from "@/hooks/useWeather";
 import { clientFetchJson } from "@/services/client-api";
 import { useLocationStore } from "@/stores/locationStore";
-import { AppApiError } from "@/types/api";
 import type { DayPeriod, GeoLocation } from "@/types/weather";
+import { messageFromApiError } from "@/utils/api-error";
 import { queryFromSlug, toCityPath } from "@/utils/city-url";
 import { selectLocation } from "@/utils/selectLocation";
 import { slugifyCity } from "@/utils/weather-code";
@@ -39,18 +40,13 @@ type WeatherDashboardProps = {
   citySlug?: string;
 };
 
-function errorMessage(error: unknown, fallback: string): string {
-  if (error instanceof AppApiError) return error.message;
-  if (error instanceof Error) return error.message;
-  return fallback;
-}
-
 export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
   const t = useT();
   const router = useRouter();
   const pathname = usePathname();
   const location = useLocationStore((s) => s.location);
   const [geoError, setGeoError] = useState<string | null>(null);
+  const [slugError, setSlugError] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [slugResolving, setSlugResolving] = useState(Boolean(citySlug));
   const resolvingSlug = useRef<string | null>(null);
@@ -68,6 +64,7 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
 
     const currentSlug = slugifyCity(location.name);
     if (currentSlug === citySlug) {
+      setSlugError(null);
       setSlugResolving(false);
       return;
     }
@@ -77,6 +74,7 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
     let cancelled = false;
 
     setSlugResolving(true);
+    setSlugError(null);
     (async () => {
       try {
         const data = await clientFetchJson<GeocodeSearchResponse>(
@@ -84,9 +82,16 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
         );
         if (cancelled) return;
         const match = data.results[0];
-        if (match) selectLocation(match);
-      } catch {
-        // Keep current location; URL sync may correct the path.
+        if (match) {
+          selectLocation(match);
+          setSlugError(null);
+        } else {
+          setSlugError(t("error.slugNotFound"));
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setSlugError(messageFromApiError(err, t, "error.slugNotFound"));
+        }
       } finally {
         if (!cancelled) setSlugResolving(false);
         if (resolvingSlug.current === citySlug) resolvingSlug.current = null;
@@ -96,7 +101,7 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
     return () => {
       cancelled = true;
     };
-  }, [hydrated, citySlug, location.name]);
+  }, [hydrated, citySlug, location.name, t]);
 
   // Keep the shareable SEO URL in sync with the selected city.
   useEffect(() => {
@@ -128,9 +133,7 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
       period={period}
       searchSlot={<SearchBar />}
       geolocationSlot={
-        <GeolocationButton
-          onError={(message) => setGeoError(message)}
-        />
+        <GeolocationButton onError={(message) => setGeoError(message)} />
       }
       settingsSlot={
         <>
@@ -141,6 +144,8 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
       favoritesSlot={<FavoritesList />}
       historySlot={<HistoryList />}
     >
+      <OfflineBanner />
+
       {geoError ? (
         <div
           className="mb-2 shrink-0 rounded-[var(--glass-radius-sm)] border border-[var(--surface-error-border)] bg-[var(--surface-error)] px-3 py-2 text-sm"
@@ -157,11 +162,27 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
         </div>
       ) : null}
 
+      {slugError ? (
+        <div
+          className="mb-2 shrink-0 rounded-[var(--glass-radius-sm)] border border-[var(--surface-error-border)] bg-[var(--surface-error)] px-3 py-2 text-sm"
+          role="status"
+        >
+          {slugError}
+          <button
+            type="button"
+            className="ml-2 underline"
+            onClick={() => setSlugError(null)}
+          >
+            {t("error.close")}
+          </button>
+        </div>
+      ) : null}
+
       {isLoading ? (
         <DashboardSkeleton />
       ) : isError ? (
         <ErrorCard
-          message={errorMessage(weatherQuery.error, t("error.weather"))}
+          message={messageFromApiError(weatherQuery.error, t)}
           onRetry={() => weatherQuery.refetch()}
           className="min-h-[12rem]"
         />
@@ -178,7 +199,7 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
               <GaugeSkeleton label={t("aqi.title")} />
             ) : airQuery.isError ? (
               <ErrorCard
-                message={errorMessage(airQuery.error, t("error.weather"))}
+                message={messageFromApiError(airQuery.error, t)}
                 onRetry={() => airQuery.refetch()}
               />
             ) : airQuery.data ? (

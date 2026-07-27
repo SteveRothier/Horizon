@@ -20,8 +20,8 @@
 
   /* Text */
   --text-primary: rgba(255, 255, 255, 0.96);
-  --text-secondary: rgba(255, 255, 255, 0.72);
-  --text-muted: rgba(255, 255, 255, 0.48);
+  --text-secondary: rgba(255, 255, 255, 0.78);
+  --text-muted: rgba(255, 255, 255, 0.58);
   --text-inverse: rgba(10, 16, 28, 0.9);
 
   /* Accents (default sunny) */
