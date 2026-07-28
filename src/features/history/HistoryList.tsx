@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Clock, X } from "lucide-react";
 import { useT } from "@/hooks/useT";
@@ -20,6 +21,13 @@ export function HistoryList({ className, onSelect }: HistoryListProps) {
   const removeFromHistory = useHistoryStore((s) => s.removeFromHistory);
   const clearHistory = useHistoryStore((s) => s.clearHistory);
   const reduceMotion = useReducedMotion();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const canAnimate = mounted && !reduceMotion;
 
   if (items.length === 0) {
     return (
@@ -36,15 +44,17 @@ export function HistoryList({ className, onSelect }: HistoryListProps) {
           {items.map((loc) => (
             <motion.li
               key={loc.id}
-              layout={!reduceMotion}
-              initial={reduceMotion ? false : { opacity: 0, x: -8 }}
+              layout={canAnimate}
+              initial={canAnimate ? { opacity: 0, x: -8 } : false}
               animate={{ opacity: 1, x: 0 }}
               exit={
-                reduceMotion
-                  ? undefined
-                  : { opacity: 0, x: -8, height: 0, marginBottom: 0 }
+                canAnimate
+                  ? { opacity: 0, x: -8, height: 0, marginBottom: 0 }
+                  : undefined
               }
-              transition={{ duration: 0.25, ease }}
+              transition={
+                canAnimate ? { duration: 0.25, ease } : { duration: 0 }
+              }
               className="group flex items-center gap-0.5 overflow-hidden"
             >
               <button

@@ -59,7 +59,7 @@ export function WeatherHero({ location, current, className }: WeatherHeroProps) 
     <GlassCard
       interactive={false}
       className={cn(
-        "flex h-full min-h-0 flex-col justify-between overflow-hidden p-[var(--card-pad)]",
+        "flex h-full min-h-0 flex-col justify-between overflow-visible p-[var(--card-pad)]",
         className,
       )}
     >
@@ -79,8 +79,8 @@ export function WeatherHero({ location, current, className }: WeatherHeroProps) 
             {formatTemp(current.feelsLike, temperatureUnit)}
           </p>
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-3">
-          <div className="flex items-center gap-1">
+        <div className="relative z-10 flex shrink-0 flex-col items-end gap-3 overflow-visible">
+          <div className="flex items-center gap-1 overflow-visible">
             <ShareButton className="h-8 w-8" />
             <FavoriteButton location={location} className="h-8 w-8" />
           </div>

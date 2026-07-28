@@ -295,6 +295,92 @@ body {
   transform-origin: center;
 }
 
+/* Light bounce on action button press (favorite / share) */
+@keyframes action-bounce {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(0.86);
+  }
+  70% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.action-bounce {
+  animation: action-bounce 0.4s var(--ease-out, cubic-bezier(0.22, 1, 0.36, 1)) both !important;
+  transform-origin: center center;
+}
+
+/* Favorites / history list item enter & exit */
+@keyframes list-item-in {
+  from {
+    opacity: 0;
+    transform: translateX(-14px) scale(0.94);
+    max-height: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    max-height: 3rem;
+  }
+}
+
+@keyframes list-item-out {
+  from {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    max-height: 3rem;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(14px) scale(0.94);
+    max-height: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+}
+
+.list-item-in {
+  animation: list-item-in 0.34s var(--ease-out, cubic-bezier(0.22, 1, 0.36, 1)) both !important;
+  transform-origin: left center;
+  overflow: hidden;
+}
+
+.list-item-out {
+  animation: list-item-out 0.28s var(--ease-out, cubic-bezier(0.22, 1, 0.36, 1)) both !important;
+  transform-origin: left center;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Compact tip under share — surface style (motion handled in ShareButton) */
+.glass-menu-tip {
+  background:
+    linear-gradient(
+      165deg,
+      rgba(255, 255, 255, 0.18) 0%,
+      rgba(255, 255, 255, 0.1) 100%
+    ),
+    rgba(14, 22, 34, 0.78);
+  backdrop-filter: blur(40px) saturate(160%);
+  -webkit-backdrop-filter: blur(40px) saturate(160%);
+  border: 1px solid var(--glass-border-strong);
+  border-radius: 9999px;
+  box-shadow: var(--glass-shadow);
+  transform-origin: top center;
+}
+
 /* Hide scrollbar but keep scroll (hourly forecast) */
 .scrollbar-none {
   scrollbar-width: none;
@@ -324,6 +410,17 @@ body {
   .search-spinner {
     animation-duration: 1s !important;
     animation-iteration-count: infinite !important;
+  }
+
+  .action-bounce {
+    animation-duration: 0.4s !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  .list-item-in,
+  .list-item-out {
+    animation-duration: 0.3s !important;
+    animation-iteration-count: 1 !important;
   }
 
   .glass-menu {
