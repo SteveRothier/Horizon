@@ -84,6 +84,29 @@ export function formatTimeShort(
   });
 }
 
+/** Current clock time in a city IANA timezone (e.g. Europe/Paris). */
+export function formatLocalClock(
+  timeZone: string | null | undefined,
+  locale: AppLocale = "fr",
+  date: Date = new Date(),
+): string {
+  const options: Intl.DateTimeFormatOptions = {
+    hour: "2-digit",
+    minute: "2-digit",
+  };
+  try {
+    if (timeZone) {
+      return date.toLocaleTimeString(BCP47[locale], {
+        ...options,
+        timeZone,
+      });
+    }
+  } catch {
+    /* invalid timezone — fall through */
+  }
+  return date.toLocaleTimeString(BCP47[locale], options);
+}
+
 export function windDirectionLabel(
   deg: number,
   locale: AppLocale = "fr",

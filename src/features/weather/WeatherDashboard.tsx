@@ -188,6 +188,7 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
               <WeatherHero
                 location={weather.location}
                 current={weather.current}
+                timezone={weather.timezone}
               />
             </CityCrossfade>
           }

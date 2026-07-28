@@ -1,6 +1,7 @@
 "use client";
 
-import { Droplets, Gauge, Sun, Wind } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Clock, Droplets, Gauge, Sun, Wind } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { WeatherIcon } from "@/components/ui/WeatherIcon";
 import { FavoriteButton } from "@/features/favorites/FavoriteButton";
@@ -8,6 +9,7 @@ import { ShareButton } from "@/features/weather/ShareButton";
 import { useLocale, useT } from "@/hooks/useT";
 import { useSettingsStore } from "@/stores/settingsStore";
 import type { CurrentWeather, GeoLocation } from "@/types/weather";
+import { formatLocalClock } from "@/utils/format";
 import { formatSpeed, formatTemp } from "@/utils/units";
 import { descriptionFromCondition } from "@/utils/weather-code";
 import { cn } from "@/utils/cn";
@@ -15,14 +17,30 @@ import { cn } from "@/utils/cn";
 type WeatherHeroProps = {
   location: GeoLocation;
   current: CurrentWeather;
+  timezone?: string;
   className?: string;
 };
 
-export function WeatherHero({ location, current, className }: WeatherHeroProps) {
+export function WeatherHero({
+  location,
+  current,
+  timezone,
+  className,
+}: WeatherHeroProps) {
   const t = useT();
   const locale = useLocale();
   const temperatureUnit = useSettingsStore((s) => s.temperatureUnit);
   const speedUnit = useSettingsStore((s) => s.speedUnit);
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const tick = () => setNow(new Date());
+    tick();
+    const id = window.setInterval(tick, 30_000);
+    return () => window.clearInterval(id);
+  }, [timezone, location.id]);
+
+  const localTime = formatLocalClock(timezone, locale, now);
 
   const description = descriptionFromCondition(
     current.condition,
@@ -32,6 +50,11 @@ export function WeatherHero({ location, current, className }: WeatherHeroProps) 
   );
 
   const metrics = [
+    {
+      icon: Clock,
+      label: t("hero.localTime"),
+      value: localTime,
+    },
     {
       icon: Wind,
       label: t("hero.wind"),
@@ -93,7 +116,7 @@ export function WeatherHero({ location, current, className }: WeatherHeroProps) 
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+      <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5 sm:gap-3">
         {metrics.map(({ icon: Icon, label, value }) => (
           <div key={label} className="min-w-0">
             <div className="flex items-center gap-1 text-[0.65rem] text-[var(--text-muted)] sm:text-xs">
