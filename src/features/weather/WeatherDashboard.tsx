@@ -11,12 +11,11 @@ import {
   GaugeSkeleton,
   MapSkeleton,
 } from "@/components/ui/skeletons";
-import { LocaleToggle } from "@/components/ui/LocaleToggle";
-import { SpeedUnitToggle } from "@/components/ui/SpeedUnitToggle";
 import { SearchBar } from "@/features/header/SearchBar";
 import { GeolocationButton } from "@/features/header/GeolocationButton";
 import { FavoritesList } from "@/features/favorites/FavoritesList";
 import { HistoryList } from "@/features/history/HistoryList";
+import { SettingsPanel } from "@/features/settings/SettingsPanel";
 import { HourlyForecast } from "@/features/forecast/HourlyForecast";
 import { WeeklyForecast } from "@/features/forecast/WeeklyForecast";
 import { WeatherMap } from "@/features/map/WeatherMap";
@@ -24,6 +23,7 @@ import { AirQuality } from "@/features/weather/AirQuality";
 import { UVIndex } from "@/features/weather/UVIndex";
 import { WeatherDetails } from "@/features/weather/WeatherDetails";
 import { WeatherHero } from "@/features/weather/WeatherHero";
+import { CityCrossfade } from "@/features/weather/CityCrossfade";
 import { useT } from "@/hooks/useT";
 import { useAirQuality, useWeather } from "@/hooks/useWeather";
 import { clientFetchJson } from "@/services/client-api";
@@ -135,12 +135,7 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
       geolocationSlot={
         <GeolocationButton onError={(message) => setGeoError(message)} />
       }
-      settingsSlot={
-        <>
-          <SpeedUnitToggle className="hidden sm:flex" />
-          <LocaleToggle className="hidden md:flex" />
-        </>
-      }
+      settingsSlot={<SettingsPanel />}
       favoritesSlot={<FavoritesList />}
       historySlot={<HistoryList />}
     >
@@ -189,34 +184,55 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
       ) : weather ? (
         <DashboardLayout
           hero={
-            <WeatherHero location={weather.location} current={weather.current} />
-          }
-          hourly={<HourlyForecast items={weather.hourly} />}
-          weekly={<WeeklyForecast items={weather.daily} />}
-          details={<WeatherDetails current={weather.current} />}
-          airQuality={
-            airQuery.isLoading ? (
-              <GaugeSkeleton label={t("aqi.title")} />
-            ) : airQuery.isError ? (
-              <ErrorCard
-                message={messageFromApiError(airQuery.error, t)}
-                onRetry={() => airQuery.refetch()}
+            <CityCrossfade locationId={weather.location.id}>
+              <WeatherHero
+                location={weather.location}
+                current={weather.current}
               />
-            ) : airQuery.data ? (
-              <AirQuality data={airQuery.data} />
-            ) : (
-              <GaugeSkeleton label={t("aqi.title")} />
-            )
+            </CityCrossfade>
+          }
+          hourly={
+            <CityCrossfade locationId={weather.location.id}>
+              <HourlyForecast items={weather.hourly} />
+            </CityCrossfade>
+          }
+          weekly={
+            <CityCrossfade locationId={weather.location.id}>
+              <WeeklyForecast items={weather.daily} />
+            </CityCrossfade>
+          }
+          details={
+            <CityCrossfade locationId={weather.location.id}>
+              <WeatherDetails current={weather.current} />
+            </CityCrossfade>
+          }
+          airQuality={
+            <CityCrossfade locationId={weather.location.id}>
+              {airQuery.isLoading ? (
+                <GaugeSkeleton label={t("aqi.title")} />
+              ) : airQuery.isError ? (
+                <ErrorCard
+                  message={messageFromApiError(airQuery.error, t)}
+                  onRetry={() => airQuery.refetch()}
+                />
+              ) : airQuery.data ? (
+                <AirQuality data={airQuery.data} />
+              ) : (
+                <GaugeSkeleton label={t("aqi.title")} />
+              )}
+            </CityCrossfade>
           }
           uv={
-            <UVIndex
-              value={
-                airQuery.data?.uvIndex ??
-                weather.current.uvIndex ??
-                weather.daily[0]?.uvIndexMax ??
-                null
-              }
-            />
+            <CityCrossfade locationId={weather.location.id}>
+              <UVIndex
+                value={
+                  airQuery.data?.uvIndex ??
+                  weather.current.uvIndex ??
+                  weather.daily[0]?.uvIndexMax ??
+                  null
+                }
+              />
+            </CityCrossfade>
           }
           map={
             weatherQuery.isFetching && !weather ? (

@@ -9,7 +9,7 @@ import {
   type ReactElement,
   type ReactNode,
 } from "react";
-import { Home, Map, Star, Clock, Navigation, X } from "lucide-react";
+import { Home, Map, Star, Clock, Navigation, Settings, X } from "lucide-react";
 import { useT } from "@/hooks/useT";
 import type { MessageKey } from "@/i18n/messages";
 import { useLocationStore } from "@/stores/locationStore";
@@ -35,6 +35,12 @@ const NAV_ITEMS: {
     icon: Clock,
     href: "#sidebar-history-title",
   },
+  {
+    id: "settings",
+    labelKey: "nav.settings",
+    icon: Settings,
+    href: "#sidebar-settings-title",
+  },
 ];
 
 type SlotWithSelect = {
@@ -46,6 +52,7 @@ type SidebarProps = {
   onClose?: () => void;
   favoritesSlot?: ReactNode;
   historySlot?: ReactNode;
+  settingsSlot?: ReactNode;
   className?: string;
 };
 
@@ -64,6 +71,7 @@ function activeNavIdFromHash(hash: string): string {
   if (hash === "#weather-map") return "map";
   if (hash === "#sidebar-fav-title") return "favorites";
   if (hash === "#sidebar-history-title") return "history";
+  if (hash === "#sidebar-settings-title") return "settings";
   return "home";
 }
 
@@ -76,6 +84,7 @@ export function Sidebar({
   onClose,
   favoritesSlot,
   historySlot,
+  settingsSlot,
   className,
 }: SidebarProps) {
   const t = useT();
@@ -255,6 +264,20 @@ export function Sidebar({
                 {t("sidebar.noFavorites")}
               </p>
             )}
+          </section>
+
+          <section
+            className="mt-3 px-1"
+            aria-labelledby="sidebar-settings-title"
+          >
+            <h2
+              id="sidebar-settings-title"
+              tabIndex={-1}
+              className="mb-1.5 px-2 text-[0.65rem] font-medium uppercase tracking-wider text-[var(--text-muted)] outline-none"
+            >
+              {t("sidebar.settings")}
+            </h2>
+            {settingsSlot}
           </section>
         </nav>
 

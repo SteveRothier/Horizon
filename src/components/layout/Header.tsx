@@ -2,15 +2,12 @@
 
 import type { ReactNode } from "react";
 import { Search, MapPin, Menu } from "lucide-react";
-import { TemperatureToggle } from "@/components/ui/TemperatureToggle";
 import { useT } from "@/hooks/useT";
 import { cn } from "@/utils/cn";
 
 type HeaderProps = {
   searchSlot?: ReactNode;
   geolocationSlot?: ReactNode;
-  /** Extra controls after the °C/°F toggle */
-  settingsSlot?: ReactNode;
   menuOpen?: boolean;
   onMenuClick?: () => void;
   className?: string;
@@ -19,7 +16,6 @@ type HeaderProps = {
 export function Header({
   searchSlot,
   geolocationSlot,
-  settingsSlot,
   menuOpen = false,
   onMenuClick,
   className,
@@ -48,18 +44,20 @@ export function Header({
             <Menu className="h-4 w-4" aria-hidden />
           </button>
 
-          <div className="min-w-0 flex-1">{searchSlot ?? (
-            <div
-              className="glass glass-sm flex h-9 w-full items-center gap-2 px-3 text-[var(--text-muted)] sm:h-10 sm:gap-3 sm:px-4"
-              role="search"
-              aria-label={t("header.searchLabel")}
-            >
-              <Search className="h-4 w-4 shrink-0" aria-hidden />
-              <span className="truncate text-sm">
-                {t("header.searchPlaceholder")}
-              </span>
-            </div>
-          )}</div>
+          <div className="min-w-0 flex-1">
+            {searchSlot ?? (
+              <div
+                className="glass glass-sm flex h-9 w-full items-center gap-2 px-3 text-[var(--text-muted)] sm:h-10 sm:gap-3 sm:px-4"
+                role="search"
+                aria-label={t("header.searchLabel")}
+              >
+                <Search className="h-4 w-4 shrink-0" aria-hidden />
+                <span className="truncate text-sm">
+                  {t("header.searchPlaceholder")}
+                </span>
+              </div>
+            )}
+          </div>
 
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             {geolocationSlot ?? (
@@ -72,8 +70,6 @@ export function Header({
                 <MapPin className="h-4 w-4" aria-hidden />
               </button>
             )}
-            <TemperatureToggle className="hidden sm:flex" />
-            {settingsSlot}
           </div>
         </div>
       </div>

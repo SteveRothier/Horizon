@@ -5,9 +5,10 @@ import { useMap } from "react-leaflet";
 
 type MapResizeProps = {
   expanded: boolean;
+  resizeTick?: number;
 };
 
-export function MapResize({ expanded }: MapResizeProps) {
+export function MapResize({ expanded, resizeTick = 0 }: MapResizeProps) {
   const map = useMap();
 
   useEffect(() => {
@@ -15,7 +16,7 @@ export function MapResize({ expanded }: MapResizeProps) {
       map.invalidateSize();
     });
     return () => cancelAnimationFrame(frame);
-  }, [expanded, map]);
+  }, [expanded, resizeTick, map]);
 
   return null;
 }

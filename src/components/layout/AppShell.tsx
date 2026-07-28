@@ -59,7 +59,6 @@ export function AppShell({
       <Header
         searchSlot={searchSlot}
         geolocationSlot={geolocationSlot}
-        settingsSlot={settingsSlot}
         menuOpen={sidebarOpen}
         onMenuClick={() => setSidebarOpen(true)}
       />
@@ -70,6 +69,7 @@ export function AppShell({
           onClose={() => setSidebarOpen(false)}
           favoritesSlot={favoritesSlot}
           historySlot={historySlot}
+          settingsSlot={settingsSlot}
         />
 
         <main
