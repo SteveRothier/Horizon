@@ -37,8 +37,8 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows:
-    minmax(0, 1.2fr) minmax(0, 0.7fr) minmax(0, 0.85fr) minmax(0, 0.85fr)
-    minmax(10rem, 0.9fr);
+    minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(0, 0.75fr) minmax(0, 0.75fr)
+    minmax(8rem, 0.8fr);
   grid-template-areas:
     "hero hero"
     "hourly hourly"
@@ -57,6 +57,7 @@ body {
 
 .dashboard-area-hourly {
   grid-area: hourly;
+  min-height: 14.5rem;
 }
 
 .dashboard-area-details {
@@ -81,7 +82,7 @@ body {
   .dashboard-grid {
     grid-template-columns: 1.4fr 1fr 1fr;
     grid-template-rows:
-      minmax(0, 1.3fr) minmax(0, 0.65fr) minmax(0, 0.9fr) minmax(11rem, 0.85fr);
+      minmax(0, 1.2fr) minmax(0, 0.95fr) minmax(0, 0.8fr) minmax(9rem, 0.75fr);
     grid-template-areas:
       "hero hero weekly"
       "hourly hourly weekly"
@@ -93,7 +94,7 @@ body {
 @media (min-width: 1280px) {
   .dashboard-grid {
     grid-template-columns: 1.5fr 1fr 0.95fr 0.95fr;
-    grid-template-rows: minmax(0, 1.45fr) minmax(0, 0.65fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1.3fr) minmax(0, 0.95fr) minmax(0, 0.9fr);
     grid-template-areas:
       "hero hero weekly weekly"
       "hourly hourly weekly weekly"
@@ -121,8 +122,8 @@ body {
     min-height: calc(100dvh - var(--header-height) - 1rem);
     height: auto;
     grid-template-rows:
-      minmax(140px, auto) minmax(88px, auto) minmax(140px, auto)
-      minmax(120px, auto) minmax(10rem, auto);
+      minmax(130px, auto) minmax(200px, auto) minmax(125px, auto)
+      minmax(105px, auto) minmax(8rem, auto);
   }
 }
 
@@ -389,6 +390,24 @@ body {
 
 .scrollbar-none::-webkit-scrollbar {
   display: none;
+}
+
+/* Hourly combined chart — grab to pan horizontally */
+.hourly-chart-scroll {
+  cursor: grab;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.hourly-chart-scroll.is-grabbing {
+  cursor: grabbing;
+}
+
+.hourly-chart-scroll.is-grabbing * {
+  pointer-events: none;
 }
 
 /* Reduce motion */

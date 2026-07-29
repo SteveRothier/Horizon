@@ -44,17 +44,18 @@ export function HourlyForecastSkeleton() {
       aria-label="Chargement des prévisions horaires"
     >
       <Skeleton className="mb-2 h-3.5 w-32 shrink-0" />
-      <div className="flex min-h-0 flex-1 items-center gap-2 overflow-hidden">
-        {Array.from({ length: 10 }).map((_, i) => (
-          <div
-            key={i}
-            className="flex w-11 shrink-0 flex-col items-center gap-1.5 sm:w-12"
-          >
-            <Skeleton className="h-2.5 w-8" />
-            <Skeleton className="h-7 w-7 rounded-full sm:h-8 sm:w-8" />
-            <Skeleton className="h-3 w-7" />
-          </div>
-        ))}
+      <div className="flex min-h-0 flex-1 flex-col justify-end gap-1.5">
+        <Skeleton className="h-[6rem] w-full rounded-[var(--glass-radius-sm)]" />
+        <div className="flex gap-3 overflow-hidden px-1">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <Skeleton key={i} className="h-5 w-5 shrink-0 rounded-full" />
+          ))}
+        </div>
+        <div className="flex justify-between gap-1 px-1">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton key={i} className="h-2.5 w-7" />
+          ))}
+        </div>
       </div>
     </GlassCard>
   );

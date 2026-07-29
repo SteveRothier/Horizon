@@ -49,6 +49,8 @@ export type HourlyForecastItem = {
   condition: WeatherCondition;
   icon?: string;
   precipitationProbability: number;
+  windSpeed: number;
+  windDirection: number;
   isDay: boolean;
 };
 

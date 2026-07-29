@@ -36,6 +36,8 @@ type OpenMeteoForecast = {
     precipitation_probability: (number | null)[];
     weather_code: number[];
     is_day: number[];
+    wind_speed_10m: number[];
+    wind_direction_10m: number[];
   };
   daily: {
     time: string[];
@@ -103,6 +105,8 @@ function buildForecastUrl(lat: number, lon: number): string {
       "precipitation_probability",
       "weather_code",
       "is_day",
+      "wind_speed_10m",
+      "wind_direction_10m",
     ].join(","),
   );
   url.searchParams.set(
@@ -140,6 +144,8 @@ function pickHourly(
       weatherCode: code,
       condition,
       precipitationProbability: data.hourly.precipitation_probability[i] ?? 0,
+      windSpeed: data.hourly.wind_speed_10m[i] ?? 0,
+      windDirection: data.hourly.wind_direction_10m[i] ?? 0,
       isDay,
     });
   }

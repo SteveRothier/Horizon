@@ -192,6 +192,8 @@ export async function fetchOpenWeatherBundle(
       condition: icondition,
       icon: owIconUrl(iw.icon),
       precipitationProbability: Math.round(item.pop * 100),
+      windSpeed: toKmh(item.wind.speed),
+      windDirection: item.wind.deg ?? 0,
       isDay: itemIsDay,
     };
   });
