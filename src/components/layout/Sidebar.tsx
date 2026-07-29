@@ -160,7 +160,12 @@ export function Sidebar({
   }
 
   return (
-    <>
+    <div
+      className={cn(
+        "max-lg:w-0 max-lg:min-w-0 max-lg:shrink-0 max-lg:overflow-visible",
+        "lg:w-[var(--sidebar-width)] lg:shrink-0",
+      )}
+    >
       <div
         className={cn(
           "fixed inset-0 z-40 bg-black/50 transition-opacity lg:hidden",
@@ -177,7 +182,7 @@ export function Sidebar({
           "bg-[rgba(14,22,34,0.92)] max-lg:shadow-xl",
           "lg:bg-white/[0.06] lg:backdrop-blur-[var(--glass-blur)]",
           "transition-transform duration-300 ease-[var(--ease-out)]",
-          "lg:static lg:z-0 lg:h-full lg:shrink-0 lg:translate-x-0 lg:self-stretch lg:bg-transparent lg:shadow-none lg:backdrop-blur-none",
+          "lg:static lg:z-0 lg:h-full lg:w-full lg:shrink-0 lg:translate-x-0 lg:self-stretch lg:bg-transparent lg:shadow-none lg:backdrop-blur-none",
           open
             ? "translate-x-0"
             : "-translate-x-full max-lg:invisible max-lg:pointer-events-none",
@@ -299,6 +304,6 @@ export function Sidebar({
           </div>
         </div>
       </aside>
-    </>
+    </div>
   );
 }

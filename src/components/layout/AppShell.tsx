@@ -79,7 +79,7 @@ export function AppShell({
         onMenuClick={() => setSidebarOpen(true)}
       />
 
-      <div className="mx-auto flex min-h-0 w-full max-w-[1440px] flex-1">
+      <div className="mx-auto flex min-h-0 w-full max-w-[1440px] flex-1 overflow-x-hidden">
         <Sidebar
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
