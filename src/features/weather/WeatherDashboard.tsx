@@ -6,26 +6,25 @@ import { AppShell } from "@/components/layout/AppShell";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ErrorCard } from "@/components/ui/ErrorCard";
 import { OfflineBanner } from "@/components/ui/OfflineBanner";
-import {
-  DashboardSkeleton,
-  GaugeSkeleton,
-  MapSkeleton,
-} from "@/components/ui/skeletons";
+import { DashboardSkeleton, MapSkeleton } from "@/components/ui/skeletons";
 import { SearchBar } from "@/features/header/SearchBar";
 import { GeolocationButton } from "@/features/header/GeolocationButton";
 import { FavoritesList } from "@/features/favorites/FavoritesList";
 import { HistoryList } from "@/features/history/HistoryList";
 import { SettingsPanel } from "@/features/settings/SettingsPanel";
-import { HourlyForecast } from "@/features/forecast/HourlyForecast";
-import { WeeklyForecast } from "@/features/forecast/WeeklyForecast";
+import { DaySelectionProvider } from "@/features/forecast/DaySelectionContext";
+import {
+  AirQualitySlot,
+  HourlyForecastSlot,
+  UVIndexSlot,
+  WeeklyForecastSlot,
+} from "@/features/forecast/ForecastSlots";
 import { WeatherMap } from "@/features/map/WeatherMap";
-import { AirQuality } from "@/features/weather/AirQuality";
-import { UVIndex } from "@/features/weather/UVIndex";
 import { WeatherDetails } from "@/features/weather/WeatherDetails";
 import { WeatherHero } from "@/features/weather/WeatherHero";
 import { CityCrossfade } from "@/features/weather/CityCrossfade";
 import { useT } from "@/hooks/useT";
-import { useAirQuality, useWeather } from "@/hooks/useWeather";
+import { useWeather } from "@/hooks/useWeather";
 import { clientFetchJson } from "@/services/client-api";
 import { useLocationStore } from "@/stores/locationStore";
 import type { DayPeriod, GeoLocation } from "@/types/weather";
@@ -49,14 +48,12 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
   const [slugError, setSlugError] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [slugResolving, setSlugResolving] = useState(Boolean(citySlug));
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const resolvingSlug = useRef<string | null>(null);
 
   useEffect(() => {
     setHydrated(true);
   }, []);
 
-  // Resolve /weather/[city] into the location store when the slug differs.
   useEffect(() => {
     if (!hydrated || !citySlug) {
       setSlugResolving(false);
@@ -104,7 +101,6 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
     };
   }, [hydrated, citySlug, location.name, t]);
 
-  // Keep the shareable SEO URL in sync with the selected city.
   useEffect(() => {
     if (!hydrated || slugResolving) return;
     const path = toCityPath(location);
@@ -119,21 +115,12 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
       : null;
 
   const weatherQuery = useWeather(coords);
-  const airQuery = useAirQuality(coords);
 
   const weather = weatherQuery.data;
   const period: DayPeriod = weather?.current.isDay ? "day" : "night";
   const condition = weather?.current.condition ?? "clear";
 
   const todayDate = weather?.daily[0]?.date ?? null;
-  const activeDate = selectedDate ?? todayDate;
-
-  useEffect(() => {
-    setSelectedDate(null);
-  }, [weather?.location.id, weather?.fetchedAt]);
-
-  const forecastDates = weather?.daily.slice(0, 7).map((d) => d.date) ?? [];
-
   const isLoading = !hydrated || slugResolving || weatherQuery.isLoading;
   const isError = weatherQuery.isError;
 
@@ -191,77 +178,50 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
           onRetry={() => weatherQuery.refetch()}
           className="min-h-[12rem]"
         />
-      ) : weather ? (
-        <DashboardLayout
-          hero={
-            <CityCrossfade locationId={weather.location.id}>
-              <WeatherHero
-                location={weather.location}
-                current={weather.current}
-                timezone={weather.timezone}
-              />
-            </CityCrossfade>
-          }
-          hourly={
-            <HourlyForecast
-              hourly={weather.hourly}
-              dates={forecastDates}
-              dateKey={activeDate ?? forecastDates[0] ?? "day"}
-              todayDate={todayDate ?? undefined}
-              locationId={weather.location.id}
-              onDayChange={setSelectedDate}
-            />
-          }
-          weekly={
-            <CityCrossfade locationId={weather.location.id}>
-              <WeeklyForecast
-                items={weather.daily}
-                selectedDate={activeDate ?? weather.daily[0]?.date ?? ""}
-                onSelectDay={setSelectedDate}
-              />
-            </CityCrossfade>
-          }
-          details={
-            <CityCrossfade locationId={weather.location.id}>
-              <WeatherDetails current={weather.current} />
-            </CityCrossfade>
-          }
-          airQuality={
-            <CityCrossfade locationId={weather.location.id}>
-              {airQuery.isLoading ? (
-                <GaugeSkeleton label={t("aqi.title")} />
-              ) : airQuery.isError ? (
-                <ErrorCard
-                  message={messageFromApiError(airQuery.error, t)}
-                  onRetry={() => airQuery.refetch()}
+      ) : weather && coords ? (
+        <CityCrossfade locationId={weather.location.id}>
+          <DaySelectionProvider
+            todayDate={todayDate}
+            resetKey={`${weather.location.id}:${weather.fetchedAt}`}
+          >
+            <DashboardLayout
+              hero={
+                <WeatherHero
+                  location={weather.location}
+                  current={weather.current}
+                  timezone={weather.timezone}
                 />
-              ) : airQuery.data ? (
-                <AirQuality data={airQuery.data} />
-              ) : (
-                <GaugeSkeleton label={t("aqi.title")} />
-              )}
-            </CityCrossfade>
-          }
-          uv={
-            <CityCrossfade locationId={weather.location.id}>
-              <UVIndex
-                value={
-                  airQuery.data?.uvIndex ??
-                  weather.current.uvIndex ??
-                  weather.daily[0]?.uvIndexMax ??
-                  null
-                }
-              />
-            </CityCrossfade>
-          }
-          map={
-            weatherQuery.isFetching && !weather ? (
-              <MapSkeleton />
-            ) : (
-              <WeatherMap location={weather.location} />
-            )
-          }
-        />
+              }
+              hourly={
+                <HourlyForecastSlot
+                  hourly={weather.hourly}
+                  daily={weather.daily}
+                  locationId={weather.location.id}
+                />
+              }
+              weekly={<WeeklyForecastSlot daily={weather.daily} />}
+              details={<WeatherDetails current={weather.current} />}
+              airQuality={<AirQualitySlot coords={coords} />}
+              uv={
+                <UVIndexSlot
+                  coords={coords}
+                  fallbackUv={
+                    weather.current.uvIndex ??
+                    weather.daily[0]?.uvIndexMax ??
+                    null
+                  }
+                />
+              }
+              map={
+                weatherQuery.isFetching && !weather ? (
+                  <MapSkeleton />
+                ) : (
+                  <WeatherMap location={weather.location} />
+                )
+              }
+            />
+          </DaySelectionProvider>
+        </CityCrossfade>
       ) : (
         <DashboardSkeleton />
       )}

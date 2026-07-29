@@ -125,14 +125,20 @@ function buildTempGradientStops(
   return stops;
 }
 
+const VISIBLE_BUFFER = 4;
+
 const MetaStrip = memo(function MetaStrip({
   items,
   locale,
   speedUnit,
+  rangeStart,
+  rangeEnd,
 }: {
   items: HourlyForecastItem[];
   locale: AppLocale;
   speedUnit: SpeedUnit;
+  rangeStart: number;
+  rangeEnd: number;
 }) {
   const speedFormatter = useMemo(
     () =>
@@ -148,30 +154,44 @@ const MetaStrip = memo(function MetaStrip({
     gridTemplateColumns: `repeat(${cols}, ${HOURLY_COL_WIDTH}px)`,
   } as const;
 
+  const start = Math.max(0, rangeStart);
+  const end = Math.min(items.length - 1, rangeEnd);
+
+  const cells = [];
+  for (let index = start; index <= end; index++) {
+    cells.push(items[index]);
+  }
+
   return (
     <>
       <div className="grid" style={gridStyle}>
-        {items.map((item) => (
-          <div
-            key={`icon-${item.time}`}
-            className="hourly-meta-cell flex items-center justify-center py-0.5"
-          >
-            <WeatherIcon
-              condition={item.condition}
-              isDay={item.isDay}
-              size={20}
-            />
-          </div>
-        ))}
+        {cells.map((item, i) => {
+          const index = start + i;
+          return (
+            <div
+              key={`icon-${item.time}`}
+              className="hourly-meta-cell flex items-center justify-center py-0.5"
+              style={{ gridColumn: index + 1 }}
+            >
+              <WeatherIcon
+                condition={item.condition}
+                isDay={item.isDay}
+                size={20}
+              />
+            </div>
+          );
+        })}
       </div>
 
       <div className="grid" style={gridStyle}>
-        {items.map((item) => {
+        {cells.map((item, i) => {
+          const index = start + i;
           const speed = toDisplaySpeed(item.windSpeed, speedUnit);
           return (
             <div
               key={`wind-${item.time}`}
               className="hourly-meta-cell flex items-center justify-center py-0.5 text-center text-[0.65rem] text-[var(--text-primary)] sm:text-xs"
+              style={{ gridColumn: index + 1 }}
             >
               {speedFormatter.format(speed)} {speedSuffix}
             </div>
@@ -180,14 +200,18 @@ const MetaStrip = memo(function MetaStrip({
       </div>
 
       <div className="grid pt-0.5" style={gridStyle}>
-        {items.map((item) => (
-          <div
-            key={`time-${item.time}`}
-            className="hourly-meta-cell truncate px-0.5 text-center text-[0.65rem] text-[var(--text-muted)] sm:text-xs"
-          >
-            {formatHour(item.time, locale)}
-          </div>
-        ))}
+        {cells.map((item, i) => {
+          const index = start + i;
+          return (
+            <div
+              key={`time-${item.time}`}
+              className="hourly-meta-cell truncate px-0.5 text-center text-[0.65rem] text-[var(--text-muted)] sm:text-xs"
+              style={{ gridColumn: index + 1 }}
+            >
+              {formatHour(item.time, locale)}
+            </div>
+          );
+        })}
       </div>
     </>
   );
@@ -211,8 +235,12 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
     top: number;
   } | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [visibleRange, setVisibleRange] = useState({ start: 0, end: 24 });
   const activeIndexRef = useRef(activeIndex);
   activeIndexRef.current = activeIndex;
+  const pointerRafRef = useRef(0);
+  const tooltipRafRef = useRef(0);
+  const pointerPosRef = useRef({ x: 0, y: 0 });
 
   const onGrabChange = useCallback((grabbing: boolean) => {
     if (grabbing && activeIndexRef.current != null) {
@@ -315,22 +343,30 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
   const updateActiveIndex = useCallback(
     (clientX: number, clientY: number) => {
       if (grabbingRef.current) return;
+      pointerPosRef.current = { x: clientX, y: clientY };
+      if (pointerRafRef.current) return;
 
-      const scrollEl = scrollRef.current;
-      if (!scrollEl) return;
+      pointerRafRef.current = requestAnimationFrame(() => {
+        pointerRafRef.current = 0;
+        if (grabbingRef.current) return;
 
-      const rect = scrollEl.getBoundingClientRect();
-      const localY = clientY - rect.top;
-      if (localY < 0 || localY > CHART_HEIGHT) {
-        setActiveIndex((prev) => (prev == null ? prev : null));
-        return;
-      }
+        const { x: px, y: py } = pointerPosRef.current;
+        const scrollEl = scrollRef.current;
+        if (!scrollEl) return;
 
-      const x = clientX - rect.left + scrollEl.scrollLeft;
-      const index = Math.floor(x / HOURLY_COL_WIDTH);
-      const next =
-        index >= 0 && index < hourly.length ? index : null;
-      setActiveIndex((prev) => (prev === next ? prev : next));
+        const rect = scrollEl.getBoundingClientRect();
+        const localY = py - rect.top;
+        if (localY < 0 || localY > CHART_HEIGHT) {
+          setActiveIndex((prev) => (prev == null ? prev : null));
+          return;
+        }
+
+        const x = px - rect.left + scrollEl.scrollLeft;
+        const index = Math.floor(x / HOURLY_COL_WIDTH);
+        const next =
+          index >= 0 && index < hourly.length ? index : null;
+        setActiveIndex((prev) => (prev === next ? prev : next));
+      });
     },
     [grabbingRef, hourly.length, scrollRef],
   );
@@ -348,38 +384,43 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
   pointsRef.current = { tempPoints, precipPoints };
 
   const syncTooltipPos = useCallback(() => {
-    if (activeIndex == null || grabbingRef.current) {
-      setTooltipPos((prev) => (prev == null ? prev : null));
-      return;
-    }
-
-    const scrollEl = scrollRef.current;
-    if (!scrollEl) return;
-
-    const { tempPoints: tempsPts, precipPoints: precipPts } = pointsRef.current;
-    const rect = scrollEl.getBoundingClientRect();
-    const chartY = Math.min(
-      tempsPts[activeIndex]?.y ?? CHART_TOP,
-      precipPts[activeIndex]?.y ?? CHART_TOP,
-    );
-    const next = {
-      left:
-        rect.left +
-        activeIndex * HOURLY_COL_WIDTH +
-        HOURLY_COL_WIDTH / 2 -
-        scrollEl.scrollLeft,
-      top: rect.top + chartY - 8,
-    };
-
-    setTooltipPos((prev) => {
-      if (
-        prev &&
-        Math.abs(prev.left - next.left) < 0.5 &&
-        Math.abs(prev.top - next.top) < 0.5
-      ) {
-        return prev;
+    if (tooltipRafRef.current) cancelAnimationFrame(tooltipRafRef.current);
+    tooltipRafRef.current = requestAnimationFrame(() => {
+      tooltipRafRef.current = 0;
+      if (activeIndex == null || grabbingRef.current) {
+        setTooltipPos((prev) => (prev == null ? prev : null));
+        return;
       }
-      return next;
+
+      const scrollEl = scrollRef.current;
+      if (!scrollEl) return;
+
+      const { tempPoints: tempsPts, precipPoints: precipPts } =
+        pointsRef.current;
+      const rect = scrollEl.getBoundingClientRect();
+      const chartY = Math.min(
+        tempsPts[activeIndex]?.y ?? CHART_TOP,
+        precipPts[activeIndex]?.y ?? CHART_TOP,
+      );
+      const next = {
+        left:
+          rect.left +
+          activeIndex * HOURLY_COL_WIDTH +
+          HOURLY_COL_WIDTH / 2 -
+          scrollEl.scrollLeft,
+        top: rect.top + chartY - 8,
+      };
+
+      setTooltipPos((prev) => {
+        if (
+          prev &&
+          Math.abs(prev.left - next.left) < 0.5 &&
+          Math.abs(prev.top - next.top) < 0.5
+        ) {
+          return prev;
+        }
+        return next;
+      });
     });
   }, [activeIndex, grabbingRef, scrollRef]);
 
@@ -417,8 +458,25 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
 
     let ticking = false;
     let lastCol = -1;
+
+    const updateVisibleRange = () => {
+      const width = el.clientWidth || HOURLY_COL_WIDTH * 12;
+      const start = Math.max(
+        0,
+        Math.floor(el.scrollLeft / HOURLY_COL_WIDTH) - VISIBLE_BUFFER,
+      );
+      const end = Math.min(
+        hourly.length - 1,
+        Math.ceil((el.scrollLeft + width) / HOURLY_COL_WIDTH) + VISIBLE_BUFFER,
+      );
+      setVisibleRange((prev) =>
+        prev.start === start && prev.end === end ? prev : { start, end },
+      );
+    };
+
     const emit = () => {
       ticking = false;
+      updateVisibleRange();
       const col = Math.max(
         0,
         Math.min(
@@ -436,8 +494,13 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
       requestAnimationFrame(emit);
     };
 
+    updateVisibleRange();
     el.addEventListener("scroll", onScroll, { passive: true });
-    return () => el.removeEventListener("scroll", onScroll);
+    window.addEventListener("resize", updateVisibleRange);
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", updateVisibleRange);
+    };
   }, [scrollRef, hourly.length]);
 
   useEffect(() => {
@@ -549,8 +612,15 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
                   strokeDasharray="3 3"
                 />
               ) : null}
-              {tempPoints.map((point, index) =>
-                activeIndex === index ? null : (
+              {tempPoints.map((point, index) => {
+                if (
+                  index < visibleRange.start ||
+                  index > visibleRange.end ||
+                  activeIndex === index
+                ) {
+                  return null;
+                }
+                return (
                   <text
                     key={`label-${point.x}`}
                     x={point.x}
@@ -562,12 +632,18 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
                   >
                     {point.value}°
                   </text>
-                ),
-              )}
+                );
+              })}
             </svg>
           </div>
 
-          <MetaStrip items={hourly} locale={locale} speedUnit={speedUnit} />
+          <MetaStrip
+            items={hourly}
+            locale={locale}
+            speedUnit={speedUnit}
+            rangeStart={visibleRange.start}
+            rangeEnd={visibleRange.end}
+          />
         </div>
       </div>
 

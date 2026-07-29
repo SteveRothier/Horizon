@@ -20,7 +20,19 @@ export async function getWeatherBundle(
 ): Promise<WeatherBundle> {
   try {
     const bundle = await fetchOpenMeteoWeather(location);
-    return await enrichWithOpenWeatherIcons(bundle);
+    if (!isOpenWeatherConfigured()) return bundle;
+
+    // Enrichment is best-effort and time-boxed so OM stays on the hot path.
+    try {
+      return await Promise.race([
+        enrichWithOpenWeatherIcons(bundle),
+        new Promise<WeatherBundle>((resolve) => {
+          setTimeout(() => resolve(bundle), 600);
+        }),
+      ]);
+    } catch {
+      return bundle;
+    }
   } catch (primaryError) {
     if (!isOpenWeatherConfigured()) {
       throw primaryError instanceof AppApiError

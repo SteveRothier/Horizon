@@ -227,15 +227,14 @@ function NightSky({ reduceMotion }: { reduceMotion: boolean }) {
         left: pct(seeded(i + 1) * 100),
         top: pct(seeded(i + 40) * 70),
         size: px(1 + seeded(i + 80) * 2),
-        delay: Math.round(seeded(i + 120) * 400) / 100,
-        duration: Math.round((2 + seeded(i + 160) * 3) * 100) / 100,
+        delay: `${Math.round(seeded(i + 120) * 400) / 100}s`,
+        duration: `${Math.round((2 + seeded(i + 160) * 3) * 100) / 100}s`,
       })),
     [],
   );
 
   return (
     <>
-      {/* Moon */}
       <motion.div
         className="absolute right-[10%] top-[8%] h-14 w-14 rounded-full bg-slate-100 shadow-[0_0_40px_12px_rgba(200,220,255,0.25)] sm:h-16 sm:w-16"
         initial={{ opacity: 0, y: -8 }}
@@ -246,30 +245,21 @@ function NightSky({ reduceMotion }: { reduceMotion: boolean }) {
       </motion.div>
 
       {stars.map((s) => (
-        <motion.span
+        <span
           key={s.id}
-          className="absolute rounded-full bg-white"
+          className={cn(
+            "absolute rounded-full bg-white",
+            !reduceMotion && "scene-star",
+          )}
           style={{
             left: s.left,
             top: s.top,
             width: s.size,
             height: s.size,
+            opacity: reduceMotion ? 0.7 : undefined,
+            ["--dur" as string]: s.duration,
+            ["--delay" as string]: s.delay,
           }}
-          animate={
-            reduceMotion
-              ? { opacity: 0.7 }
-              : { opacity: [0.2, 0.95, 0.2] }
-          }
-          transition={
-            reduceMotion
-              ? undefined
-              : {
-                  duration: s.duration,
-                  repeat: Infinity,
-                  delay: s.delay,
-                  ease: "easeInOut",
-                }
-          }
         />
       ))}
     </>
@@ -352,9 +342,8 @@ function Rain({
       Array.from({ length: heavy ? 48 : 32 }, (_, i) => ({
         id: i,
         left: pct(seeded(i + 3) * 100),
-        delay: Math.round(seeded(i + 7) * 150) / 100,
-        duration:
-          Math.round(((heavy ? 0.45 : 0.7) + seeded(i + 9) * 0.4) * 100) / 100,
+        delay: `${Math.round(seeded(i + 7) * 150) / 100}s`,
+        duration: `${Math.round(((heavy ? 0.45 : 0.7) + seeded(i + 9) * 0.4) * 100) / 100}s`,
         height: px(10 + seeded(i + 13) * 16),
       })),
     [heavy],
@@ -369,16 +358,14 @@ function Rain({
   return (
     <>
       {drops.map((d) => (
-        <motion.span
+        <span
           key={d.id}
-          className="absolute w-px rounded-full bg-sky-100/50"
-          style={{ left: d.left, height: d.height, top: "-20px" }}
-          animate={{ y: ["0vh", "110vh"], opacity: [0, 0.8, 0] }}
-          transition={{
-            duration: d.duration,
-            repeat: Infinity,
-            delay: d.delay,
-            ease: "linear",
+          className="scene-raindrop absolute top-[-20px] w-px rounded-full bg-sky-100/50"
+          style={{
+            left: d.left,
+            height: d.height,
+            ["--dur" as string]: d.duration,
+            ["--delay" as string]: d.delay,
           }}
         />
       ))}
@@ -393,9 +380,9 @@ function Snow({ reduceMotion }: { reduceMotion: boolean }) {
         id: i,
         left: pct(seeded(i + 4) * 100),
         size: px(2 + seeded(i + 6) * 4),
-        delay: Math.round(seeded(i + 8) * 500) / 100,
-        duration: Math.round((6 + seeded(i + 10) * 8) * 100) / 100,
-        drift: Math.round((seeded(i + 12) - 0.5) * 8000) / 100,
+        delay: `${Math.round(seeded(i + 8) * 500) / 100}s`,
+        duration: `${Math.round((6 + seeded(i + 10) * 8) * 100) / 100}s`,
+        drift: `${Math.round((seeded(i + 12) - 0.5) * 8000) / 100}px`,
       })),
     [],
   );
@@ -409,25 +396,16 @@ function Snow({ reduceMotion }: { reduceMotion: boolean }) {
   return (
     <>
       {flakes.map((f) => (
-        <motion.span
+        <span
           key={f.id}
-          className="absolute rounded-full bg-white/90"
+          className="scene-snowflake absolute top-[-10px] rounded-full bg-white/90"
           style={{
             left: f.left,
             width: f.size,
             height: f.size,
-            top: "-10px",
-          }}
-          animate={{
-            y: ["0vh", "110vh"],
-            x: [0, f.drift, 0],
-            opacity: [0, 1, 0.8, 0],
-          }}
-          transition={{
-            duration: f.duration,
-            repeat: Infinity,
-            delay: f.delay,
-            ease: "linear",
+            ["--dur" as string]: f.duration,
+            ["--delay" as string]: f.delay,
+            ["--drift" as string]: f.drift,
           }}
         />
       ))}
@@ -495,7 +473,8 @@ function GoldenParticles({ reduceMotion }: { reduceMotion: boolean }) {
         left: pct(20 + seeded(i + 21) * 60),
         top: pct(10 + seeded(i + 25) * 50),
         size: px(2 + seeded(i + 29) * 3),
-        delay: Math.round(seeded(i + 33) * 300) / 100,
+        delay: `${Math.round(seeded(i + 33) * 300) / 100}s`,
+        duration: `${Math.round((4 + seeded(i + 33) * 2) * 100) / 100}s`,
       })),
     [],
   );
@@ -505,24 +484,16 @@ function GoldenParticles({ reduceMotion }: { reduceMotion: boolean }) {
   return (
     <>
       {particles.map((p) => (
-        <motion.span
+        <span
           key={p.id}
-          className="absolute rounded-full bg-amber-200/70"
+          className="scene-spark absolute rounded-full bg-amber-200/70"
           style={{
             left: p.left,
             top: p.top,
             width: p.size,
             height: p.size,
-          }}
-          animate={{
-            y: [0, -18, 0],
-            opacity: [0.2, 0.85, 0.2],
-          }}
-          transition={{
-            duration: 4 + p.delay,
-            repeat: Infinity,
-            delay: p.delay,
-            ease: "easeInOut",
+            ["--dur" as string]: p.duration,
+            ["--delay" as string]: p.delay,
           }}
         />
       ))}

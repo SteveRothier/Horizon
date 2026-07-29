@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
 import { reverseGeocode, searchCities } from "@/services/nominatim";
 import { AppApiError } from "@/types/api";
+import { cachedJson } from "@/utils/api-cache";
 import { jsonError, parseCoord } from "@/utils/api-response";
 
 export const runtime = "nodejs";
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
         parseCoord(lat, "lat"),
         parseCoord(lon, "lon"),
       );
-      return NextResponse.json({ location });
+      return cachedJson({ location }, 3600);
     }
 
     if (!q || q.trim().length < 2) {
@@ -37,7 +37,7 @@ export async function GET(request: Request) {
       10,
     );
     const results = await searchCities(q, limit);
-    return NextResponse.json({ results });
+    return cachedJson({ results }, 3600);
   } catch (error) {
     return jsonError(error);
   }

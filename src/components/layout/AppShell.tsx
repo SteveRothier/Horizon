@@ -1,12 +1,20 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState, type ReactNode } from "react";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
-import { WeatherBackground } from "@/features/background/WeatherBackground";
 import { cn } from "@/utils/cn";
 import type { WeatherCondition, DayPeriod } from "@/types/weather";
 import { DEFAULT_PERIOD, DEFAULT_WEATHER } from "@/constants/design";
+
+const WeatherBackground = dynamic(
+  () =>
+    import("@/features/background/WeatherBackground").then(
+      (m) => m.WeatherBackground,
+    ),
+  { ssr: false },
+);
 
 type AppShellProps = {
   children: ReactNode;

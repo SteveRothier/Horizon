@@ -19,19 +19,6 @@ export function useWeather(coords: WeatherCoords, enabled = true) {
   });
 }
 
-export function useWeatherByCity(cityQuery: string, enabled = true) {
-  const q = cityQuery.trim();
-  return useQuery({
-    queryKey: ["weather", "city", q],
-    queryFn: () =>
-      clientFetchJson<WeatherBundle>(
-        `/api/weather?q=${encodeURIComponent(q)}`,
-      ),
-    enabled: enabled && q.length >= 2,
-    staleTime: WEATHER_STALE_TIME_MS,
-  });
-}
-
 export function useAirQuality(coords: WeatherCoords, enabled = true) {
   return useQuery({
     queryKey: ["air-quality", coords?.lat, coords?.lon],

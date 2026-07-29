@@ -158,14 +158,29 @@ body {
   border-radius: var(--glass-radius-sm);
 }
 
+@keyframes glass-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.glass-card-enter {
+  animation: glass-card-in 0.4s var(--ease-out) both;
+}
+
 /* Glass controls on map tiles — readable over light/dark backgrounds */
 .glass-control {
   position: relative;
   isolation: isolate;
   overflow: hidden;
   background: rgba(12, 18, 30, 0.78);
-  backdrop-filter: blur(28px) saturate(150%);
-  -webkit-backdrop-filter: blur(28px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
   border: 1px solid var(--glass-border-strong);
   border-radius: 9999px;
   box-shadow:
@@ -236,8 +251,8 @@ body {
       rgba(255, 255, 255, 0.1) 100%
     ),
     rgba(14, 22, 34, 0.78);
-  backdrop-filter: blur(40px) saturate(160%);
-  -webkit-backdrop-filter: blur(40px) saturate(160%);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
   border: 1px solid var(--glass-border-strong);
   border-radius: var(--glass-radius-sm);
   box-shadow: var(--glass-shadow);
@@ -374,8 +389,8 @@ body {
       rgba(255, 255, 255, 0.1) 100%
     ),
     rgba(14, 22, 34, 0.78);
-  backdrop-filter: blur(40px) saturate(160%);
-  -webkit-backdrop-filter: blur(40px) saturate(160%);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
   border: 1px solid var(--glass-border-strong);
   border-radius: 9999px;
   box-shadow: var(--glass-shadow);
@@ -420,6 +435,77 @@ body {
 .hourly-meta-cell {
   content-visibility: auto;
   contain-intrinsic-size: 56px 22px;
+}
+
+/* Scene particle animations (CSS instead of Framer per-particle) */
+@keyframes scene-twinkle {
+  0%,
+  100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
+@keyframes scene-fall {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(110vh);
+    opacity: 0;
+  }
+}
+
+@keyframes scene-snow {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  50% {
+    transform: translate3d(var(--drift, 20px), 55vh, 0);
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate3d(0, 110vh, 0);
+    opacity: 0;
+  }
+}
+
+@keyframes scene-float {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.2;
+  }
+  50% {
+    transform: translateY(-18px);
+    opacity: 0.85;
+  }
+}
+
+.scene-star {
+  animation: scene-twinkle var(--dur, 3s) ease-in-out var(--delay, 0s) infinite;
+}
+
+.scene-raindrop {
+  animation: scene-fall var(--dur, 0.7s) linear var(--delay, 0s) infinite;
+}
+
+.scene-snowflake {
+  animation: scene-snow var(--dur, 8s) linear var(--delay, 0s) infinite;
+}
+
+.scene-spark {
+  animation: scene-float var(--dur, 4s) ease-in-out var(--delay, 0s) infinite;
 }
 
 /* Weekly forecast — sliding day selection pill */
@@ -474,6 +560,13 @@ body {
 
   .weekly-day-highlight.is-ready {
     transition-duration: 0.28s !important;
+  }
+
+  .scene-star,
+  .scene-raindrop,
+  .scene-snowflake,
+  .scene-spark {
+    animation: none !important;
   }
 
   .glass-menu {

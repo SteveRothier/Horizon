@@ -11,6 +11,7 @@ import {
   Moon,
   Sun,
 } from "lucide-react";
+import { memo } from "react";
 
 type WeatherIconProps = {
   condition: WeatherCondition;
@@ -19,7 +20,7 @@ type WeatherIconProps = {
   size?: number;
 };
 
-export function WeatherIcon({
+export const WeatherIcon = memo(function WeatherIcon({
   condition,
   isDay = true,
   className,
@@ -62,4 +63,4 @@ export function WeatherIcon({
     default:
       return <Cloud {...props} />;
   }
-}
+});
