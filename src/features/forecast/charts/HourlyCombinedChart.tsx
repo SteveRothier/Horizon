@@ -13,7 +13,11 @@ import { createPortal } from "react-dom";
 import { WeatherIcon } from "@/components/ui/WeatherIcon";
 import { useGrabScroll } from "@/hooks/useGrabScroll";
 import { useLocale } from "@/hooks/useT";
-import { useSettingsStore } from "@/stores/settingsStore";
+import {
+  useSettingsStore,
+  type AppLocale,
+  type SpeedUnit,
+} from "@/stores/settingsStore";
 import type { HourlyForecastItem } from "@/types/weather";
 import { formatHour } from "@/utils/format";
 import { tempStrokeColor } from "@/utils/temp-color";
@@ -127,8 +131,8 @@ const MetaStrip = memo(function MetaStrip({
   speedUnit,
 }: {
   items: HourlyForecastItem[];
-  locale: string;
-  speedUnit: "kmh" | "mph";
+  locale: AppLocale;
+  speedUnit: SpeedUnit;
 }) {
   const speedFormatter = useMemo(
     () =>
