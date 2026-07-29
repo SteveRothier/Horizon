@@ -47,18 +47,10 @@ export function WeatherBackground({
       aria-hidden
     >
       <GradientLayer />
-      <GlowOrbs staticOrbs={reduceMotion} />
+      <AtmosphereLayer />
 
       {mounted ? (
         <>
-          {(condition === "clear" || condition === "cloudy") &&
-          period === "day" ? (
-            <SunHalo
-              reduceMotion={reduceMotion}
-              intense={condition === "clear"}
-            />
-          ) : null}
-
           {period === "night" && condition !== "storm" ? (
             <NightSky reduceMotion={reduceMotion} light={isMobile} />
           ) : null}
@@ -113,7 +105,7 @@ export function WeatherBackground({
         </>
       ) : null}
 
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(0,0,0,0.25)_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_65%,rgba(0,0,0,0.28)_100%)]" />
     </div>
   );
 }
@@ -131,102 +123,19 @@ function GradientLayer() {
   );
 }
 
-function GlowOrbs({ staticOrbs }: { staticOrbs: boolean }) {
-  if (staticOrbs) {
-    return (
-      <>
-        <div
-          className="absolute -left-1/4 top-0 h-[50vmax] w-[50vmax] rounded-full opacity-50"
-          style={{
-            background:
-              "radial-gradient(circle, var(--scene-glow) 0%, transparent 70%)",
-          }}
-        />
-        <div
-          className="absolute -right-1/4 bottom-0 h-[40vmax] w-[40vmax] rounded-full opacity-35"
-          style={{
-            background:
-              "radial-gradient(circle, var(--scene-glow) 0%, transparent 70%)",
-          }}
-        />
-      </>
-    );
-  }
-
+/** Subtle atmospheric depth — CSS mesh, no blur or motion. */
+function AtmosphereLayer() {
   return (
-    <>
-      <motion.div
-        className="absolute -left-1/4 top-0 h-[60vmax] w-[60vmax] rounded-full blur-3xl"
-        style={{ background: "var(--scene-glow)" }}
-        animate={{ opacity: [0.45, 0.7, 0.45], scale: [1, 1.06, 1] }}
-        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <motion.div
-        className="absolute -right-1/4 bottom-0 h-[50vmax] w-[50vmax] rounded-full blur-3xl"
-        style={{ background: "var(--scene-glow)" }}
-        animate={{ opacity: [0.3, 0.5, 0.3], scale: [1, 1.08, 1] }}
-        transition={{
-          duration: 14,
-          repeat: Infinity,
-          ease: "easeInOut",
-          delay: 1.5,
-        }}
-      />
-    </>
-  );
-}
-
-function SunHalo({
-  reduceMotion,
-  intense,
-}: {
-  reduceMotion: boolean;
-  intense: boolean;
-}) {
-  return (
-    <div className="absolute right-[8%] top-[6%] sm:right-[12%] sm:top-[8%]">
-      <motion.div
-        className="relative"
-        animate={reduceMotion ? undefined : { rotate: 360 }}
-        transition={
-          reduceMotion
-            ? undefined
-            : { duration: 80, repeat: Infinity, ease: "linear" }
-        }
-      >
-        {/* Rays */}
-        <div
-          className={cn(
-            "absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full",
-            intense ? "h-56 w-56 sm:h-72 sm:w-72" : "h-40 w-40 sm:h-52 sm:w-52",
-          )}
-          style={{
-            background:
-              "conic-gradient(from 0deg, transparent 0deg, rgba(255,220,120,0.15) 8deg, transparent 16deg, rgba(255,220,120,0.12) 24deg, transparent 32deg)",
-            maskImage:
-              "radial-gradient(circle, transparent 28%, black 30%, black 55%, transparent 70%)",
-            WebkitMaskImage:
-              "radial-gradient(circle, transparent 28%, black 30%, black 55%, transparent 70%)",
-          }}
-        />
-      </motion.div>
-      <motion.div
-        className={cn(
-          "rounded-full bg-amber-100 shadow-[0_0_60px_20px_rgba(255,210,100,0.45)]",
-          intense ? "h-16 w-16 sm:h-20 sm:w-20" : "h-10 w-10 sm:h-12 sm:w-12",
-        )}
-        animate={
-          reduceMotion
-            ? { opacity: 0.95 }
-            : { opacity: [0.85, 1, 0.85], scale: [1, 1.04, 1] }
-        }
-        transition={
-          reduceMotion
-            ? undefined
-            : { duration: 5, repeat: Infinity, ease: "easeInOut" }
-        }
-      />
-    </div>
+    <div
+      className="absolute inset-0 transition-[opacity] duration-500"
+      style={{
+        background: `
+          radial-gradient(ellipse 90% 55% at 15% -5%, var(--scene-atmo-a) 0%, transparent 52%),
+          radial-gradient(ellipse 70% 45% at 95% 105%, var(--scene-atmo-b) 0%, transparent 48%),
+          radial-gradient(ellipse 50% 35% at 50% 40%, var(--scene-atmo-c) 0%, transparent 55%)
+        `,
+      }}
+    />
   );
 }
 
@@ -253,10 +162,6 @@ function NightSky({
 
   return (
     <>
-      <div className="absolute right-[10%] top-[8%] h-14 w-14 rounded-full bg-slate-100 opacity-90 shadow-[0_0_40px_12px_rgba(200,220,255,0.25)] sm:h-16 sm:w-16">
-        <div className="absolute left-2 top-1 h-10 w-10 rounded-full bg-[var(--scene-via)] opacity-40 blur-[1px]" />
-      </div>
-
       {stars.map((s) => (
         <span
           key={s.id}

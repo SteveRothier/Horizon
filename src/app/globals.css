@@ -186,6 +186,10 @@ body {
   -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--glass-border);
   border-radius: var(--glass-radius);
+  /* Ensure the frosted background/border is properly clipped to rounded corners */
+  overflow: hidden;
+  background-clip: padding-box;
+  isolation: isolate;
   box-shadow: var(--glass-shadow);
 }
 
