@@ -72,11 +72,12 @@ export function WeeklyForecastSkeleton() {
       <Skeleton className="mb-2 h-3.5 w-28 shrink-0" />
       <div className="flex min-h-0 flex-1 flex-col justify-between gap-1">
         {Array.from({ length: 7 }).map((_, i) => (
-          <div key={i} className="flex min-h-0 flex-1 items-center gap-2">
+          <div key={i} className="flex min-h-0 flex-1 items-center gap-1.5">
             <Skeleton className="h-3 w-9 shrink-0" />
             <Skeleton className="h-5 w-5 shrink-0 rounded-full sm:h-6 sm:w-6" />
+            <Skeleton className="h-2.5 w-7 shrink-0" />
             <Skeleton className="h-2 flex-1" />
-            <Skeleton className="h-3 w-12 shrink-0" />
+            <Skeleton className="h-3 w-8 shrink-0" />
           </div>
         ))}
       </div>

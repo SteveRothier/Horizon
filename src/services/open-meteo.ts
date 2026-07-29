@@ -224,7 +224,7 @@ export async function fetchOpenMeteoWeather(
   return {
     location,
     current: mapCurrent(data, null),
-    hourly: pickHourly(data, startHourly, 24),
+    hourly: pickHourly(data, startHourly, data.hourly.time.length - startHourly),
     daily: mapDaily(data),
     timezone: data.timezone,
     source: "open-meteo",

@@ -49,6 +49,7 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
   const [slugError, setSlugError] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [slugResolving, setSlugResolving] = useState(Boolean(citySlug));
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const resolvingSlug = useRef<string | null>(null);
 
   useEffect(() => {
@@ -124,6 +125,15 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
   const period: DayPeriod = weather?.current.isDay ? "day" : "night";
   const condition = weather?.current.condition ?? "clear";
 
+  const todayDate = weather?.daily[0]?.date ?? null;
+  const activeDate = selectedDate ?? todayDate;
+
+  useEffect(() => {
+    setSelectedDate(null);
+  }, [weather?.location.id, weather?.fetchedAt]);
+
+  const forecastDates = weather?.daily.slice(0, 7).map((d) => d.date) ?? [];
+
   const isLoading = !hydrated || slugResolving || weatherQuery.isLoading;
   const isError = weatherQuery.isError;
 
@@ -193,13 +203,22 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
             </CityCrossfade>
           }
           hourly={
-            <CityCrossfade locationId={weather.location.id}>
-              <HourlyForecast items={weather.hourly} />
-            </CityCrossfade>
+            <HourlyForecast
+              hourly={weather.hourly}
+              dates={forecastDates}
+              dateKey={activeDate ?? forecastDates[0] ?? "day"}
+              todayDate={todayDate ?? undefined}
+              locationId={weather.location.id}
+              onDayChange={setSelectedDate}
+            />
           }
           weekly={
             <CityCrossfade locationId={weather.location.id}>
-              <WeeklyForecast items={weather.daily} />
+              <WeeklyForecast
+                items={weather.daily}
+                selectedDate={activeDate ?? weather.daily[0]?.date ?? ""}
+                onSelectDay={setSelectedDate}
+              />
             </CityCrossfade>
           }
           details={

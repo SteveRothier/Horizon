@@ -1,13 +1,25 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 const DRAG_THRESHOLD_PX = 4;
 
-/** Horizontal pan via pointer drag with grab / grabbing cursor. */
-export function useGrabScroll<T extends HTMLElement>() {
+type UseGrabScrollOptions = {
+  /** Fired when a drag starts / ends (DOM class is toggled without React state). */
+  onGrabChange?: (grabbing: boolean) => void;
+};
+
+/**
+ * Horizontal pan via pointer drag.
+ * Uses a DOM class for the cursor — no React re-render on every grab.
+ */
+export function useGrabScroll<T extends HTMLElement>(
+  options: UseGrabScrollOptions = {},
+) {
   const ref = useRef<T>(null);
-  const [grabbing, setGrabbing] = useState(false);
+  const grabbingRef = useRef(false);
+  const onGrabChangeRef = useRef(options.onGrabChange);
+  onGrabChangeRef.current = options.onGrabChange;
 
   useEffect(() => {
     const el = ref.current;
@@ -18,6 +30,13 @@ export function useGrabScroll<T extends HTMLElement>() {
     let startX = 0;
     let startScrollLeft = 0;
     let dragging = false;
+
+    function setGrabbing(next: boolean) {
+      if (grabbingRef.current === next) return;
+      grabbingRef.current = next;
+      scrollEl.classList.toggle("is-grabbing", next);
+      onGrabChangeRef.current?.(next);
+    }
 
     function onPointerDown(event: PointerEvent) {
       if (event.button !== 0) return;
@@ -79,5 +98,5 @@ export function useGrabScroll<T extends HTMLElement>() {
     };
   }, []);
 
-  return { ref, grabbing };
+  return { ref, grabbingRef };
 }

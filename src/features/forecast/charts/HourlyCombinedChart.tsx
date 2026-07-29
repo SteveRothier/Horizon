@@ -1,13 +1,13 @@
 "use client";
 
 import {
+  memo,
   useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
-  type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
 import { WeatherIcon } from "@/components/ui/WeatherIcon";
@@ -28,8 +28,49 @@ const CHART_BOTTOM = 8;
 
 type HourlyCombinedChartProps = {
   items: HourlyForecastItem[];
+  /** Align this column to the left edge of the viewport. */
+  scrollToIndex?: number;
+  scrollDurationMs?: number;
+  locationId?: string;
+  /** Fired while the user (or animation) scrolls — column under the left edge. */
+  onScrollColumn?: (columnIndex: number) => void;
+  /** Fired when a programmatic scrollToIndex animation finishes (or is skipped). */
+  onProgrammaticScrollEnd?: () => void;
   className?: string;
 };
+
+function easeOutExpo(t: number): number {
+  return t >= 1 ? 1 : 1 - Math.pow(2, -10 * t);
+}
+
+function animateScrollLeft(
+  el: HTMLElement,
+  to: number,
+  durationMs: number,
+  signal: { cancelled: boolean },
+  onComplete?: () => void,
+) {
+  const from = el.scrollLeft;
+  const delta = to - from;
+  if (durationMs <= 0 || Math.abs(delta) < 0.5) {
+    el.scrollLeft = to;
+    onComplete?.();
+    return;
+  }
+
+  const start = performance.now();
+  const tick = (now: number) => {
+    if (signal.cancelled) return;
+    const t = Math.min(1, (now - start) / durationMs);
+    el.scrollLeft = from + delta * easeOutExpo(t);
+    if (t < 1) {
+      requestAnimationFrame(tick);
+    } else {
+      onComplete?.();
+    }
+  };
+  requestAnimationFrame(tick);
+}
 
 type PlotPoint = { x: number; y: number; value: number };
 
@@ -55,82 +96,145 @@ function buildAreaPath(points: PlotPoint[], baseline: number): string {
   return `${line} L ${last.x} ${baseline} L ${first.x} ${baseline} Z`;
 }
 
-function sampleCurveSegment(
-  from: PlotPoint,
-  to: PlotPoint,
-  steps: number,
-): PlotPoint[] {
-  const cx = (from.x + to.x) / 2;
-  const samples: PlotPoint[] = [];
-  for (let i = 0; i <= steps; i++) {
-    const t = i / steps;
-    const mt = 1 - t;
-    const x =
-      mt * mt * mt * from.x +
-      3 * mt * mt * t * cx +
-      3 * mt * t * t * cx +
-      t * t * t * to.x;
-    const y =
-      mt * mt * mt * from.y +
-      3 * mt * mt * t * from.y +
-      3 * mt * t * t * to.y +
-      t * t * t * to.y;
-    const value = from.value + (to.value - from.value) * t;
-    samples.push({ x, y, value });
-  }
-  return samples;
-}
-
-function renderCurveSegments(
+/** Horizontal gradient matching temp colors along the strip (one stroke, not N lines). */
+function buildTempGradientStops(
   points: PlotPoint[],
-  keyPrefix: string,
-  strokeForSegment: (a: PlotPoint, b: PlotPoint) => string,
-  strokeWidth: number,
-): ReactNode[] {
-  return points.slice(1).flatMap((point, index) => {
-    const prev = points[index];
-    const segSamples = sampleCurveSegment(prev, point, 6);
-    const segments: ReactNode[] = [];
-    for (let i = 1; i < segSamples.length; i++) {
-      const a = segSamples[i - 1];
-      const b = segSamples[i];
-      segments.push(
-        <line
-          key={`${keyPrefix}-${index}-${i}`}
-          x1={a.x}
-          y1={a.y}
-          x2={b.x}
-          y2={b.y}
-          stroke={strokeForSegment(a, b)}
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-        />,
-      );
-    }
-    return segments;
-  });
+  domainMin: number,
+  domainMax: number,
+): { offset: string; color: string }[] {
+  if (points.length === 0) return [];
+  const x0 = points[0].x;
+  const span = points[points.length - 1].x - x0 || 1;
+  const stops: { offset: string; color: string }[] = [];
+  let lastColor = "";
+
+  for (let i = 0; i < points.length; i++) {
+    const color = tempStrokeColor(points[i].value, domainMin, domainMax);
+    const isEdge = i === 0 || i === points.length - 1;
+    if (!isEdge && color === lastColor) continue;
+    lastColor = color;
+    stops.push({
+      offset: `${(((points[i].x - x0) / span) * 100).toFixed(2)}%`,
+      color,
+    });
+  }
+  return stops;
 }
 
-export function HourlyCombinedChart({
+const MetaStrip = memo(function MetaStrip({
   items,
+  locale,
+  speedUnit,
+}: {
+  items: HourlyForecastItem[];
+  locale: string;
+  speedUnit: "kmh" | "mph";
+}) {
+  const speedFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat(locale === "fr" ? "fr-FR" : "en-US", {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+      }),
+    [locale],
+  );
+  const speedSuffix = speedUnit === "mph" ? "mph" : "km/h";
+  const cols = Math.max(items.length, 1);
+  const gridStyle = {
+    gridTemplateColumns: `repeat(${cols}, ${HOURLY_COL_WIDTH}px)`,
+  } as const;
+
+  return (
+    <>
+      <div className="grid" style={gridStyle}>
+        {items.map((item) => (
+          <div
+            key={`icon-${item.time}`}
+            className="hourly-meta-cell flex items-center justify-center py-0.5"
+          >
+            <WeatherIcon
+              condition={item.condition}
+              isDay={item.isDay}
+              size={20}
+            />
+          </div>
+        ))}
+      </div>
+
+      <div className="grid" style={gridStyle}>
+        {items.map((item) => {
+          const speed = toDisplaySpeed(item.windSpeed, speedUnit);
+          return (
+            <div
+              key={`wind-${item.time}`}
+              className="hourly-meta-cell flex items-center justify-center py-0.5 text-center text-[0.65rem] text-[var(--text-primary)] sm:text-xs"
+            >
+              {speedFormatter.format(speed)} {speedSuffix}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="grid pt-0.5" style={gridStyle}>
+        {items.map((item) => (
+          <div
+            key={`time-${item.time}`}
+            className="hourly-meta-cell truncate px-0.5 text-center text-[0.65rem] text-[var(--text-muted)] sm:text-xs"
+          >
+            {formatHour(item.time, locale)}
+          </div>
+        ))}
+      </div>
+    </>
+  );
+});
+
+export const HourlyCombinedChart = memo(function HourlyCombinedChart({
+  items,
+  scrollToIndex = 0,
+  scrollDurationMs = 0,
+  locationId,
+  onScrollColumn,
+  onProgrammaticScrollEnd,
   className,
 }: HourlyCombinedChartProps) {
   const locale = useLocale();
   const temperatureUnit = useSettingsStore((s) => s.temperatureUnit);
   const speedUnit = useSettingsStore((s) => s.speedUnit);
-  const { ref: scrollRef, grabbing } = useGrabScroll<HTMLDivElement>();
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{
     left: number;
     top: number;
   } | null>(null);
   const [mounted, setMounted] = useState(false);
+  const activeIndexRef = useRef(activeIndex);
+  activeIndexRef.current = activeIndex;
+
+  const onGrabChange = useCallback((grabbing: boolean) => {
+    if (grabbing && activeIndexRef.current != null) {
+      setActiveIndex(null);
+      setTooltipPos(null);
+    }
+  }, []);
+
+  const { ref: scrollRef, grabbingRef } = useGrabScroll<HTMLDivElement>({
+    onGrabChange,
+  });
+
+  const gradientId = useMemo(
+    () => `hourly-${Math.random().toString(36).slice(2, 9)}`,
+    [],
+  );
+  const onScrollColumnRef = useRef(onScrollColumn);
+  onScrollColumnRef.current = onScrollColumn;
+  const onProgrammaticScrollEndRef = useRef(onProgrammaticScrollEnd);
+  onProgrammaticScrollEndRef.current = onProgrammaticScrollEnd;
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const hourly = useMemo(() => items.slice(0, 24), [items]);
+  const hourly = items;
   const contentWidth = Math.max(hourly.length, 1) * HOURLY_COL_WIDTH;
 
   const { tempPoints, precipPoints, domainMin, domainMax, baseline } =
@@ -184,18 +288,29 @@ export function HourlyCombinedChart({
     () => buildAreaPath(tempPoints, baseline),
     [tempPoints, baseline],
   );
-  const speedFormatter = new Intl.NumberFormat(
-    locale === "fr" ? "fr-FR" : "en-US",
-    { minimumFractionDigits: 1, maximumFractionDigits: 1 },
+  const precipLinePath = useMemo(
+    () => buildSmoothPath(precipPoints),
+    [precipPoints],
   );
-  const speedSuffix = speedUnit === "mph" ? "mph" : "km/h";
+  const tempLinePath = useMemo(
+    () => buildSmoothPath(tempPoints),
+    [tempPoints],
+  );
+  const tempGradientStops = useMemo(
+    () => buildTempGradientStops(tempPoints, domainMin, domainMax),
+    [tempPoints, domainMin, domainMax],
+  );
+  const tempGradientX = useMemo(() => {
+    if (tempPoints.length === 0) return { x1: 0, x2: 0 };
+    return {
+      x1: tempPoints[0].x,
+      x2: tempPoints[tempPoints.length - 1].x,
+    };
+  }, [tempPoints]);
 
   const updateActiveIndex = useCallback(
     (clientX: number, clientY: number) => {
-      if (grabbing) {
-        setActiveIndex(null);
-        return;
-      }
+      if (grabbingRef.current) return;
 
       const scrollEl = scrollRef.current;
       if (!scrollEl) return;
@@ -203,19 +318,17 @@ export function HourlyCombinedChart({
       const rect = scrollEl.getBoundingClientRect();
       const localY = clientY - rect.top;
       if (localY < 0 || localY > CHART_HEIGHT) {
-        setActiveIndex(null);
+        setActiveIndex((prev) => (prev == null ? prev : null));
         return;
       }
 
       const x = clientX - rect.left + scrollEl.scrollLeft;
       const index = Math.floor(x / HOURLY_COL_WIDTH);
-      if (index >= 0 && index < hourly.length) {
-        setActiveIndex(index);
-      } else {
-        setActiveIndex(null);
-      }
+      const next =
+        index >= 0 && index < hourly.length ? index : null;
+      setActiveIndex((prev) => (prev === next ? prev : next));
     },
-    [grabbing, hourly.length, scrollRef],
+    [grabbingRef, hourly.length, scrollRef],
   );
 
   const activeTemp =
@@ -231,7 +344,7 @@ export function HourlyCombinedChart({
   pointsRef.current = { tempPoints, precipPoints };
 
   const syncTooltipPos = useCallback(() => {
-    if (activeIndex == null || grabbing) {
+    if (activeIndex == null || grabbingRef.current) {
       setTooltipPos((prev) => (prev == null ? prev : null));
       return;
     }
@@ -264,11 +377,64 @@ export function HourlyCombinedChart({
       }
       return next;
     });
-  }, [activeIndex, grabbing, scrollRef]);
+  }, [activeIndex, grabbingRef, scrollRef]);
 
   useLayoutEffect(() => {
     syncTooltipPos();
   }, [syncTooltipPos]);
+
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const maxScroll = Math.max(0, el.scrollWidth - el.clientWidth);
+    const target = Math.min(
+      maxScroll,
+      Math.max(0, scrollToIndex * HOURLY_COL_WIDTH),
+    );
+
+    if (Math.abs(el.scrollLeft - target) < 0.5 && scrollDurationMs <= 0) {
+      onProgrammaticScrollEndRef.current?.();
+      return;
+    }
+
+    const signal = { cancelled: false };
+    animateScrollLeft(el, target, scrollDurationMs, signal, () => {
+      if (!signal.cancelled) onProgrammaticScrollEndRef.current?.();
+    });
+    return () => {
+      signal.cancelled = true;
+    };
+  }, [scrollToIndex, scrollDurationMs, locationId, contentWidth, scrollRef]);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    let ticking = false;
+    let lastCol = -1;
+    const emit = () => {
+      ticking = false;
+      const col = Math.max(
+        0,
+        Math.min(
+          hourly.length - 1,
+          Math.round(el.scrollLeft / HOURLY_COL_WIDTH),
+        ),
+      );
+      if (col === lastCol) return;
+      lastCol = col;
+      onScrollColumnRef.current?.(col);
+    };
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(emit);
+    };
+
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [scrollRef, hourly.length]);
 
   useEffect(() => {
     const scrollEl = scrollRef.current;
@@ -287,16 +453,13 @@ export function HourlyCombinedChart({
     <div className={cn("min-h-0 flex-1", className)}>
       <div
         ref={scrollRef}
-        className={cn(
-          "hourly-chart-scroll scrollbar-none overflow-x-auto",
-          grabbing && "is-grabbing",
-        )}
+        className="hourly-chart-scroll scrollbar-none overflow-x-auto"
         onPointerMove={(event) =>
           updateActiveIndex(event.clientX, event.clientY)
         }
         onPointerLeave={() => setActiveIndex(null)}
       >
-        <div className="pb-0.5" style={{ width: contentWidth }}>
+        <div className="hourly-chart-strip pb-0.5" style={{ width: contentWidth }}>
           <div className="relative" style={{ height: CHART_HEIGHT }}>
             <svg
               width={contentWidth}
@@ -306,7 +469,7 @@ export function HourlyCombinedChart({
             >
               <defs>
                 <linearGradient
-                  id="hourlyPrecipFill"
+                  id={`${gradientId}-precip`}
                   x1="0"
                   y1="0"
                   x2="0"
@@ -316,7 +479,7 @@ export function HourlyCombinedChart({
                   <stop offset="100%" stopColor="rgba(110, 200, 255, 0.02)" />
                 </linearGradient>
                 <linearGradient
-                  id="hourlyCombinedFill"
+                  id={`${gradientId}-temp-fill`}
                   x1="0"
                   y1="0"
                   x2="0"
@@ -325,31 +488,53 @@ export function HourlyCombinedChart({
                   <stop offset="0%" stopColor="rgba(255, 255, 255, 0.22)" />
                   <stop offset="100%" stopColor="rgba(255, 255, 255, 0.02)" />
                 </linearGradient>
+                <linearGradient
+                  id={`${gradientId}-temp-stroke`}
+                  gradientUnits="userSpaceOnUse"
+                  x1={tempGradientX.x1}
+                  y1={0}
+                  x2={tempGradientX.x2}
+                  y2={0}
+                >
+                  {tempGradientStops.map((stop) => (
+                    <stop
+                      key={stop.offset}
+                      offset={stop.offset}
+                      stopColor={stop.color}
+                    />
+                  ))}
+                </linearGradient>
               </defs>
               {precipAreaPath ? (
-                <path d={precipAreaPath} fill="url(#hourlyPrecipFill)" />
+                <path d={precipAreaPath} fill={`url(#${gradientId}-precip)`} />
               ) : null}
-              {renderCurveSegments(
-                precipPoints,
-                "precip",
-                () => "var(--accent-cool)",
-                2,
-              )}
+              {precipLinePath ? (
+                <path
+                  d={precipLinePath}
+                  fill="none"
+                  stroke="var(--accent-cool)"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              ) : null}
               {tempAreaPath ? (
-                <path d={tempAreaPath} fill="url(#hourlyCombinedFill)" />
+                <path
+                  d={tempAreaPath}
+                  fill={`url(#${gradientId}-temp-fill)`}
+                />
               ) : null}
-              {renderCurveSegments(
-                tempPoints,
-                "temp",
-                (a, b) =>
-                  tempStrokeColor(
-                    (a.value + b.value) / 2,
-                    domainMin,
-                    domainMax,
-                  ),
-                2.75,
-              )}
-              {activeIndex != null && !grabbing ? (
+              {tempLinePath ? (
+                <path
+                  d={tempLinePath}
+                  fill="none"
+                  stroke={`url(#${gradientId}-temp-stroke)`}
+                  strokeWidth={2.75}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              ) : null}
+              {activeIndex != null ? (
                 <line
                   x1={tooltipLeft}
                   y1={CHART_TOP}
@@ -378,60 +563,7 @@ export function HourlyCombinedChart({
             </svg>
           </div>
 
-          <div
-            className="grid"
-            style={{
-              gridTemplateColumns: `repeat(${Math.max(hourly.length, 1)}, ${HOURLY_COL_WIDTH}px)`,
-            }}
-          >
-            {hourly.map((item) => (
-              <div
-                key={`icon-${item.time}`}
-                className="flex items-center justify-center py-0.5"
-              >
-                <WeatherIcon
-                  condition={item.condition}
-                  isDay={item.isDay}
-                  size={20}
-                />
-              </div>
-            ))}
-          </div>
-
-          <div
-            className="grid"
-            style={{
-              gridTemplateColumns: `repeat(${Math.max(hourly.length, 1)}, ${HOURLY_COL_WIDTH}px)`,
-            }}
-          >
-            {hourly.map((item) => {
-              const speed = toDisplaySpeed(item.windSpeed, speedUnit);
-              return (
-                <div
-                  key={`wind-${item.time}`}
-                  className="flex items-center justify-center py-0.5 text-center text-[0.65rem] text-[var(--text-primary)] sm:text-xs"
-                >
-                  {speedFormatter.format(speed)} {speedSuffix}
-                </div>
-              );
-            })}
-          </div>
-
-          <div
-            className="grid pt-0.5"
-            style={{
-              gridTemplateColumns: `repeat(${Math.max(hourly.length, 1)}, ${HOURLY_COL_WIDTH}px)`,
-            }}
-          >
-            {hourly.map((item) => (
-              <div
-                key={`time-${item.time}`}
-                className="truncate px-0.5 text-center text-[0.65rem] text-[var(--text-muted)] sm:text-xs"
-              >
-                {formatHour(item.time, locale)}
-              </div>
-            ))}
-          </div>
+          <MetaStrip items={hourly} locale={locale} speedUnit={speedUnit} />
         </div>
       </div>
 
@@ -441,7 +573,11 @@ export function HourlyCombinedChart({
         createPortal(
           <div
             className="glass-menu-tip pointer-events-none fixed z-[200] -translate-x-1/2 -translate-y-full whitespace-nowrap px-2.5 py-1 text-[0.65rem] font-medium sm:text-xs"
-            style={{ left: tooltipPos.left, top: tooltipPos.top, marginTop: -6 }}
+            style={{
+              left: tooltipPos.left,
+              top: tooltipPos.top,
+              marginTop: -6,
+            }}
             role="status"
             aria-live="polite"
           >
@@ -453,4 +589,4 @@ export function HourlyCombinedChart({
         )}
     </div>
   );
-}
+});
