@@ -10,8 +10,8 @@
   --glass-blur: 12px;
   --glass-radius: 30px;
   --glass-radius-sm: 20px;
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.22);
-  --glass-shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.28);
+  --glass-shadow: none;
+  --glass-shadow-hover: none;
 
   /* Surfaces */
   --surface-error: rgba(220, 60, 60, 0.18);
