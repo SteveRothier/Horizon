@@ -162,8 +162,8 @@ export function Sidebar({
   return (
     <div
       className={cn(
-        "max-lg:w-0 max-lg:min-w-0 max-lg:shrink-0 max-lg:overflow-visible",
-        "lg:w-[var(--sidebar-width)] lg:shrink-0",
+        "max-lg:h-0 max-lg:w-0 max-lg:min-h-0 max-lg:min-w-0 max-lg:shrink-0 max-lg:overflow-visible",
+        "lg:h-auto lg:w-[var(--sidebar-width)] lg:shrink-0",
       )}
     >
       <div

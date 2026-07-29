@@ -35,7 +35,9 @@ body {
 /* Dashboard grid — tout visible sans scroll page */
 .dashboard-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  min-width: 0;
+  max-width: 100%;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   grid-template-rows:
     minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(0, 0.75fr) minmax(0, 0.75fr)
     minmax(8rem, 0.8fr);
@@ -443,6 +445,8 @@ body {
 /* Hourly combined chart — grab to pan horizontally */
 .hourly-chart-scroll {
   cursor: grab;
+  min-width: 0;
+  max-width: 100%;
   overscroll-behavior-x: contain;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-x;

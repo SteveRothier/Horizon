@@ -29,29 +29,29 @@ export function DashboardLayout({
   return (
     <div
       className={cn(
-        "dashboard-grid h-full min-h-0 w-full gap-[var(--grid-gap)]",
+        "dashboard-grid h-full min-h-0 w-full min-w-0 max-w-full gap-[var(--grid-gap)] overflow-hidden",
         className,
       )}
     >
-      <section className="dashboard-area-hero min-h-0 [&>*]:h-full">
+      <section className="dashboard-area-hero min-h-0 min-w-0 overflow-hidden [&>*]:h-full [&>*]:min-w-0">
         {hero}
       </section>
-      <section className="dashboard-area-weekly min-h-0 [&>*]:h-full">
+      <section className="dashboard-area-weekly min-h-0 min-w-0 overflow-hidden [&>*]:h-full [&>*]:min-w-0">
         {weekly}
       </section>
-      <section className="dashboard-area-hourly min-h-0 [&>*]:h-full">
+      <section className="dashboard-area-hourly min-h-0 min-w-0 overflow-hidden [&>*]:h-full [&>*]:min-w-0">
         {hourly}
       </section>
-      <section className="dashboard-area-details min-h-0 [&>*]:h-full">
+      <section className="dashboard-area-details min-h-0 min-w-0 overflow-hidden [&>*]:h-full [&>*]:min-w-0">
         {details}
       </section>
-      <section className="dashboard-area-aqi min-h-0 [&>*]:h-full">
+      <section className="dashboard-area-aqi min-h-0 min-w-0 overflow-hidden [&>*]:h-full [&>*]:min-w-0">
         {airQuality}
       </section>
-      <section className="dashboard-area-uv min-h-0 [&>*]:h-full">
+      <section className="dashboard-area-uv min-h-0 min-w-0 overflow-hidden [&>*]:h-full [&>*]:min-w-0">
         {uv}
       </section>
-      <section className="dashboard-area-map min-h-0 [&>*]:h-full">
+      <section className="dashboard-area-map min-h-0 min-w-0 overflow-hidden [&>*]:h-full [&>*]:min-w-0">
         {map}
       </section>
     </div>

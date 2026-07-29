@@ -517,10 +517,10 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
   }, [activeIndex, scrollRef, syncTooltipPos]);
 
   return (
-    <div className={cn("min-h-0 flex-1", className)}>
+    <div className={cn("min-h-0 min-w-0 w-full max-w-full flex-1", className)}>
       <div
         ref={scrollRef}
-        className="hourly-chart-scroll scrollbar-none overflow-x-auto"
+        className="hourly-chart-scroll scrollbar-none min-w-0 max-w-full overflow-x-auto"
         onPointerMove={(event) =>
           updateActiveIndex(event.clientX, event.clientY)
         }

@@ -51,7 +51,7 @@ export function AppShell({
       data-weather={weather}
       data-period={period}
       className={cn(
-        "app-shell relative flex h-dvh max-h-dvh flex-col overflow-hidden text-[var(--text-primary)]",
+        "app-shell relative flex h-dvh max-h-dvh flex-col overflow-x-hidden overflow-y-hidden text-[var(--text-primary)]",
         className,
       )}
     >
@@ -79,7 +79,7 @@ export function AppShell({
         onMenuClick={() => setSidebarOpen(true)}
       />
 
-      <div className="mx-auto flex min-h-0 w-full max-w-[1440px] flex-1 overflow-x-hidden">
+      <div className="mx-auto flex min-h-0 w-full min-w-0 max-w-[1440px] flex-1 flex-col overflow-x-hidden lg:flex-row">
         <Sidebar
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
@@ -90,7 +90,7 @@ export function AppShell({
 
         <main
           id="main-content"
-          className="flex min-h-0 min-w-0 flex-1 flex-col px-[var(--page-gutter)] py-[var(--page-gutter)] lg:pl-3"
+          className="flex min-h-0 w-full min-w-0 flex-1 flex-col px-[var(--page-gutter)] py-[var(--page-gutter)] lg:pl-3"
           tabIndex={-1}
         >
           {children}

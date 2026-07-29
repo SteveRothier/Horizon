@@ -23,8 +23,8 @@ export function Header({
   const t = useT();
 
   return (
-    <header className={cn("sticky top-0 z-40 shrink-0", className)}>
-      <div className="mx-auto flex h-[var(--header-height)] w-full max-w-[1440px] items-center">
+    <header className={cn("sticky top-0 z-40 w-full min-w-0 shrink-0", className)}>
+      <div className="mx-auto flex h-[var(--header-height)] w-full min-w-0 max-w-[1440px] items-center">
         {/* Same width as sidebar — keeps search aligned with dashboard cards */}
         <div className="hidden w-[var(--sidebar-width)] shrink-0 items-center px-[var(--page-gutter)] lg:flex">
           <span className="font-[family-name:var(--font-horizon-display)] text-lg font-semibold tracking-tight text-[var(--text-primary)] xl:text-xl">
@@ -32,20 +32,21 @@ export function Header({
           </span>
         </div>
 
-        {/* Mobile: equal side columns so search is optically centered */}
-        <div className="grid min-w-0 flex-1 grid-cols-[2.5rem_minmax(0,1fr)_2.5rem] items-center gap-2 px-[var(--page-gutter)] sm:gap-3 lg:flex lg:pl-3">
-          <button
-            type="button"
-            onClick={onMenuClick}
-            className="glass glass-sm flex h-9 w-9 shrink-0 items-center justify-center justify-self-start lg:hidden"
-            aria-label={t("sidebar.openMenu")}
-            aria-expanded={menuOpen}
-            aria-controls="app-sidebar"
-          >
-            <Menu className="h-4 w-4" aria-hidden />
-          </button>
+        <div className="flex min-w-0 flex-1 items-center gap-2 px-[var(--page-gutter)] sm:gap-3 lg:pl-3">
+          <div className="flex w-9 shrink-0 justify-center lg:hidden">
+            <button
+              type="button"
+              onClick={onMenuClick}
+              className="glass glass-sm flex h-9 w-9 items-center justify-center"
+              aria-label={t("sidebar.openMenu")}
+              aria-expanded={menuOpen}
+              aria-controls="app-sidebar"
+            >
+              <Menu className="h-4 w-4" aria-hidden />
+            </button>
+          </div>
 
-          <div className="col-start-2 min-w-0 lg:col-auto lg:flex-1">
+          <div className="min-w-0 flex-1">
             {searchSlot ?? (
               <div
                 className="glass glass-sm flex h-9 w-full items-center gap-2 px-3 text-[var(--text-muted)] sm:h-10 sm:gap-3 sm:px-4"
@@ -60,11 +61,11 @@ export function Header({
             )}
           </div>
 
-          <div className="col-start-3 flex shrink-0 items-center justify-self-end lg:col-auto lg:ml-0">
+          <div className="flex w-9 shrink-0 justify-center">
             {geolocationSlot ?? (
               <button
                 type="button"
-                className="glass glass-sm flex h-9 w-9 shrink-0 items-center justify-center"
+                className="glass glass-sm flex h-9 w-9 items-center justify-center"
                 aria-label={t("header.geolocate")}
                 disabled
               >
