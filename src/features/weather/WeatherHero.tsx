@@ -128,7 +128,7 @@ export function WeatherHero({
           condition={current.condition}
           isDay={current.isDay}
           size={64}
-          className="mt-8 shrink-0 sm:mt-2 sm:h-20 sm:w-20 xl:h-24 xl:w-24"
+          className="mt-8 shrink-0 sm:mt-10 sm:h-20 sm:w-20 xl:h-24 xl:w-24"
         />
       </div>
     </GlassCard>
