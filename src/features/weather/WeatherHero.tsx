@@ -82,50 +82,54 @@ export function WeatherHero({
     <GlassCard
       interactive={false}
       className={cn(
-        "flex h-full min-h-0 flex-col justify-between overflow-visible p-[var(--card-pad)]",
+        "relative flex h-full min-h-0 flex-col overflow-hidden p-[var(--card-pad)]",
         className,
       )}
     >
-      <div className="flex min-h-0 flex-1 items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-xs text-[var(--text-muted)] sm:text-sm">
-            {location.displayName}
-          </p>
-          <p className="mt-1 font-[family-name:var(--font-horizon-display)] text-5xl font-light leading-none tracking-tight sm:text-6xl xl:text-7xl">
-            {formatTemp(current.temperature, temperatureUnit)}
-          </p>
-          <p className="mt-2 text-sm font-medium text-[var(--text-primary)] sm:text-base">
-            {description}
-          </p>
-          <p className="text-xs text-[var(--text-secondary)] sm:text-sm">
-            {t("hero.feelsLike")}{" "}
-            {formatTemp(current.feelsLike, temperatureUnit)}
-          </p>
-        </div>
-        <div className="relative z-10 flex shrink-0 flex-col items-end gap-3 overflow-visible">
-          <div className="flex items-center gap-1 overflow-visible">
-            <ShareButton className="h-8 w-8" />
-            <FavoriteButton location={location} className="h-8 w-8" />
-          </div>
-          <WeatherIcon
-            condition={current.condition}
-            isDay={current.isDay}
-            size={72}
-            className="mt-1 sm:mt-2 sm:h-20 sm:w-20 xl:h-24 xl:w-24"
-          />
-        </div>
+      <div className="absolute top-[var(--card-pad)] right-[var(--card-pad)] z-10 flex items-center gap-1">
+        <ShareButton className="h-8 w-8" />
+        <FavoriteButton location={location} className="h-8 w-8" />
       </div>
 
-      <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5 sm:gap-3">
-        {metrics.map(({ icon: Icon, label, value }) => (
-          <div key={label} className="min-w-0">
-            <div className="flex items-center gap-1 text-[0.65rem] text-[var(--text-muted)] sm:text-xs">
-              <Icon className="h-3 w-3 shrink-0" aria-hidden />
-              {label}
-            </div>
-            <p className="truncate text-sm font-medium sm:text-base">{value}</p>
+      <div className="flex min-h-0 flex-1 items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-1 flex-col justify-between gap-2">
+          <div>
+            <p className="truncate pr-20 text-xs text-[var(--text-muted)] sm:text-sm">
+              {location.displayName}
+            </p>
+            <p className="mt-1 font-[family-name:var(--font-horizon-display)] text-5xl font-light leading-none tracking-tight sm:text-6xl xl:text-7xl">
+              {formatTemp(current.temperature, temperatureUnit)}
+            </p>
+            <p className="mt-2 text-sm font-medium text-[var(--text-primary)] sm:text-base">
+              {description}
+            </p>
+            <p className="text-xs text-[var(--text-secondary)] sm:text-sm">
+              {t("hero.feelsLike")}{" "}
+              {formatTemp(current.feelsLike, temperatureUnit)}
+            </p>
           </div>
-        ))}
+
+          <div className="mt-auto grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5 sm:gap-3">
+            {metrics.map(({ icon: Icon, label, value }) => (
+              <div key={label} className="min-w-0">
+                <div className="flex items-center gap-1 text-[0.65rem] text-[var(--text-muted)] sm:text-xs">
+                  <Icon className="h-3 w-3 shrink-0" aria-hidden />
+                  {label}
+                </div>
+                <p className="truncate text-sm font-medium sm:text-base">
+                  {value}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <WeatherIcon
+          condition={current.condition}
+          isDay={current.isDay}
+          size={64}
+          className="mt-8 shrink-0 sm:mt-2 sm:h-20 sm:w-20 xl:h-24 xl:w-24"
+        />
       </div>
     </GlassCard>
   );

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useIsMobileUi } from "@/hooks/useIsMobileUi";
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
@@ -18,6 +19,7 @@ export function CityCrossfade({
   className = "h-full min-h-0",
 }: CityCrossfadeProps) {
   const reduceMotion = useReducedMotion();
+  const isMobile = useIsMobileUi();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -25,16 +27,30 @@ export function CityCrossfade({
   }, []);
 
   const canAnimate = mounted && !reduceMotion;
+  // Mobile: opacity-only (no y) to avoid backdrop+transform flicker
+  const useSlide = canAnimate && !isMobile;
 
   return (
     <AnimatePresence mode="wait" initial={false}>
       <motion.div
         key={locationId}
         className={className}
-        initial={canAnimate ? { opacity: 0, y: 8 } : false}
-        animate={{ opacity: 1, y: 0 }}
-        exit={canAnimate ? { opacity: 0, y: -6 } : undefined}
-        transition={{ duration: 0.3, ease }}
+        initial={
+          canAnimate
+            ? useSlide
+              ? { opacity: 0, y: 8 }
+              : { opacity: 0 }
+            : false
+        }
+        animate={useSlide ? { opacity: 1, y: 0 } : { opacity: 1 }}
+        exit={
+          canAnimate
+            ? useSlide
+              ? { opacity: 0, y: -6 }
+              : { opacity: 0 }
+            : undefined
+        }
+        transition={{ duration: isMobile ? 0.2 : 0.3, ease }}
       >
         {children}
       </motion.div>

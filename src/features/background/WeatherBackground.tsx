@@ -2,6 +2,7 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
+import { useIsMobileUi } from "@/hooks/useIsMobileUi";
 import type { DayPeriod, WeatherCondition } from "@/types/weather";
 import { cn } from "@/utils/cn";
 
@@ -31,9 +32,10 @@ export function WeatherBackground({
   className,
 }: WeatherBackgroundProps) {
   const [mounted, setMounted] = useState(false);
+  const isMobile = useIsMobileUi();
   const reduceMotionHook = useReducedMotion();
   // Until mounted, assume reduced motion so SSR markup stays simple/static
-  const reduceMotion = !mounted || !!reduceMotionHook;
+  const reduceMotion = !mounted || !!reduceMotionHook || isMobile;
 
   useEffect(() => {
     setMounted(true);
@@ -44,10 +46,9 @@ export function WeatherBackground({
       className={cn("absolute inset-0 overflow-hidden", className)}
       aria-hidden
     >
-      <GradientLayer condition={condition} period={period} />
-      <GlowOrbs reduceMotion={reduceMotion} />
+      <GradientLayer />
+      <GlowOrbs staticOrbs={reduceMotion} />
 
-      {/* Decorative layers only after hydration to avoid Framer/float mismatches */}
       {mounted ? (
         <>
           {(condition === "clear" || condition === "cloudy") &&
@@ -59,7 +60,7 @@ export function WeatherBackground({
           ) : null}
 
           {period === "night" && condition !== "storm" ? (
-            <NightSky reduceMotion={reduceMotion} />
+            <NightSky reduceMotion={reduceMotion} light={isMobile} />
           ) : null}
 
           {(condition === "cloudy" ||
@@ -70,11 +71,13 @@ export function WeatherBackground({
             <Clouds
               reduceMotion={reduceMotion}
               density={
-                condition === "storm"
-                  ? "heavy"
-                  : condition === "clear"
-                    ? "light"
-                    : "medium"
+                isMobile
+                  ? "light"
+                  : condition === "storm"
+                    ? "heavy"
+                    : condition === "clear"
+                      ? "light"
+                      : "medium"
               }
               dark={
                 condition === "storm" ||
@@ -85,20 +88,26 @@ export function WeatherBackground({
           )}
 
           {condition === "rain" || condition === "storm" ? (
-            <Rain reduceMotion={reduceMotion} heavy={condition === "storm"} />
+            <Rain
+              reduceMotion={reduceMotion}
+              heavy={condition === "storm"}
+              light={isMobile}
+            />
           ) : null}
 
-          {condition === "storm" ? (
+          {condition === "storm" && !isMobile ? (
             <Lightning reduceMotion={reduceMotion} />
           ) : null}
 
           {condition === "snow" ? (
-            <Snow reduceMotion={reduceMotion} />
+            <Snow reduceMotion={reduceMotion} light={isMobile} />
           ) : null}
 
-          {condition === "fog" ? <Fog reduceMotion={reduceMotion} /> : null}
+          {condition === "fog" ? (
+            <Fog reduceMotion={reduceMotion} />
+          ) : null}
 
-          {condition === "clear" && period === "day" ? (
+          {condition === "clear" && period === "day" && !isMobile ? (
             <GoldenParticles reduceMotion={reduceMotion} />
           ) : null}
         </>
@@ -109,57 +118,59 @@ export function WeatherBackground({
   );
 }
 
-function GradientLayer({
-  condition,
-  period,
-}: {
-  condition: WeatherCondition;
-  period: DayPeriod;
-}) {
+/** CSS vars already update with data-weather/period — no remount flash. */
+function GradientLayer() {
   return (
-    <motion.div
-      key={`${condition}-${period}`}
-      className="absolute inset-0"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+    <div
+      className="absolute inset-0 transition-[opacity] duration-500"
       style={{
-        background: `linear-gradient(145deg, var(--scene-from) 0%, var(--scene-via) 48%, var(--scene-to) 100%)`,
+        background:
+          "linear-gradient(145deg, var(--scene-from) 0%, var(--scene-via) 48%, var(--scene-to) 100%)",
       }}
     />
   );
 }
 
-function GlowOrbs({ reduceMotion }: { reduceMotion: boolean }) {
+function GlowOrbs({ staticOrbs }: { staticOrbs: boolean }) {
+  if (staticOrbs) {
+    return (
+      <>
+        <div
+          className="absolute -left-1/4 top-0 h-[50vmax] w-[50vmax] rounded-full opacity-50"
+          style={{
+            background:
+              "radial-gradient(circle, var(--scene-glow) 0%, transparent 70%)",
+          }}
+        />
+        <div
+          className="absolute -right-1/4 bottom-0 h-[40vmax] w-[40vmax] rounded-full opacity-35"
+          style={{
+            background:
+              "radial-gradient(circle, var(--scene-glow) 0%, transparent 70%)",
+          }}
+        />
+      </>
+    );
+  }
+
   return (
     <>
       <motion.div
         className="absolute -left-1/4 top-0 h-[60vmax] w-[60vmax] rounded-full blur-3xl"
         style={{ background: "var(--scene-glow)" }}
-        animate={
-          reduceMotion
-            ? { opacity: 0.55 }
-            : { opacity: [0.45, 0.7, 0.45], scale: [1, 1.06, 1] }
-        }
-        transition={
-          reduceMotion
-            ? undefined
-            : { duration: 10, repeat: Infinity, ease: "easeInOut" }
-        }
+        animate={{ opacity: [0.45, 0.7, 0.45], scale: [1, 1.06, 1] }}
+        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
       />
       <motion.div
         className="absolute -right-1/4 bottom-0 h-[50vmax] w-[50vmax] rounded-full blur-3xl"
         style={{ background: "var(--scene-glow)" }}
-        animate={
-          reduceMotion
-            ? { opacity: 0.35 }
-            : { opacity: [0.3, 0.5, 0.3], scale: [1, 1.08, 1] }
-        }
-        transition={
-          reduceMotion
-            ? undefined
-            : { duration: 14, repeat: Infinity, ease: "easeInOut", delay: 1.5 }
-        }
+        animate={{ opacity: [0.3, 0.5, 0.3], scale: [1, 1.08, 1] }}
+        transition={{
+          duration: 14,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: 1.5,
+        }}
       />
     </>
   );
@@ -219,10 +230,17 @@ function SunHalo({
   );
 }
 
-function NightSky({ reduceMotion }: { reduceMotion: boolean }) {
+function NightSky({
+  reduceMotion,
+  light,
+}: {
+  reduceMotion: boolean;
+  light?: boolean;
+}) {
+  const count = light ? 12 : 36;
   const stars = useMemo(
     () =>
-      Array.from({ length: 36 }, (_, i) => ({
+      Array.from({ length: count }, (_, i) => ({
         id: i,
         left: pct(seeded(i + 1) * 100),
         top: pct(seeded(i + 40) * 70),
@@ -230,19 +248,14 @@ function NightSky({ reduceMotion }: { reduceMotion: boolean }) {
         delay: `${Math.round(seeded(i + 120) * 400) / 100}s`,
         duration: `${Math.round((2 + seeded(i + 160) * 3) * 100) / 100}s`,
       })),
-    [],
+    [count],
   );
 
   return (
     <>
-      <motion.div
-        className="absolute right-[10%] top-[8%] h-14 w-14 rounded-full bg-slate-100 shadow-[0_0_40px_12px_rgba(200,220,255,0.25)] sm:h-16 sm:w-16"
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 0.9, y: 0 }}
-        transition={{ duration: 0.8 }}
-      >
+      <div className="absolute right-[10%] top-[8%] h-14 w-14 rounded-full bg-slate-100 opacity-90 shadow-[0_0_40px_12px_rgba(200,220,255,0.25)] sm:h-16 sm:w-16">
         <div className="absolute left-2 top-1 h-10 w-10 rounded-full bg-[var(--scene-via)] opacity-40 blur-[1px]" />
-      </motion.div>
+      </div>
 
       {stars.map((s) => (
         <span
@@ -333,20 +346,23 @@ function Clouds({
 function Rain({
   reduceMotion,
   heavy,
+  light,
 }: {
   reduceMotion: boolean;
   heavy: boolean;
+  light?: boolean;
 }) {
+  const count = light ? 12 : heavy ? 48 : 32;
   const drops = useMemo(
     () =>
-      Array.from({ length: heavy ? 48 : 32 }, (_, i) => ({
+      Array.from({ length: count }, (_, i) => ({
         id: i,
         left: pct(seeded(i + 3) * 100),
         delay: `${Math.round(seeded(i + 7) * 150) / 100}s`,
         duration: `${Math.round(((heavy ? 0.45 : 0.7) + seeded(i + 9) * 0.4) * 100) / 100}s`,
         height: px(10 + seeded(i + 13) * 16),
       })),
-    [heavy],
+    [count, heavy],
   );
 
   if (reduceMotion) {
@@ -373,10 +389,17 @@ function Rain({
   );
 }
 
-function Snow({ reduceMotion }: { reduceMotion: boolean }) {
+function Snow({
+  reduceMotion,
+  light,
+}: {
+  reduceMotion: boolean;
+  light?: boolean;
+}) {
+  const count = light ? 12 : 28;
   const flakes = useMemo(
     () =>
-      Array.from({ length: 28 }, (_, i) => ({
+      Array.from({ length: count }, (_, i) => ({
         id: i,
         left: pct(seeded(i + 4) * 100),
         size: px(2 + seeded(i + 6) * 4),
@@ -384,7 +407,7 @@ function Snow({ reduceMotion }: { reduceMotion: boolean }) {
         duration: `${Math.round((6 + seeded(i + 10) * 8) * 100) / 100}s`,
         drift: `${Math.round((seeded(i + 12) - 0.5) * 8000) / 100}px`,
       })),
-    [],
+    [count],
   );
 
   if (reduceMotion) {
@@ -414,7 +437,25 @@ function Snow({ reduceMotion }: { reduceMotion: boolean }) {
 }
 
 function Fog({ reduceMotion }: { reduceMotion: boolean }) {
-  const layers = [0, 1, 2];
+  const layers = reduceMotion ? [0, 1] : [0, 1, 2];
+
+  if (reduceMotion) {
+    return (
+      <>
+        {layers.map((i) => (
+          <div
+            key={i}
+            className="absolute inset-x-[-20%] h-1/3 rounded-full opacity-40"
+            style={{
+              top: `${20 + i * 22}%`,
+              background:
+                "radial-gradient(ellipse, rgba(255,255,255,0.35) 0%, transparent 70%)",
+            }}
+          />
+        ))}
+      </>
+    );
+  }
 
   return (
     <>
@@ -423,24 +464,16 @@ function Fog({ reduceMotion }: { reduceMotion: boolean }) {
           key={i}
           className="absolute inset-x-[-20%] h-1/3 rounded-full bg-white/25 blur-3xl"
           style={{ top: `${20 + i * 22}%` }}
-          animate={
-            reduceMotion
-              ? { opacity: 0.35 + i * 0.1 }
-              : {
-                  x: ["-8%", "8%", "-8%"],
-                  opacity: [0.25 + i * 0.08, 0.45 + i * 0.08, 0.25 + i * 0.08],
-                }
-          }
-          transition={
-            reduceMotion
-              ? undefined
-              : {
-                  duration: 12 + i * 4,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: i * 1.2,
-                }
-          }
+          animate={{
+            x: ["-8%", "8%", "-8%"],
+            opacity: [0.25 + i * 0.08, 0.45 + i * 0.08, 0.25 + i * 0.08],
+          }}
+          transition={{
+            duration: 12 + i * 4,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: i * 1.2,
+          }}
         />
       ))}
     </>

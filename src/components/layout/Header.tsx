@@ -32,11 +32,12 @@ export function Header({
           </span>
         </div>
 
-        <div className="flex min-w-0 flex-1 items-center gap-2 px-[var(--page-gutter)] sm:gap-3 lg:pl-3">
+        {/* Mobile: equal side columns so search is optically centered */}
+        <div className="grid min-w-0 flex-1 grid-cols-[2.5rem_minmax(0,1fr)_2.5rem] items-center gap-2 px-[var(--page-gutter)] sm:gap-3 lg:flex lg:pl-3">
           <button
             type="button"
             onClick={onMenuClick}
-            className="glass glass-sm flex h-9 w-9 shrink-0 items-center justify-center lg:hidden"
+            className="glass glass-sm flex h-9 w-9 shrink-0 items-center justify-center justify-self-start lg:hidden"
             aria-label={t("sidebar.openMenu")}
             aria-expanded={menuOpen}
             aria-controls="app-sidebar"
@@ -44,7 +45,7 @@ export function Header({
             <Menu className="h-4 w-4" aria-hidden />
           </button>
 
-          <div className="min-w-0 flex-1">
+          <div className="col-start-2 min-w-0 lg:col-auto lg:flex-1">
             {searchSlot ?? (
               <div
                 className="glass glass-sm flex h-9 w-full items-center gap-2 px-3 text-[var(--text-muted)] sm:h-10 sm:gap-3 sm:px-4"
@@ -59,11 +60,11 @@ export function Header({
             )}
           </div>
 
-          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <div className="col-start-3 flex shrink-0 items-center justify-self-end lg:col-auto lg:ml-0">
             {geolocationSlot ?? (
               <button
                 type="button"
-                className="glass glass-sm flex h-9 w-9 shrink-0 items-center justify-center sm:h-10 sm:w-10"
+                className="glass glass-sm flex h-9 w-9 shrink-0 items-center justify-center"
                 aria-label={t("header.geolocate")}
                 disabled
               >

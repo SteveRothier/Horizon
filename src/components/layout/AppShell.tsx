@@ -59,6 +59,14 @@ export function AppShell({
         className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
         aria-hidden
       >
+        {/* Always-on gradient so dynamic WeatherBackground never leaves a hole */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(145deg, var(--scene-from) 0%, var(--scene-via) 48%, var(--scene-to) 100%)",
+          }}
+        />
         {backgroundSlot ?? (
           <WeatherBackground condition={weather} period={period} />
         )}

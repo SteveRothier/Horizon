@@ -163,7 +163,7 @@ export function Sidebar({
     <>
       <div
         className={cn(
-          "fixed inset-0 z-40 bg-black/40 backdrop-blur-sm transition-opacity lg:hidden",
+          "fixed inset-0 z-40 bg-black/50 transition-opacity lg:hidden",
           open ? "opacity-100" : "pointer-events-none opacity-0",
         )}
         onClick={onClose}
@@ -174,9 +174,10 @@ export function Sidebar({
         id="app-sidebar"
         className={cn(
           "fixed inset-y-0 left-0 z-50 flex w-[min(100%,var(--sidebar-width))] flex-col",
-          "bg-white/[0.06] backdrop-blur-[var(--glass-blur)]",
+          "bg-[rgba(14,22,34,0.92)] max-lg:shadow-xl",
+          "lg:bg-white/[0.06] lg:backdrop-blur-[var(--glass-blur)]",
           "transition-transform duration-300 ease-[var(--ease-out)]",
-          "lg:static lg:z-0 lg:h-full lg:shrink-0 lg:translate-x-0 lg:self-stretch lg:bg-transparent lg:backdrop-blur-none",
+          "lg:static lg:z-0 lg:h-full lg:shrink-0 lg:translate-x-0 lg:self-stretch lg:bg-transparent lg:shadow-none lg:backdrop-blur-none",
           open
             ? "translate-x-0"
             : "-translate-x-full max-lg:invisible max-lg:pointer-events-none",
