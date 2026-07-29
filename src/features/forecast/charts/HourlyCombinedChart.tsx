@@ -312,21 +312,48 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
       return { tempPoints, precipPoints, domainMin, domainMax, baseline };
     }, [hourly, temperatureUnit]);
 
+  // Points étendus pour le rendu SVG : premier point à x=0, dernier à x=contentWidth
+  const tempRenderPoints = useMemo(() => {
+    if (tempPoints.length === 0) return tempPoints;
+    return tempPoints.map((p, i) => ({
+      ...p,
+      x:
+        i === 0
+          ? 0
+          : i === tempPoints.length - 1
+            ? contentWidth
+            : p.x,
+    }));
+  }, [tempPoints, contentWidth]);
+
+  const precipRenderPoints = useMemo(() => {
+    if (precipPoints.length === 0) return precipPoints;
+    return precipPoints.map((p, i) => ({
+      ...p,
+      x:
+        i === 0
+          ? 0
+          : i === precipPoints.length - 1
+            ? contentWidth
+            : p.x,
+    }));
+  }, [precipPoints, contentWidth]);
+
   const precipAreaPath = useMemo(
-    () => buildAreaPath(precipPoints, baseline),
-    [precipPoints, baseline],
+    () => buildAreaPath(precipRenderPoints, baseline),
+    [precipRenderPoints, baseline],
   );
   const tempAreaPath = useMemo(
-    () => buildAreaPath(tempPoints, baseline),
-    [tempPoints, baseline],
+    () => buildAreaPath(tempRenderPoints, baseline),
+    [tempRenderPoints, baseline],
   );
   const precipLinePath = useMemo(
-    () => buildSmoothPath(precipPoints),
-    [precipPoints],
+    () => buildSmoothPath(precipRenderPoints),
+    [precipRenderPoints],
   );
   const tempLinePath = useMemo(
-    () => buildSmoothPath(tempPoints),
-    [tempPoints],
+    () => buildSmoothPath(tempRenderPoints),
+    [tempRenderPoints],
   );
   const tempGradientStops = useMemo(
     () => buildTempGradientStops(tempPoints, domainMin, domainMax),
