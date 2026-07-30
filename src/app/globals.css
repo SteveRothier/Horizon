@@ -39,13 +39,14 @@ body {
   max-width: 100%;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   grid-template-rows:
-    minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(0, 0.75fr) minmax(0, 0.75fr)
-    minmax(8rem, 0.8fr);
+    minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 0.85fr) minmax(0, 0.7fr)
+    minmax(0, 0.7fr) minmax(8rem, 0.75fr);
   grid-template-areas:
     "hero hero"
     "hourly hourly"
-    "weekly aqi"
-    "details uv"
+    "weekly weekly"
+    "aqi uv"
+    "details details"
     "map map";
 }
 
@@ -124,8 +125,8 @@ body {
     min-height: calc(100dvh - var(--header-height) - 1rem);
     height: auto;
     grid-template-rows:
-      minmax(130px, auto) minmax(200px, auto) minmax(125px, auto)
-      minmax(105px, auto) minmax(8rem, auto);
+      minmax(130px, auto) minmax(200px, auto) minmax(160px, auto)
+      minmax(105px, auto) minmax(105px, auto) minmax(8rem, auto);
   }
 }
 
