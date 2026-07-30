@@ -103,7 +103,7 @@ export function AppShell({
 
         <main
           id="main-content"
-          className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-y-auto px-[var(--page-gutter)] py-[var(--page-gutter)] lg:pl-3"
+          className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto px-[var(--page-gutter)] py-[var(--page-gutter)] lg:pl-3"
           tabIndex={-1}
         >
           {children}

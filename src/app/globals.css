@@ -439,14 +439,16 @@ body {
 /* Hourly combined chart — grab to pan horizontally */
 .hourly-chart-scroll {
   cursor: grab;
+  width: 100%;
   min-width: 0;
   max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
   overscroll-behavior-x: contain;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-x;
   user-select: none;
   -webkit-user-select: none;
-  contain: content;
 }
 
 .hourly-chart-scroll.is-grabbing {
@@ -458,9 +460,9 @@ body {
 }
 
 .hourly-chart-strip {
-  /* Promote the wide strip so horizontal pan composites as a layer */
-  transform: translateZ(0);
-  backface-visibility: hidden;
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
 }
 
 .hourly-meta-cell {

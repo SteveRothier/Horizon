@@ -259,6 +259,8 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
     () => `hourly-${Math.random().toString(36).slice(2, 9)}`,
     [],
   );
+  const scrollToIndexRef = useRef(scrollToIndex);
+  scrollToIndexRef.current = scrollToIndex;
   const onScrollColumnRef = useRef(onScrollColumn);
   onScrollColumnRef.current = onScrollColumn;
   const onProgrammaticScrollEndRef = useRef(onProgrammaticScrollEnd);
@@ -498,6 +500,30 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
 
   useEffect(() => {
     const el = scrollRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+
+    const syncScrollLeft = () => {
+      const maxScroll = Math.max(0, el.scrollWidth - el.clientWidth);
+      const target = Math.min(
+        maxScroll,
+        Math.max(0, scrollToIndexRef.current * HOURLY_COL_WIDTH),
+      );
+      if (Math.abs(el.scrollLeft - target) > 1) {
+        el.scrollLeft = target;
+      }
+    };
+
+    const ro = new ResizeObserver(syncScrollLeft);
+    ro.observe(el);
+    window.addEventListener("resize", syncScrollLeft);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", syncScrollLeft);
+    };
+  }, [scrollRef, contentWidth]);
+
+  useEffect(() => {
+    const el = scrollRef.current;
     if (!el) return;
 
     let ticking = false;
@@ -569,14 +595,14 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
     >
       <div
         ref={scrollRef}
-        className="hourly-chart-scroll scrollbar-none min-h-0 min-w-0 max-w-full flex-1 overflow-x-auto"
+        className="hourly-chart-scroll scrollbar-none flex min-h-0 w-full min-w-0 max-w-full flex-1 overflow-x-auto overflow-y-hidden"
         onPointerMove={(event) =>
           updateActiveIndex(event.clientX, event.clientY)
         }
         onPointerLeave={() => setActiveIndex(null)}
       >
         <div
-          className="hourly-chart-strip flex h-full min-h-full flex-col"
+          className="hourly-chart-strip"
           style={{ width: contentWidth }}
         >
           <div ref={chartRef} className="relative min-h-0 flex-1">

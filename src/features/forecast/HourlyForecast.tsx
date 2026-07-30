@@ -235,7 +235,7 @@ export function HourlyForecast({
         </span>
       </h2>
 
-      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="relative flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden">
         {continuous.length === 0 ? (
           <p className="flex h-full min-h-0 items-center justify-center text-center text-xs text-[var(--text-muted)]">
             {t("forecast.noHourly")}
