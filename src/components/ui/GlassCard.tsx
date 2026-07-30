@@ -38,7 +38,7 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
           size === "sm" && "glass-sm",
           animate && "glass-card-enter",
           interactive &&
-            "glass-card-interactive transition-[box-shadow,background-color] duration-200 hover:bg-white/12 hover:shadow-[var(--glass-shadow-hover)]",
+            "glass-card-interactive transition-[box-shadow,background-color] duration-200 hover:bg-white/12",
           className,
         )}
         {...props}

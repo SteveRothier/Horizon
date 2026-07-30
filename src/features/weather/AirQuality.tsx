@@ -16,7 +16,7 @@ function pollutant(label: string, value: number | null, unit = "µg/m³") {
   return (
     <div className="min-w-0">
       <p className="text-[0.65rem] text-[var(--text-muted)]">{label}</p>
-      <p className="truncate text-xs font-medium">
+      <p className="text-xs font-medium whitespace-nowrap">
         {value != null ? `${Math.round(value)} ${unit}` : "—"}
       </p>
     </div>
@@ -41,14 +41,14 @@ export function AirQuality({ data, className }: AirQualityProps) {
     <GlassCard
       interactive={false}
       className={cn(
-        "flex h-full min-h-0 flex-col overflow-hidden p-[var(--card-pad)]",
+        "@container flex h-full min-h-0 flex-col overflow-hidden p-[var(--card-pad)]",
         className,
       )}
     >
       <h2 className="mb-1 shrink-0 text-sm font-medium text-[var(--text-secondary)]">
         {t("aqi.title")}
       </h2>
-      <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 sm:flex-row sm:items-center sm:gap-3">
+      <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 @[15rem]:flex-row @[15rem]:gap-3">
         <SemiGauge
           value={aqi}
           max={100}
@@ -56,7 +56,7 @@ export function AirQuality({ data, className }: AirQualityProps) {
           color={color}
           className="w-28 shrink-0 sm:w-32"
         />
-        <div className="grid w-full grid-cols-2 gap-x-3 gap-y-1.5 sm:flex-1">
+        <div className="grid w-full grid-cols-2 gap-x-3 gap-y-1.5 @[15rem]:flex-1">
           {pollutant("PM2.5", data.pm25)}
           {pollutant("PM10", data.pm10)}
           {pollutant("O₃", data.o3)}

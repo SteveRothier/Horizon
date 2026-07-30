@@ -91,9 +91,9 @@ export function WeatherHero({
         <FavoriteButton location={location} className="h-8 w-8" />
       </div>
 
-      <div className="flex min-h-0 flex-1 items-start justify-between gap-3">
-        <div className="flex min-w-0 flex-1 flex-col justify-between gap-2">
-          <div>
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className="flex min-h-0 flex-1 items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
             <p className="truncate pr-20 text-xs text-[var(--text-muted)] sm:text-sm">
               {location.displayName}
             </p>
@@ -109,27 +109,27 @@ export function WeatherHero({
             </p>
           </div>
 
-          <div className="mt-auto grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5 sm:gap-3">
-            {metrics.map(({ icon: Icon, label, value }) => (
-              <div key={label} className="min-w-0">
-                <div className="flex items-center gap-1 text-[0.65rem] text-[var(--text-muted)] sm:text-xs">
-                  <Icon className="h-3 w-3 shrink-0" aria-hidden />
-                  {label}
-                </div>
-                <p className="truncate text-sm font-medium sm:text-base">
-                  {value}
-                </p>
-              </div>
-            ))}
-          </div>
+          <WeatherIcon
+            condition={current.condition}
+            isDay={current.isDay}
+            size={64}
+            className="mt-8 shrink-0 sm:mt-10 sm:h-20 sm:w-20 xl:h-24 xl:w-24"
+          />
         </div>
 
-        <WeatherIcon
-          condition={current.condition}
-          isDay={current.isDay}
-          size={64}
-          className="mt-8 shrink-0 sm:mt-10 sm:h-20 sm:w-20 xl:h-24 xl:w-24"
-        />
+        <div className="mt-auto flex w-full items-end justify-between gap-2">
+          {metrics.map(({ icon: Icon, label, value }) => (
+            <div key={label} className="min-w-0 flex-1">
+              <div className="flex items-center gap-1 text-[0.65rem] text-[var(--text-muted)] sm:text-xs">
+                <Icon className="h-3 w-3 shrink-0" aria-hidden />
+                {label}
+              </div>
+              <p className="truncate text-sm font-medium sm:text-base">
+                {value}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
     </GlassCard>
   );
