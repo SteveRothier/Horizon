@@ -12,6 +12,9 @@ import type { CurrentWeather, GeoLocation } from "@/types/weather";
 import { formatLocalClock } from "@/utils/format";
 import { formatSpeed, formatTemp } from "@/utils/units";
 import { descriptionFromCondition } from "@/utils/weather-code";
+import {
+  dashboardCardClass,
+} from "@/constants/layout";
 import { cn } from "@/utils/cn";
 
 type WeatherHeroProps = {
@@ -81,10 +84,7 @@ export function WeatherHero({
   return (
     <GlassCard
       interactive={false}
-      className={cn(
-        "relative flex h-full min-h-0 flex-col overflow-hidden p-[var(--card-pad)]",
-        className,
-      )}
+      className={cn("relative", dashboardCardClass, className)}
     >
       <div className="absolute top-[var(--card-pad)] right-[var(--card-pad)] z-10 flex items-center gap-1">
         <ShareButton className="h-8 w-8" />

@@ -26,9 +26,9 @@ import { cn } from "@/utils/cn";
 
 export const HOURLY_COL_WIDTH = 56;
 
-const CHART_HEIGHT = 96;
-const CHART_TOP = 20;
-const CHART_BOTTOM = 8;
+const CHART_MIN_HEIGHT = 72;
+const CHART_TOP = 12;
+const CHART_BOTTOM = 4;
 
 type HourlyCombinedChartProps = {
   items: HourlyForecastItem[];
@@ -170,7 +170,7 @@ const MetaStrip = memo(function MetaStrip({
           return (
             <div
               key={`icon-${item.time}`}
-              className="hourly-meta-cell flex items-center justify-center py-0.5"
+              className="hourly-meta-cell flex items-center justify-center"
               style={{ gridColumn: index + 1 }}
             >
               <WeatherIcon
@@ -190,7 +190,7 @@ const MetaStrip = memo(function MetaStrip({
           return (
             <div
               key={`wind-${item.time}`}
-              className="hourly-meta-cell flex items-center justify-center py-0.5 text-center text-[0.65rem] text-[var(--text-primary)] sm:text-xs"
+              className="hourly-meta-cell flex items-center justify-center text-center text-[0.65rem] text-[var(--text-primary)] sm:text-xs"
               style={{ gridColumn: index + 1 }}
             >
               {speedFormatter.format(speed)} {speedSuffix}
@@ -199,7 +199,7 @@ const MetaStrip = memo(function MetaStrip({
         })}
       </div>
 
-      <div className="grid pt-0.5" style={gridStyle}>
+      <div className="grid" style={gridStyle}>
         {cells.map((item, i) => {
           const index = start + i;
           return (
@@ -235,7 +235,9 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
     top: number;
   } | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [chartHeight, setChartHeight] = useState(96);
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: 24 });
+  const chartRef = useRef<HTMLDivElement>(null);
   const activeIndexRef = useRef(activeIndex);
   activeIndexRef.current = activeIndex;
   const pointerRafRef = useRef(0);
@@ -266,6 +268,20 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
     setMounted(true);
   }, []);
 
+  useLayoutEffect(() => {
+    const el = chartRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+
+    const update = () => {
+      setChartHeight(Math.max(CHART_MIN_HEIGHT, Math.round(el.clientHeight)));
+    };
+
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const hourly = items;
   const contentWidth = Math.max(hourly.length, 1) * HOURLY_COL_WIDTH;
 
@@ -279,8 +295,8 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
       const pad = Math.max(2, Math.round((maxTemp - minTemp) * 0.15) || 2);
       const domainMin = minTemp - pad;
       const domainMax = maxTemp + pad;
-      const plotHeight = CHART_HEIGHT - CHART_TOP - CHART_BOTTOM;
-      const baseline = CHART_HEIGHT - CHART_BOTTOM;
+      const plotHeight = chartHeight - CHART_TOP - CHART_BOTTOM;
+      const baseline = chartHeight - CHART_BOTTOM;
 
       const tempPoints: PlotPoint[] = hourly.map((item, index) => {
         const temp = Math.round(
@@ -310,7 +326,7 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
       });
 
       return { tempPoints, precipPoints, domainMin, domainMax, baseline };
-    }, [hourly, temperatureUnit]);
+    }, [hourly, temperatureUnit, chartHeight]);
 
   // Points étendus pour le rendu SVG : premier point à x=0, dernier à x=contentWidth
   const tempRenderPoints = useMemo(() => {
@@ -378,17 +394,17 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
         if (grabbingRef.current) return;
 
         const { x: px, y: py } = pointerPosRef.current;
+        const chartEl = chartRef.current;
         const scrollEl = scrollRef.current;
-        if (!scrollEl) return;
+        if (!chartEl || !scrollEl) return;
 
-        const rect = scrollEl.getBoundingClientRect();
-        const localY = py - rect.top;
-        if (localY < 0 || localY > CHART_HEIGHT) {
+        const chartRect = chartEl.getBoundingClientRect();
+        if (py < chartRect.top || py > chartRect.bottom) {
           setActiveIndex((prev) => (prev == null ? prev : null));
           return;
         }
 
-        const x = px - rect.left + scrollEl.scrollLeft;
+        const x = px - chartRect.left + scrollEl.scrollLeft;
         const index = Math.floor(x / HOURLY_COL_WIDTH);
         const next =
           index >= 0 && index < hourly.length ? index : null;
@@ -420,22 +436,23 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
       }
 
       const scrollEl = scrollRef.current;
-      if (!scrollEl) return;
+      const chartEl = chartRef.current;
+      if (!scrollEl || !chartEl) return;
 
       const { tempPoints: tempsPts, precipPoints: precipPts } =
         pointsRef.current;
-      const rect = scrollEl.getBoundingClientRect();
+      const chartRect = chartEl.getBoundingClientRect();
       const chartY = Math.min(
         tempsPts[activeIndex]?.y ?? CHART_TOP,
         precipPts[activeIndex]?.y ?? CHART_TOP,
       );
       const next = {
         left:
-          rect.left +
+          chartRect.left +
           activeIndex * HOURLY_COL_WIDTH +
           HOURLY_COL_WIDTH / 2 -
           scrollEl.scrollLeft,
-        top: rect.top + chartY - 8,
+        top: chartRect.top + chartY - 8,
       };
 
       setTooltipPos((prev) => {
@@ -544,20 +561,28 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
   }, [activeIndex, scrollRef, syncTooltipPos]);
 
   return (
-    <div className={cn("min-h-0 min-w-0 w-full max-w-full flex-1", className)}>
+    <div
+      className={cn(
+        "flex h-full min-h-0 min-w-0 w-full max-w-full flex-col",
+        className,
+      )}
+    >
       <div
         ref={scrollRef}
-        className="hourly-chart-scroll scrollbar-none min-w-0 max-w-full overflow-x-auto"
+        className="hourly-chart-scroll scrollbar-none min-h-0 min-w-0 max-w-full flex-1 overflow-x-auto"
         onPointerMove={(event) =>
           updateActiveIndex(event.clientX, event.clientY)
         }
         onPointerLeave={() => setActiveIndex(null)}
       >
-        <div className="hourly-chart-strip pb-0.5" style={{ width: contentWidth }}>
-          <div className="relative" style={{ height: CHART_HEIGHT }}>
+        <div
+          className="hourly-chart-strip flex h-full min-h-full flex-col"
+          style={{ width: contentWidth }}
+        >
+          <div ref={chartRef} className="relative min-h-0 flex-1">
             <svg
               width={contentWidth}
-              height={CHART_HEIGHT}
+              height={chartHeight}
               className="block overflow-visible"
               aria-hidden
             >
@@ -651,7 +676,7 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
                   <text
                     key={`label-${point.x}`}
                     x={point.x}
-                    y={point.y - 10}
+                    y={point.y - 6}
                     textAnchor="middle"
                     fill="var(--text-secondary)"
                     fontSize={11}
@@ -664,13 +689,15 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
             </svg>
           </div>
 
-          <MetaStrip
-            items={hourly}
-            locale={locale}
-            speedUnit={speedUnit}
-            rangeStart={visibleRange.start}
-            rangeEnd={visibleRange.end}
-          />
+          <div className="shrink-0">
+            <MetaStrip
+              items={hourly}
+              locale={locale}
+              speedUnit={speedUnit}
+              rangeStart={visibleRange.start}
+              rangeEnd={visibleRange.end}
+            />
+          </div>
         </div>
       </div>
 

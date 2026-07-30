@@ -14,6 +14,10 @@ import { useSettingsStore } from "@/stores/settingsStore";
 import type { DailyForecastItem } from "@/types/weather";
 import { formatDayShort } from "@/utils/format";
 import { formatTemp, toDisplayTemp } from "@/utils/units";
+import {
+  dashboardCardClass,
+  dashboardCardTitleClass,
+} from "@/constants/layout";
 import { cn } from "@/utils/cn";
 
 type WeeklyForecastProps = {
@@ -96,12 +100,9 @@ export function WeeklyForecast({
   return (
     <GlassCard
       interactive={false}
-      className={cn(
-        "flex h-full min-h-0 flex-col overflow-hidden p-[var(--card-pad)]",
-        className,
-      )}
+      className={cn(dashboardCardClass, className)}
     >
-      <h2 className="mb-2 shrink-0 text-sm font-medium text-[var(--text-secondary)]">
+      <h2 className={dashboardCardTitleClass}>
         {t("forecast.weekly")}
       </h2>
       <ul

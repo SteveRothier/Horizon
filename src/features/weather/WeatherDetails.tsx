@@ -16,6 +16,10 @@ import { useSettingsStore } from "@/stores/settingsStore";
 import type { CurrentWeather } from "@/types/weather";
 import { formatTimeShort, windDirectionLabel } from "@/utils/format";
 import { formatSpeed, formatTemp, formatVisibility } from "@/utils/units";
+import {
+  dashboardCardClass,
+  dashboardCardTitleClass,
+} from "@/constants/layout";
 import { cn } from "@/utils/cn";
 
 type WeatherDetailsProps = {
@@ -75,12 +79,9 @@ export function WeatherDetails({ current, className }: WeatherDetailsProps) {
   return (
     <GlassCard
       interactive={false}
-      className={cn(
-        "flex h-full min-h-0 flex-col overflow-hidden p-[var(--card-pad)]",
-        className,
-      )}
+      className={cn(dashboardCardClass, className)}
     >
-      <h2 className="mb-2 shrink-0 text-sm font-medium text-[var(--text-secondary)]">
+      <h2 className={dashboardCardTitleClass}>
         {t("details.title")}
       </h2>
       <div className="grid min-h-0 flex-1 grid-cols-2 content-center gap-x-3 gap-y-2 overflow-auto scrollbar-none">

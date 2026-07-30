@@ -17,6 +17,10 @@ import {
 import { useLocale, useT } from "@/hooks/useT";
 import type { HourlyForecastItem } from "@/types/weather";
 import { formatDayShort } from "@/utils/format";
+import {
+  dashboardCardClass,
+  dashboardCardTitleClass,
+} from "@/constants/layout";
 import { cn } from "@/utils/cn";
 
 type HourlyForecastProps = {
@@ -221,12 +225,9 @@ export function HourlyForecast({
   return (
     <GlassCard
       interactive={false}
-      className={cn(
-        "flex h-full min-h-0 flex-col overflow-hidden p-[var(--card-pad)]",
-        className,
-      )}
+      className={cn(dashboardCardClass, className)}
     >
-      <h2 className="mb-1.5 shrink-0 text-sm font-medium text-[var(--text-secondary)]">
+      <h2 className={dashboardCardTitleClass}>
         {t("forecast.hourly")}
         <span ref={dayLabelRef} className="text-[var(--text-muted)]">
           {" "}
@@ -234,13 +235,14 @@ export function HourlyForecast({
         </span>
       </h2>
 
-      <div className="relative min-h-0 flex-1 overflow-hidden">
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
         {continuous.length === 0 ? (
           <p className="flex h-full min-h-0 items-center justify-center text-center text-xs text-[var(--text-muted)]">
             {t("forecast.noHourly")}
           </p>
         ) : (
           <HourlyCombinedChart
+            className="h-full"
             items={continuous}
             scrollToIndex={scrollToIndex}
             scrollDurationMs={scrollDurationMs}

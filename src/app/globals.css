@@ -60,7 +60,7 @@ body {
 
 .dashboard-area-hourly {
   grid-area: hourly;
-  min-height: 14.5rem;
+  min-height: 12rem;
 }
 
 .dashboard-area-details {

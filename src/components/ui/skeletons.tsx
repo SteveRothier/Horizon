@@ -1,16 +1,16 @@
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { dashboardCardClass } from "@/constants/layout";
 
-const cardShell =
-  "flex h-full min-h-0 flex-col overflow-hidden p-[var(--card-pad)]";
+const skeletonTitleClass = "mb-1.5 h-3.5 shrink-0";
 
 export function WeatherHeroSkeleton() {
   return (
     <GlassCard
       interactive={false}
       animate={false}
-      className={cardShell}
+      className={dashboardCardClass}
       aria-label="Chargement de la météo actuelle"
     >
       <div className="flex min-h-0 flex-1 items-start justify-between gap-3">
@@ -40,21 +40,23 @@ export function HourlyForecastSkeleton() {
     <GlassCard
       interactive={false}
       animate={false}
-      className={cardShell}
+      className={dashboardCardClass}
       aria-label="Chargement des prévisions horaires"
     >
-      <Skeleton className="mb-2 h-3.5 w-32 shrink-0" />
-      <div className="flex min-h-0 flex-1 flex-col justify-end gap-1.5">
-        <Skeleton className="h-[6rem] w-full rounded-[var(--glass-radius-sm)]" />
-        <div className="flex gap-3 overflow-hidden px-1">
-          {Array.from({ length: 10 }).map((_, i) => (
-            <Skeleton key={i} className="h-5 w-5 shrink-0 rounded-full" />
-          ))}
-        </div>
-        <div className="flex justify-between gap-1 px-1">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <Skeleton key={i} className="h-2.5 w-7" />
-          ))}
+      <Skeleton className={`${skeletonTitleClass} w-32`} />
+      <div className="flex min-h-0 flex-1 flex-col">
+        <Skeleton className="min-h-0 flex-1 w-full rounded-[var(--glass-radius-sm)]" />
+        <div className="shrink-0 space-y-1.5 pt-1.5">
+          <div className="flex gap-3 overflow-hidden px-1">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <Skeleton key={i} className="h-5 w-5 shrink-0 rounded-full" />
+            ))}
+          </div>
+          <div className="flex justify-between gap-1 px-1">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <Skeleton key={i} className="h-2.5 w-7" />
+            ))}
+          </div>
         </div>
       </div>
     </GlassCard>
@@ -66,10 +68,10 @@ export function WeeklyForecastSkeleton() {
     <GlassCard
       interactive={false}
       animate={false}
-      className={cardShell}
+      className={dashboardCardClass}
       aria-label="Chargement des prévisions sur 7 jours"
     >
-      <Skeleton className="mb-2 h-3.5 w-28 shrink-0" />
+      <Skeleton className={`${skeletonTitleClass} w-28`} />
       <div className="flex min-h-0 flex-1 flex-col justify-between gap-1">
         {Array.from({ length: 7 }).map((_, i) => (
           <div key={i} className="flex min-h-0 flex-1 items-center gap-1.5">
@@ -90,10 +92,10 @@ export function GaugeSkeleton({ label = "Indicateur" }: { label?: string }) {
     <GlassCard
       interactive={false}
       animate={false}
-      className={cardShell}
+      className={dashboardCardClass}
       aria-label={`Chargement — ${label}`}
     >
-      <Skeleton className="mb-2 h-3.5 w-24 shrink-0" />
+      <Skeleton className={`${skeletonTitleClass} w-24`} />
       <div className="flex min-h-0 flex-1 items-center justify-center">
         <Skeleton className="aspect-square h-[min(100%,5.5rem)] w-auto max-w-full rounded-full sm:h-[min(100%,6.5rem)]" />
       </div>
@@ -108,10 +110,10 @@ export function DetailsSkeleton() {
     <GlassCard
       interactive={false}
       animate={false}
-      className={cardShell}
+      className={dashboardCardClass}
       aria-label="Chargement des détails météo"
     >
-      <Skeleton className="mb-2 h-3.5 w-24 shrink-0" />
+      <Skeleton className={`${skeletonTitleClass} w-24`} />
       <div className="grid min-h-0 flex-1 grid-cols-2 content-center gap-x-3 gap-y-2">
         {Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className="space-y-1">

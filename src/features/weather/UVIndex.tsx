@@ -4,6 +4,10 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { SemiGauge } from "@/components/ui/SemiGauge";
 import { useT } from "@/hooks/useT";
 import type { MessageKey } from "@/i18n/messages";
+import {
+  dashboardCardClass,
+  dashboardCardTitleClass,
+} from "@/constants/layout";
 import { cn } from "@/utils/cn";
 
 type UVIndexProps = {
@@ -58,12 +62,9 @@ export function UVIndex({ value, className }: UVIndexProps) {
   return (
     <GlassCard
       interactive={false}
-      className={cn(
-        "flex h-full min-h-0 flex-col overflow-hidden p-[var(--card-pad)]",
-        className,
-      )}
+      className={cn(dashboardCardClass, className)}
     >
-      <h2 className="mb-1 shrink-0 text-sm font-medium text-[var(--text-secondary)]">
+      <h2 className={dashboardCardTitleClass}>
         {t("uv.title")}
       </h2>
       <div className="flex min-h-0 flex-1 flex-col items-center justify-center">
