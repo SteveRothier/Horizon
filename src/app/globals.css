@@ -109,18 +109,8 @@ body {
   }
 }
 
-/* Mobile court : autoriser un scroll si hauteur trop faible */
+/* Mobile court : autoriser le scroll dans main, pas sur body */
 @media (max-width: 767px) and (max-height: 700px) {
-  body {
-    overflow: auto;
-  }
-
-  .app-shell {
-    height: auto;
-    max-height: none;
-    overflow: visible;
-  }
-
   .dashboard-grid {
     min-height: calc(100dvh - var(--header-height) - 1rem);
     height: auto;
@@ -132,10 +122,6 @@ body {
 
 /* Mobile / coarse: cut backdrop-filter to stop GPU flicker */
 @media (max-width: 767px), (pointer: coarse) {
-  body {
-    background-attachment: scroll;
-  }
-
   .glass {
     background: rgba(14, 22, 34, 0.78);
     backdrop-filter: none;

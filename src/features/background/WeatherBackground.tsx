@@ -43,7 +43,7 @@ export function WeatherBackground({
 
   return (
     <div
-      className={cn("absolute inset-0 overflow-hidden", className)}
+      className={cn("fixed inset-0 overflow-hidden", className)}
       aria-hidden
     >
       <GradientLayer />
