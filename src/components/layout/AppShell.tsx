@@ -3,6 +3,12 @@
 import dynamic from "next/dynamic";
 import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import {
+  CollectionsPanel,
+  anchorFromEventTarget,
+  type CollectionsAnchor,
+  type CollectionsView,
+} from "@/components/layout/CollectionsPanel";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { cn } from "@/utils/cn";
@@ -46,11 +52,33 @@ export function AppShell({
   className,
 }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collectionsOpen, setCollectionsOpen] = useState(false);
+  const [collectionsView, setCollectionsView] =
+    useState<CollectionsView>("history");
+  const [collectionsAnchor, setCollectionsAnchor] =
+    useState<CollectionsAnchor | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  function openCollections(
+    view: CollectionsView,
+    target?: EventTarget | null,
+  ) {
+    if (collectionsOpen && collectionsView === view) {
+      setCollectionsOpen(false);
+      return;
+    }
+    setCollectionsView(view);
+    setCollectionsAnchor(anchorFromEventTarget(target ?? null));
+    setCollectionsOpen(true);
+  }
+
+  function closeCollections() {
+    setCollectionsOpen(false);
+  }
 
   const backgroundLayer = (
     <div
@@ -85,31 +113,41 @@ export function AppShell({
           className,
         )}
       >
-      <Header
-        searchSlot={searchSlot}
-        geolocationSlot={geolocationSlot}
-        menuOpen={sidebarOpen}
-        onMenuClick={() => setSidebarOpen(true)}
-      />
-
-      <div className="mx-auto flex min-h-0 w-full min-w-0 max-w-[1440px] flex-1 flex-col overflow-x-hidden lg:flex-row">
-        <Sidebar
-          open={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-          favoritesSlot={favoritesSlot}
-          historySlot={historySlot}
-          settingsSlot={settingsSlot}
+        <Header
+          searchSlot={searchSlot}
+          geolocationSlot={geolocationSlot}
+          menuOpen={sidebarOpen}
+          onMenuClick={() => setSidebarOpen(true)}
+          onOpenCollections={openCollections}
         />
 
-        <main
-          id="main-content"
-          className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto px-[var(--page-gutter)] py-[var(--page-gutter)] lg:pl-3"
-          tabIndex={-1}
-        >
-          {children}
-        </main>
+        <div className="relative mx-auto flex min-h-0 w-full min-w-0 max-w-[1440px] flex-1 flex-col overflow-x-hidden lg:flex-row">
+          <Sidebar
+            open={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+            favoritesSlot={favoritesSlot}
+            historySlot={historySlot}
+            settingsSlot={settingsSlot}
+          />
+
+          <main
+            id="main-content"
+            className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto px-[var(--page-gutter)] py-[var(--page-gutter)] lg:pl-3"
+            tabIndex={-1}
+          >
+            {children}
+          </main>
+        </div>
+
+        <CollectionsPanel
+          open={collectionsOpen}
+          onClose={closeCollections}
+          view={collectionsView}
+          anchor={collectionsAnchor}
+          favoritesSlot={favoritesSlot}
+          historySlot={historySlot}
+        />
       </div>
-    </div>
     </>
   );
 }

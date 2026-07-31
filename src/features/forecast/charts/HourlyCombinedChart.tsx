@@ -20,15 +20,15 @@ import {
 } from "@/stores/settingsStore";
 import type { HourlyForecastItem } from "@/types/weather";
 import { formatHour } from "@/utils/format";
-import { tempStrokeColor } from "@/utils/temp-color";
+import { tempFillColor, tempStrokeColor } from "@/utils/temp-color";
 import { toDisplaySpeed, toDisplayTemp } from "@/utils/units";
 import { cn } from "@/utils/cn";
 
 export const HOURLY_COL_WIDTH = 56;
 
-const CHART_MIN_HEIGHT = 72;
-const CHART_TOP = 12;
-const CHART_BOTTOM = 4;
+const CHART_MIN_HEIGHT = 112;
+const CHART_TOP = 14;
+const CHART_BOTTOM = 6;
 
 type HourlyCombinedChartProps = {
   items: HourlyForecastItem[];
@@ -105,6 +105,7 @@ function buildTempGradientStops(
   points: PlotPoint[],
   domainMin: number,
   domainMax: number,
+  mode: "stroke" | "fill" = "stroke",
 ): { offset: string; color: string }[] {
   if (points.length === 0) return [];
   const x0 = points[0].x;
@@ -113,7 +114,38 @@ function buildTempGradientStops(
   let lastColor = "";
 
   for (let i = 0; i < points.length; i++) {
-    const color = tempStrokeColor(points[i].value, domainMin, domainMax);
+    const color =
+      mode === "fill"
+        ? tempFillColor(points[i].value, domainMin, domainMax, 0.36)
+        : tempStrokeColor(points[i].value, domainMin, domainMax);
+    const isEdge = i === 0 || i === points.length - 1;
+    if (!isEdge && color === lastColor) continue;
+    lastColor = color;
+    stops.push({
+      offset: `${(((points[i].x - x0) / span) * 100).toFixed(2)}%`,
+      color,
+    });
+  }
+  return stops;
+}
+
+/** Horizontal precip fill — more opaque/saturated blue as % rises. */
+function buildPrecipGradientStops(
+  points: PlotPoint[],
+): { offset: string; color: string }[] {
+  if (points.length === 0) return [];
+  const x0 = points[0].x;
+  const span = points[points.length - 1].x - x0 || 1;
+  const stops: { offset: string; color: string }[] = [];
+  let lastColor = "";
+
+  for (let i = 0; i < points.length; i++) {
+    const t = Math.min(1, Math.max(0, points[i].value / 100));
+    const alpha = 0.03 + t * 0.48;
+    const r = Math.round(120 - t * 55);
+    const g = Math.round(205 - t * 55);
+    const b = 255;
+    const color = `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(3)})`;
     const isEdge = i === 0 || i === points.length - 1;
     if (!isEdge && color === lastColor) continue;
     lastColor = color;
@@ -176,7 +208,7 @@ const MetaStrip = memo(function MetaStrip({
               <WeatherIcon
                 condition={item.condition}
                 isDay={item.isDay}
-                size={20}
+                size={18}
               />
             </div>
           );
@@ -374,8 +406,16 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
     [tempRenderPoints],
   );
   const tempGradientStops = useMemo(
-    () => buildTempGradientStops(tempPoints, domainMin, domainMax),
+    () => buildTempGradientStops(tempPoints, domainMin, domainMax, "stroke"),
     [tempPoints, domainMin, domainMax],
+  );
+  const tempFillStops = useMemo(
+    () => buildTempGradientStops(tempPoints, domainMin, domainMax, "fill"),
+    [tempPoints, domainMin, domainMax],
+  );
+  const precipFillStops = useMemo(
+    () => buildPrecipGradientStops(precipPoints),
+    [precipPoints],
   );
   const tempGradientX = useMemo(() => {
     if (tempPoints.length === 0) return { x1: 0, x2: 0 };
@@ -384,6 +424,13 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
       x2: tempPoints[tempPoints.length - 1].x,
     };
   }, [tempPoints]);
+  const precipGradientX = useMemo(() => {
+    if (precipPoints.length === 0) return { x1: 0, x2: 0 };
+    return {
+      x1: precipPoints[0].x,
+      x2: precipPoints[precipPoints.length - 1].x,
+    };
+  }, [precipPoints]);
 
   const updateActiveIndex = useCallback(
     (clientX: number, clientY: number) => {
@@ -397,8 +444,7 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
 
         const { x: px, y: py } = pointerPosRef.current;
         const chartEl = chartRef.current;
-        const scrollEl = scrollRef.current;
-        if (!chartEl || !scrollEl) return;
+        if (!chartEl) return;
 
         const chartRect = chartEl.getBoundingClientRect();
         if (py < chartRect.top || py > chartRect.bottom) {
@@ -406,14 +452,16 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
           return;
         }
 
-        const x = px - chartRect.left + scrollEl.scrollLeft;
+        // chartRef lives inside the scrolled strip — rect.left already
+        // includes scroll offset; do not add scrollLeft again.
+        const x = px - chartRect.left;
         const index = Math.floor(x / HOURLY_COL_WIDTH);
         const next =
           index >= 0 && index < hourly.length ? index : null;
         setActiveIndex((prev) => (prev === next ? prev : next));
       });
     },
-    [grabbingRef, hourly.length, scrollRef],
+    [grabbingRef, hourly.length],
   );
 
   const activeTemp =
@@ -437,9 +485,8 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
         return;
       }
 
-      const scrollEl = scrollRef.current;
       const chartEl = chartRef.current;
-      if (!scrollEl || !chartEl) return;
+      if (!chartEl) return;
 
       const { tempPoints: tempsPts, precipPoints: precipPts } =
         pointsRef.current;
@@ -448,12 +495,12 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
         tempsPts[activeIndex]?.y ?? CHART_TOP,
         precipPts[activeIndex]?.y ?? CHART_TOP,
       );
+      // chartRect.left already reflects scroll; no scrollLeft subtraction.
       const next = {
         left:
           chartRect.left +
           activeIndex * HOURLY_COL_WIDTH +
-          HOURLY_COL_WIDTH / 2 -
-          scrollEl.scrollLeft,
+          HOURLY_COL_WIDTH / 2,
         top: chartRect.top + chartY - 8,
       };
 
@@ -468,7 +515,7 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
         return next;
       });
     });
-  }, [activeIndex, grabbingRef, scrollRef]);
+  }, [activeIndex, grabbingRef]);
 
   useLayoutEffect(() => {
     syncTooltipPos();
@@ -614,24 +661,64 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
             >
               <defs>
                 <linearGradient
-                  id={`${gradientId}-precip`}
-                  x1="0"
-                  y1="0"
-                  x2="0"
-                  y2="1"
+                  id={`${gradientId}-area-fade`}
+                  gradientUnits="userSpaceOnUse"
+                  x1={0}
+                  y1={CHART_TOP}
+                  x2={0}
+                  y2={baseline}
                 >
-                  <stop offset="0%" stopColor="rgba(110, 200, 255, 0.22)" />
-                  <stop offset="100%" stopColor="rgba(110, 200, 255, 0.02)" />
+                  <stop offset="0%" stopColor="#fff" stopOpacity={1} />
+                  <stop offset="55%" stopColor="#fff" stopOpacity={0.55} />
+                  <stop offset="100%" stopColor="#fff" stopOpacity={0} />
+                </linearGradient>
+                <mask
+                  id={`${gradientId}-area-mask`}
+                  maskUnits="userSpaceOnUse"
+                  x={0}
+                  y={0}
+                  width={contentWidth}
+                  height={chartHeight}
+                >
+                  <rect
+                    x={0}
+                    y={0}
+                    width={contentWidth}
+                    height={chartHeight}
+                    fill={`url(#${gradientId}-area-fade)`}
+                  />
+                </mask>
+                <linearGradient
+                  id={`${gradientId}-precip`}
+                  gradientUnits="userSpaceOnUse"
+                  x1={precipGradientX.x1}
+                  y1={0}
+                  x2={precipGradientX.x2}
+                  y2={0}
+                >
+                  {precipFillStops.map((stop) => (
+                    <stop
+                      key={`p-${stop.offset}`}
+                      offset={stop.offset}
+                      stopColor={stop.color}
+                    />
+                  ))}
                 </linearGradient>
                 <linearGradient
                   id={`${gradientId}-temp-fill`}
-                  x1="0"
-                  y1="0"
-                  x2="0"
-                  y2="1"
+                  gradientUnits="userSpaceOnUse"
+                  x1={tempGradientX.x1}
+                  y1={0}
+                  x2={tempGradientX.x2}
+                  y2={0}
                 >
-                  <stop offset="0%" stopColor="rgba(255, 255, 255, 0.22)" />
-                  <stop offset="100%" stopColor="rgba(255, 255, 255, 0.02)" />
+                  {tempFillStops.map((stop) => (
+                    <stop
+                      key={`f-${stop.offset}`}
+                      offset={stop.offset}
+                      stopColor={stop.color}
+                    />
+                  ))}
                 </linearGradient>
                 <linearGradient
                   id={`${gradientId}-temp-stroke`}
@@ -651,14 +738,18 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
                 </linearGradient>
               </defs>
               {precipAreaPath ? (
-                <path d={precipAreaPath} fill={`url(#${gradientId}-precip)`} />
+                <path
+                  d={precipAreaPath}
+                  fill={`url(#${gradientId}-precip)`}
+                  mask={`url(#${gradientId}-area-mask)`}
+                />
               ) : null}
               {precipLinePath ? (
                 <path
                   d={precipLinePath}
                   fill="none"
                   stroke="var(--accent-cool)"
-                  strokeWidth={2}
+                  strokeWidth={2.25}
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
@@ -667,6 +758,7 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
                 <path
                   d={tempAreaPath}
                   fill={`url(#${gradientId}-temp-fill)`}
+                  mask={`url(#${gradientId}-area-mask)`}
                 />
               ) : null}
               {tempLinePath ? (

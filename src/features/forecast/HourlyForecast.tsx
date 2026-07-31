@@ -7,6 +7,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type RefObject,
 } from "react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { HourlyCombinedChart } from "@/features/forecast/charts/HourlyCombinedChart";
@@ -36,6 +37,10 @@ type HourlyForecastProps = {
   locationId?: string;
   /** Sync weekly selection when the visible day changes via scroll. */
   onDayChange?: (date: string) => void;
+  /** Skip GlassCard + title — for use inside ForecastPanel. */
+  embedded?: boolean;
+  /** External day label node (ForecastPanel title). */
+  dayLabelRef?: RefObject<HTMLSpanElement | null>;
   className?: string;
 };
 
@@ -56,6 +61,8 @@ export function HourlyForecast({
   todayDate,
   locationId,
   onDayChange,
+  embedded = false,
+  dayLabelRef: dayLabelRefProp,
   className,
 }: HourlyForecastProps) {
   const t = useT();
@@ -93,7 +100,8 @@ export function HourlyForecast({
   const onDayChangeRef = useRef(onDayChange);
   onDayChangeRef.current = onDayChange;
   const parentSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const dayLabelRef = useRef<HTMLSpanElement>(null);
+  const dayLabelRefInternal = useRef<HTMLSpanElement>(null);
+  const dayLabelRef = dayLabelRefProp ?? dayLabelRefInternal;
   const localeRef = useRef(locale);
   localeRef.current = locale;
 
@@ -101,7 +109,7 @@ export function HourlyForecast({
   const writeDayLabel = useCallback((date: string) => {
     const el = dayLabelRef.current;
     if (el) el.textContent = ` · ${formatDayShort(date, localeRef.current)}`;
-  }, []);
+  }, [dayLabelRef]);
 
   const flushParentDay = useCallback((nextDate: string) => {
     if (parentSyncTimerRef.current) {
@@ -222,6 +230,30 @@ export function HourlyForecast({
     }
   }, [writeDayLabel]);
 
+  const body = (
+    <div className="relative flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden">
+      {continuous.length === 0 ? (
+        <p className="flex h-full min-h-0 items-center justify-center text-center text-xs text-[var(--text-muted)]">
+          {t("forecast.noHourly")}
+        </p>
+      ) : (
+        <HourlyCombinedChart
+          className="h-full"
+          items={continuous}
+          scrollToIndex={scrollToIndex}
+          scrollDurationMs={scrollDurationMs}
+          locationId={locationId}
+          onScrollColumn={onScrollColumn}
+          onProgrammaticScrollEnd={onProgrammaticScrollEnd}
+        />
+      )}
+    </div>
+  );
+
+  if (embedded) {
+    return <div className={cn("flex min-h-0 min-w-0 flex-1 flex-col", className)}>{body}</div>;
+  }
+
   return (
     <GlassCard
       interactive={false}
@@ -229,29 +261,12 @@ export function HourlyForecast({
     >
       <h2 className={dashboardCardTitleClass}>
         {t("forecast.hourly")}
-        <span ref={dayLabelRef} className="text-[var(--text-muted)]">
+        <span ref={dayLabelRefInternal} className="text-[var(--text-muted)]">
           {" "}
           · {formatDayShort(dateKey, locale)}
         </span>
       </h2>
-
-      <div className="relative flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden">
-        {continuous.length === 0 ? (
-          <p className="flex h-full min-h-0 items-center justify-center text-center text-xs text-[var(--text-muted)]">
-            {t("forecast.noHourly")}
-          </p>
-        ) : (
-          <HourlyCombinedChart
-            className="h-full"
-            items={continuous}
-            scrollToIndex={scrollToIndex}
-            scrollDurationMs={scrollDurationMs}
-            locationId={locationId}
-            onScrollColumn={onScrollColumn}
-            onProgrammaticScrollEnd={onProgrammaticScrollEnd}
-          />
-        )}
-      </div>
+      {body}
     </GlassCard>
   );
 }

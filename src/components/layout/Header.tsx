@@ -1,8 +1,9 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Search, MapPin, Menu } from "lucide-react";
+import { Search, MapPin, Menu, Star, Clock } from "lucide-react";
 import { useT } from "@/hooks/useT";
+import type { CollectionsView } from "@/components/layout/CollectionsPanel";
 import { cn } from "@/utils/cn";
 
 type HeaderProps = {
@@ -10,6 +11,10 @@ type HeaderProps = {
   geolocationSlot?: ReactNode;
   menuOpen?: boolean;
   onMenuClick?: () => void;
+  onOpenCollections?: (
+    view: CollectionsView,
+    target?: EventTarget | null,
+  ) => void;
   className?: string;
 };
 
@@ -18,6 +23,7 @@ export function Header({
   geolocationSlot,
   menuOpen = false,
   onMenuClick,
+  onOpenCollections,
   className,
 }: HeaderProps) {
   const t = useT();
@@ -61,17 +67,42 @@ export function Header({
             )}
           </div>
 
-          <div className="flex w-9 shrink-0 justify-center">
-            {geolocationSlot ?? (
-              <button
-                type="button"
-                className="glass glass-sm flex h-9 w-9 items-center justify-center"
-                aria-label={t("header.geolocate")}
-                disabled
-              >
-                <MapPin className="h-4 w-4" aria-hidden />
-              </button>
-            )}
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              data-collections-trigger=""
+              onClick={(e) =>
+                onOpenCollections?.("favorites", e.currentTarget)
+              }
+              className="glass glass-sm flex h-9 w-9 items-center justify-center"
+              aria-label={t("collections.openFavorites")}
+              aria-controls="app-collections-panel"
+            >
+              <Star className="h-4 w-4" aria-hidden />
+            </button>
+            <button
+              type="button"
+              data-collections-trigger=""
+              onClick={(e) => onOpenCollections?.("history", e.currentTarget)}
+              className="glass glass-sm flex h-9 w-9 items-center justify-center"
+              aria-label={t("collections.openHistory")}
+              aria-controls="app-collections-panel"
+            >
+              <Clock className="h-4 w-4" aria-hidden />
+            </button>
+
+            <div className="flex w-9 shrink-0 justify-center">
+              {geolocationSlot ?? (
+                <button
+                  type="button"
+                  className="glass glass-sm flex h-9 w-9 items-center justify-center"
+                  aria-label={t("header.geolocate")}
+                  disabled
+                >
+                  <MapPin className="h-4 w-4" aria-hidden />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

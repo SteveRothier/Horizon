@@ -15,9 +15,8 @@ import { SettingsPanel } from "@/features/settings/SettingsPanel";
 import { DaySelectionProvider } from "@/features/forecast/DaySelectionContext";
 import {
   AirQualitySlot,
-  HourlyForecastSlot,
+  ForecastPanelSlot,
   UVIndexSlot,
-  WeeklyForecastSlot,
 } from "@/features/forecast/ForecastSlots";
 import { WeatherMap } from "@/features/map/WeatherMap";
 import { WeatherDetails } from "@/features/weather/WeatherDetails";
@@ -192,14 +191,13 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
                   timezone={weather.timezone}
                 />
               }
-              hourly={
-                <HourlyForecastSlot
+              forecast={
+                <ForecastPanelSlot
                   hourly={weather.hourly}
                   daily={weather.daily}
                   locationId={weather.location.id}
                 />
               }
-              weekly={<WeeklyForecastSlot daily={weather.daily} />}
               details={<WeatherDetails current={weather.current} />}
               airQuality={<AirQualitySlot coords={coords} />}
               uv={

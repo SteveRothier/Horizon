@@ -4,8 +4,7 @@ import { memo, useMemo } from "react";
 import { ErrorCard } from "@/components/ui/ErrorCard";
 import { GaugeSkeleton } from "@/components/ui/skeletons";
 import { useDaySelection } from "@/features/forecast/DaySelectionContext";
-import { HourlyForecast } from "@/features/forecast/HourlyForecast";
-import { WeeklyForecast } from "@/features/forecast/WeeklyForecast";
+import { ForecastPanel } from "@/features/forecast/ForecastPanel";
 import { AirQuality } from "@/features/weather/AirQuality";
 import { UVIndex } from "@/features/weather/UVIndex";
 import { useT } from "@/hooks/useT";
@@ -15,17 +14,17 @@ import { messageFromApiError } from "@/utils/api-error";
 
 type Coords = { lat: number; lon: number };
 
-type HourlyForecastSlotProps = {
+type ForecastPanelSlotProps = {
   hourly: HourlyForecastItem[];
   daily: DailyForecastItem[];
   locationId: string;
 };
 
-export const HourlyForecastSlot = memo(function HourlyForecastSlot({
+export const ForecastPanelSlot = memo(function ForecastPanelSlot({
   hourly,
   daily,
   locationId,
-}: HourlyForecastSlotProps) {
+}: ForecastPanelSlotProps) {
   const { activeDate, todayDate, setSelectedDate } = useDaySelection();
   const dates = useMemo(
     () => daily.slice(0, 7).map((d) => d.date),
@@ -33,31 +32,14 @@ export const HourlyForecastSlot = memo(function HourlyForecastSlot({
   );
 
   return (
-    <HourlyForecast
+    <ForecastPanel
       hourly={hourly}
+      daily={daily}
       dates={dates}
       dateKey={activeDate ?? dates[0] ?? "day"}
       todayDate={todayDate ?? undefined}
       locationId={locationId}
       onDayChange={setSelectedDate}
-    />
-  );
-});
-
-type WeeklyForecastSlotProps = {
-  daily: DailyForecastItem[];
-};
-
-export const WeeklyForecastSlot = memo(function WeeklyForecastSlot({
-  daily,
-}: WeeklyForecastSlotProps) {
-  const { activeDate, setSelectedDate } = useDaySelection();
-
-  return (
-    <WeeklyForecast
-      items={daily}
-      selectedDate={activeDate ?? daily[0]?.date ?? ""}
-      onSelectDay={setSelectedDate}
     />
   );
 });

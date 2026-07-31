@@ -9,37 +9,62 @@ import {
   type ReactElement,
   type ReactNode,
 } from "react";
-import { Home, Map, Star, Clock, Navigation, Settings, X } from "lucide-react";
+import {
+  Home,
+  Map,
+  Star,
+  Clock,
+  Navigation,
+  Settings,
+  X,
+  ChevronDown,
+} from "lucide-react";
 import { useT } from "@/hooks/useT";
 import type { MessageKey } from "@/i18n/messages";
 import { useLocationStore } from "@/stores/locationStore";
 import { cn } from "@/utils/cn";
 
-const NAV_ITEMS: {
+type ExpandableId = "favorites" | "history" | "settings";
+
+type NavLinkItem = {
+  kind: "link";
   id: string;
   labelKey: MessageKey;
   icon: typeof Home;
   href: string;
-}[] = [
-  { id: "home", labelKey: "nav.home", icon: Home, href: "#main-content" },
-  { id: "map", labelKey: "nav.map", icon: Map, href: "#weather-map" },
+};
+
+type NavExpandableItem = {
+  kind: "expandable";
+  id: ExpandableId;
+  labelKey: MessageKey;
+  icon: typeof Home;
+  panelId: string;
+};
+
+const NAV_ITEMS: (NavLinkItem | NavExpandableItem)[] = [
+  { kind: "link", id: "home", labelKey: "nav.home", icon: Home, href: "#main-content" },
+  { kind: "link", id: "map", labelKey: "nav.map", icon: Map, href: "#weather-map" },
   {
+    kind: "expandable",
     id: "favorites",
     labelKey: "nav.favorites",
     icon: Star,
-    href: "#sidebar-fav-title",
+    panelId: "sidebar-favorites-panel",
   },
   {
+    kind: "expandable",
     id: "history",
     labelKey: "nav.history",
     icon: Clock,
-    href: "#sidebar-history-title",
+    panelId: "sidebar-history-panel",
   },
   {
+    kind: "expandable",
     id: "settings",
     labelKey: "nav.settings",
     icon: Settings,
-    href: "#sidebar-settings-title",
+    panelId: "sidebar-settings-panel",
   },
 ];
 
@@ -69,15 +94,12 @@ function withCloseOnSelect(slot: ReactNode, onClose?: () => void): ReactNode {
 
 function activeNavIdFromHash(hash: string): string {
   if (hash === "#weather-map") return "map";
-  if (hash === "#sidebar-fav-title") return "favorites";
-  if (hash === "#sidebar-history-title") return "history";
-  if (hash === "#sidebar-settings-title") return "settings";
   return "home";
 }
 
 /**
- * Left navigation shell — glass panels with favorites / history slots.
- * Mobile: drawer with Escape close + focus restore.
+ * Left navigation shell — nested disclosures for favorites / history / settings.
+ * Mobile: floating glass drawer with Escape close + focus restore.
  */
 export function Sidebar({
   open = false,
@@ -92,10 +114,12 @@ export function Sidebar({
   const previouslyFocused = useRef<HTMLElement | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [activeId, setActiveId] = useState("home");
+  const [expanded, setExpanded] = useState<ExpandableId | null>(null);
   const location = useLocationStore((s) => s.location);
-  const history = withCloseOnSelect(historySlot, onClose);
-  const favorites = withCloseOnSelect(favoritesSlot, onClose);
   const drawerActive = isMobile && open;
+
+  const favorites = withCloseOnSelect(favoritesSlot, onClose);
+  const history = withCloseOnSelect(historySlot, onClose);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 1023px)");
@@ -136,12 +160,17 @@ export function Sidebar({
     };
   }, [drawerActive, onClose]);
 
+  function toggleExpanded(id: ExpandableId) {
+    setExpanded((prev) => (prev === id ? null : id));
+    setActiveId(id);
+  }
+
   function navigateTo(href: string, id: string) {
+    setExpanded(null);
     setActiveId(id);
     onClose?.();
 
     const targetId = href.replace(/^#/, "");
-    // Defer until drawer close animation / layout settle
     requestAnimationFrame(() => {
       const el = document.getElementById(targetId);
       if (el) {
@@ -159,6 +188,28 @@ export function Sidebar({
     });
   }
 
+  function panelContent(id: ExpandableId): ReactNode {
+    if (id === "favorites") {
+      return (
+        favorites ?? (
+          <p className="px-2 text-xs text-[var(--text-muted)]">
+            {t("sidebar.noFavorites")}
+          </p>
+        )
+      );
+    }
+    if (id === "history") {
+      return (
+        history ?? (
+          <p className="px-2 text-xs text-[var(--text-muted)]">
+            {t("sidebar.noRecent")}
+          </p>
+        )
+      );
+    }
+    return settingsSlot;
+  }
+
   return (
     <div
       className={cn(
@@ -168,7 +219,7 @@ export function Sidebar({
     >
       <div
         className={cn(
-          "fixed inset-0 z-40 bg-black/50 transition-opacity lg:hidden",
+          "fixed inset-0 z-40 bg-black/40 transition-opacity lg:hidden",
           open ? "opacity-100" : "pointer-events-none opacity-0",
         )}
         onClick={onClose}
@@ -178,14 +229,19 @@ export function Sidebar({
       <aside
         id="app-sidebar"
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-[min(100%,var(--sidebar-width))] flex-col",
-          "bg-[rgba(14,22,34,0.92)] max-lg:shadow-xl",
-          "lg:bg-white/[0.06] lg:backdrop-blur-[var(--glass-blur)]",
-          "transition-transform duration-300 ease-[var(--ease-out)]",
-          "lg:static lg:z-0 lg:h-full lg:w-full lg:shrink-0 lg:translate-x-0 lg:self-stretch lg:bg-transparent lg:shadow-none lg:backdrop-blur-none",
+          "fixed z-50 flex flex-col",
+          "inset-y-3 left-3 w-[min(calc(100%-1.5rem),var(--sidebar-width))]",
+          "rounded-[var(--glass-radius)] border border-[var(--glass-border)]",
+          "bg-[var(--glass-bg)] shadow-[var(--glass-shadow)]",
+          "backdrop-blur-[var(--glass-blur)]",
+          "transition-[transform,opacity] duration-300 ease-[var(--ease-out)]",
+          "lg:static lg:inset-auto lg:z-0 lg:h-full lg:w-full lg:shrink-0",
+          "lg:translate-x-0 lg:self-stretch lg:rounded-none lg:border-0",
+          "lg:bg-transparent lg:shadow-none lg:backdrop-blur-none",
           open
-            ? "translate-x-0"
-            : "-translate-x-full max-lg:invisible max-lg:pointer-events-none",
+            ? "max-lg:translate-x-0 max-lg:opacity-100"
+            : "max-lg:-translate-x-[calc(100%+0.75rem)] max-lg:opacity-0 max-lg:pointer-events-none max-lg:invisible",
+          "lg:translate-x-0 lg:opacity-100 lg:visible lg:pointer-events-auto",
           className,
         )}
         aria-label={t("nav.main")}
@@ -193,8 +249,8 @@ export function Sidebar({
         aria-hidden={isMobile && !open ? true : undefined}
         role={drawerActive ? "dialog" : undefined}
       >
-        <div className="flex h-[var(--header-height)] items-center justify-between px-4 lg:hidden">
-          <span className="font-[family-name:var(--font-horizon-display)] text-lg font-semibold">
+        <div className="flex h-[var(--header-height)] shrink-0 items-center justify-between px-4 lg:hidden">
+          <span className="font-[family-name:var(--font-horizon-display)] text-lg font-semibold text-[var(--text-primary)]">
             {t("header.brand")}
           </span>
           <button
@@ -213,78 +269,79 @@ export function Sidebar({
           aria-label={t("nav.menu")}
         >
           <ul className="space-y-0.5">
-            {NAV_ITEMS.map(({ id, labelKey, icon: Icon, href }) => {
-              const active = activeId === id;
+            {NAV_ITEMS.map((item) => {
+              if (item.kind === "link") {
+                const { id, labelKey, icon: Icon, href } = item;
+                const active = activeId === id;
+                return (
+                  <li key={id}>
+                    <a
+                      href={href}
+                      className={cn(
+                        "flex items-center gap-2.5 rounded-[var(--glass-radius-sm)] px-2.5 py-2 text-sm transition-colors",
+                        active
+                          ? "bg-white/15 text-[var(--text-primary)] ring-1 ring-white/25"
+                          : "text-[var(--text-secondary)] hover:bg-white/10 hover:text-[var(--text-primary)]",
+                      )}
+                      aria-current={active ? "page" : undefined}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navigateTo(href, id);
+                      }}
+                    >
+                      <Icon
+                        className="h-4 w-4 shrink-0 opacity-80"
+                        aria-hidden
+                      />
+                      {t(labelKey)}
+                    </a>
+                  </li>
+                );
+              }
+
+              const { id, labelKey, icon: Icon, panelId } = item;
+              const isOpen = expanded === id;
               return (
                 <li key={id}>
-                  <a
-                    href={href}
+                  <button
+                    type="button"
                     className={cn(
-                      "flex items-center gap-2.5 rounded-[var(--glass-radius-sm)] px-2.5 py-2 text-sm transition-colors",
-                      active
-                        ? "bg-white/15 text-[var(--text-primary)]"
+                      "flex w-full items-center gap-2.5 rounded-[var(--glass-radius-sm)] px-2.5 py-2 text-sm transition-colors",
+                      isOpen
+                        ? "bg-white/15 text-[var(--text-primary)] ring-1 ring-white/25"
                         : "text-[var(--text-secondary)] hover:bg-white/10 hover:text-[var(--text-primary)]",
                     )}
-                    aria-current={active ? "page" : undefined}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      navigateTo(href, id);
-                    }}
+                    aria-expanded={isOpen}
+                    aria-controls={panelId}
+                    onClick={() => toggleExpanded(id)}
                   >
                     <Icon className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
-                    {t(labelKey)}
-                  </a>
+                    <span className="min-w-0 flex-1 text-left">{t(labelKey)}</span>
+                    <ChevronDown
+                      className={cn(
+                        "h-3.5 w-3.5 shrink-0 opacity-70 transition-transform duration-200 ease-[var(--ease-out)]",
+                        isOpen && "rotate-180",
+                      )}
+                      aria-hidden
+                    />
+                  </button>
+
+                  <div
+                    id={panelId}
+                    className={cn(
+                      "grid transition-[grid-template-rows] duration-200 ease-[var(--ease-out)]",
+                      isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+                    )}
+                    aria-hidden={!isOpen}
+                  >
+                    <div className="min-h-0 overflow-hidden">
+                      <div className="px-1 pb-2 pt-1">{panelContent(id)}</div>
+                    </div>
+                  </div>
                 </li>
               );
             })}
           </ul>
-
-          <section
-            className="mt-4 px-1"
-            aria-labelledby="sidebar-history-title"
-          >
-            <h2
-              id="sidebar-history-title"
-              tabIndex={-1}
-              className="mb-1.5 px-2 text-[0.65rem] font-medium uppercase tracking-wider text-[var(--text-muted)] outline-none"
-            >
-              {t("sidebar.recent")}
-            </h2>
-            {history ?? (
-              <p className="px-2 text-xs text-[var(--text-muted)]">
-                {t("sidebar.noRecent")}
-              </p>
-            )}
-          </section>
-
-          <section className="mt-3 px-1" aria-labelledby="sidebar-fav-title">
-            <h2
-              id="sidebar-fav-title"
-              tabIndex={-1}
-              className="mb-1.5 px-2 text-[0.65rem] font-medium uppercase tracking-wider text-[var(--text-muted)] outline-none"
-            >
-              {t("sidebar.favorites")}
-            </h2>
-            {favorites ?? (
-              <p className="px-2 text-xs text-[var(--text-muted)]">
-                {t("sidebar.noFavorites")}
-              </p>
-            )}
-          </section>
-
-          <section
-            className="mt-3 px-1"
-            aria-labelledby="sidebar-settings-title"
-          >
-            <h2
-              id="sidebar-settings-title"
-              tabIndex={-1}
-              className="mb-1.5 px-2 text-[0.65rem] font-medium uppercase tracking-wider text-[var(--text-muted)] outline-none"
-            >
-              {t("sidebar.settings")}
-            </h2>
-            {settingsSlot}
-          </section>
         </nav>
 
         <div className="shrink-0 p-2 lg:px-[var(--page-gutter)] lg:pb-[var(--page-gutter)] lg:pt-0">

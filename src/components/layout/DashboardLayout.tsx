@@ -3,8 +3,7 @@ import { cn } from "@/utils/cn";
 
 type DashboardLayoutProps = {
   hero: ReactNode;
-  hourly: ReactNode;
-  weekly: ReactNode;
+  forecast: ReactNode;
   details: ReactNode;
   airQuality: ReactNode;
   uv: ReactNode;
@@ -14,12 +13,11 @@ type DashboardLayoutProps = {
 
 /**
  * Viewport-filling dashboard grid — no page scroll on tablet+.
- * Mobile: compact 2-col grid that still aims to fit short viewports.
+ * Mobile: compact grid that still aims to fit short viewports.
  */
 export function DashboardLayout({
   hero,
-  hourly,
-  weekly,
+  forecast,
   details,
   airQuality,
   uv,
@@ -36,11 +34,8 @@ export function DashboardLayout({
       <section className="dashboard-area-hero min-h-0 min-w-0 [&>*]:h-full [&>*]:min-w-0">
         {hero}
       </section>
-      <section className="dashboard-area-weekly min-h-0 min-w-0 [&>*]:h-full [&>*]:min-w-0">
-        {weekly}
-      </section>
-      <section className="dashboard-area-hourly min-h-0 min-w-0 [&>*]:h-full [&>*]:min-w-0">
-        {hourly}
+      <section className="dashboard-area-forecast min-h-0 min-w-0 [&>*]:h-full [&>*]:min-w-0">
+        {forecast}
       </section>
       <section className="dashboard-area-details min-h-0 min-w-0 [&>*]:h-full [&>*]:min-w-0">
         {details}

@@ -72,16 +72,61 @@ export function WeeklyForecastSkeleton() {
       aria-label="Chargement des prévisions sur 7 jours"
     >
       <Skeleton className={`${skeletonTitleClass} w-28`} />
-      <div className="flex min-h-0 flex-1 flex-col justify-between gap-1">
+      <div className="flex justify-between gap-0.5">
         {Array.from({ length: 7 }).map((_, i) => (
-          <div key={i} className="flex min-h-0 flex-1 items-center gap-1.5">
-            <Skeleton className="h-3 w-9 shrink-0" />
-            <Skeleton className="h-5 w-5 shrink-0 rounded-full sm:h-6 sm:w-6" />
-            <Skeleton className="h-2.5 w-7 shrink-0" />
-            <Skeleton className="h-2 flex-1" />
-            <Skeleton className="h-3 w-8 shrink-0" />
+          <div
+            key={i}
+            className="flex min-w-0 flex-1 flex-col items-center gap-0.5 px-0.5 py-1"
+          >
+            <Skeleton className="h-2 w-6" />
+            <Skeleton className="h-4 w-4 rounded-full" />
+            <Skeleton className="h-2.5 w-6" />
+            <Skeleton className="h-2 w-8" />
           </div>
         ))}
+      </div>
+    </GlassCard>
+  );
+}
+
+export function ForecastPanelSkeleton() {
+  return (
+    <GlassCard
+      interactive={false}
+      animate={false}
+      className={dashboardCardClass}
+      aria-label="Chargement des prévisions"
+    >
+      <Skeleton className={`${skeletonTitleClass} w-28`} />
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <Skeleton className="min-h-0 flex-1 w-full rounded-[var(--glass-radius-sm)]" />
+          <div className="shrink-0 space-y-1 pt-1">
+            <div className="flex gap-3 overflow-hidden px-1">
+              {Array.from({ length: 10 }).map((_, i) => (
+                <Skeleton key={i} className="h-4 w-4 shrink-0 rounded-full" />
+              ))}
+            </div>
+            <div className="flex justify-between gap-1 px-1">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <Skeleton key={i} className="h-2 w-7" />
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="mt-1 flex shrink-0 justify-between gap-0.5">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <div
+              key={i}
+              className="flex min-w-0 flex-1 flex-col items-center gap-0.5 px-0.5 py-1"
+            >
+              <Skeleton className="h-2 w-6" />
+              <Skeleton className="h-4 w-4 rounded-full" />
+              <Skeleton className="h-2.5 w-6" />
+              <Skeleton className="h-2 w-8" />
+            </div>
+          ))}
+        </div>
       </div>
     </GlassCard>
   );
@@ -144,8 +189,7 @@ export function DashboardSkeleton() {
   return (
     <DashboardLayout
       hero={<WeatherHeroSkeleton />}
-      hourly={<HourlyForecastSkeleton />}
-      weekly={<WeeklyForecastSkeleton />}
+      forecast={<ForecastPanelSkeleton />}
       details={<DetailsSkeleton />}
       airQuality={<GaugeSkeleton label="Qualité de l'air" />}
       uv={<GaugeSkeleton label="Indice UV" />}

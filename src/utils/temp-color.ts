@@ -11,11 +11,11 @@ function lerpChannel(a: number, b: number, t: number) {
   return Math.round(a + (b - a) * t);
 }
 
-export function tempStrokeColor(
+function tempRgb(
   temp: number,
   min: number,
   max: number,
-): string {
+): { r: number; g: number; b: number } {
   const span = max - min || 1;
   const norm = Math.min(1, Math.max(0, (temp - min) / span));
 
@@ -32,8 +32,30 @@ export function tempStrokeColor(
   const local =
     upper.t === lower.t ? 0 : (norm - lower.t) / (upper.t - lower.t);
 
-  const r = lerpChannel(lower.r, upper.r, local);
-  const g = lerpChannel(lower.g, upper.g, local);
-  const b = lerpChannel(lower.b, upper.b, local);
+  return {
+    r: lerpChannel(lower.r, upper.r, local),
+    g: lerpChannel(lower.g, upper.g, local),
+    b: lerpChannel(lower.b, upper.b, local),
+  };
+}
+
+export function tempStrokeColor(
+  temp: number,
+  min: number,
+  max: number,
+): string {
+  const { r, g, b } = tempRgb(temp, min, max);
   return `rgb(${r}, ${g}, ${b})`;
+}
+
+/** Same palette as stroke, with alpha — for area fill under the curve. */
+export function tempFillColor(
+  temp: number,
+  min: number,
+  max: number,
+  alpha = 0.34,
+): string {
+  const { r, g, b } = tempRgb(temp, min, max);
+  const a = Math.min(1, Math.max(0, alpha));
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
 }
