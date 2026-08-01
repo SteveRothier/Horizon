@@ -243,6 +243,7 @@ export function HourlyForecast({
           scrollToIndex={scrollToIndex}
           scrollDurationMs={scrollDurationMs}
           locationId={locationId}
+          todayDate={todayDate}
           onScrollColumn={onScrollColumn}
           onProgrammaticScrollEnd={onProgrammaticScrollEnd}
         />

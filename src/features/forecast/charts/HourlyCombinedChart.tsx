@@ -19,7 +19,8 @@ import {
   type SpeedUnit,
 } from "@/stores/settingsStore";
 import type { HourlyForecastItem } from "@/types/weather";
-import { formatHour } from "@/utils/format";
+import { dateKeyFromTime } from "@/features/forecast/filterHourlyByDate";
+import { formatDayShort, formatHour } from "@/utils/format";
 import { tempFillColor, tempStrokeColor } from "@/utils/temp-color";
 import { toDisplaySpeed, toDisplayTemp } from "@/utils/units";
 import { cn } from "@/utils/cn";
@@ -27,8 +28,9 @@ import { cn } from "@/utils/cn";
 export const HOURLY_COL_WIDTH = 56;
 
 const CHART_MIN_HEIGHT = 112;
-const CHART_TOP = 14;
+const CHART_TOP = 22;
 const CHART_BOTTOM = 6;
+const DAY_LINE_STROKE = "rgba(255, 255, 255, 0.16)";
 
 type HourlyCombinedChartProps = {
   items: HourlyForecastItem[];
@@ -36,6 +38,8 @@ type HourlyCombinedChartProps = {
   scrollToIndex?: number;
   scrollDurationMs?: number;
   locationId?: string;
+  /** Today’s YYYY-MM-DD — for “Auj.” labels and start bound. */
+  todayDate?: string;
   /** Fired while the user (or animation) scrolls — column under the left edge. */
   onScrollColumn?: (columnIndex: number) => void;
   /** Fired when a programmatic scrollToIndex animation finishes (or is skipped). */
@@ -43,8 +47,8 @@ type HourlyCombinedChartProps = {
   className?: string;
 };
 
-function easeOutExpo(t: number): number {
-  return t >= 1 ? 1 : 1 - Math.pow(2, -10 * t);
+function easeOutCubic(t: number): number {
+  return 1 - Math.pow(1 - t, 3);
 }
 
 function animateScrollLeft(
@@ -66,12 +70,13 @@ function animateScrollLeft(
   const tick = (now: number) => {
     if (signal.cancelled) return;
     const t = Math.min(1, (now - start) / durationMs);
-    el.scrollLeft = from + delta * easeOutExpo(t);
-    if (t < 1) {
-      requestAnimationFrame(tick);
-    } else {
+    if (t >= 1) {
+      el.scrollLeft = to;
       onComplete?.();
+      return;
     }
+    el.scrollLeft = from + delta * easeOutCubic(t);
+    requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
 }
@@ -254,6 +259,7 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
   scrollToIndex = 0,
   scrollDurationMs = 0,
   locationId,
+  todayDate,
   onScrollColumn,
   onProgrammaticScrollEnd,
   className,
@@ -297,6 +303,7 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
   onScrollColumnRef.current = onScrollColumn;
   const onProgrammaticScrollEndRef = useRef(onProgrammaticScrollEnd);
   onProgrammaticScrollEndRef.current = onProgrammaticScrollEnd;
+  const animatingRef = useRef(false);
 
   useEffect(() => {
     setMounted(true);
@@ -318,6 +325,32 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
 
   const hourly = items;
   const contentWidth = Math.max(hourly.length, 1) * HOURLY_COL_WIDTH;
+
+  const dayStarts = useMemo(() => {
+    const starts: { index: number; date: string }[] = [];
+    let prev = "";
+    for (let i = 0; i < hourly.length; i++) {
+      const date = dateKeyFromTime(hourly[i].time);
+      if (date !== prev) {
+        starts.push({ index: i, date });
+        prev = date;
+      }
+    }
+    return starts;
+  }, [hourly]);
+
+  const todayStartIndex = useMemo(() => {
+    if (!todayDate || hourly.length === 0) return 0;
+    const found = dayStarts.find((d) => d.date === todayDate);
+    return found?.index ?? 0;
+  }, [dayStarts, hourly.length, todayDate]);
+
+  const boundXs = useMemo(() => {
+    const xs = new Set<number>();
+    xs.add(todayStartIndex * HOURLY_COL_WIDTH);
+    xs.add(contentWidth);
+    return xs;
+  }, [contentWidth, todayStartIndex]);
 
   const { tempPoints, precipPoints, domainMin, domainMax, baseline } =
     useMemo(() => {
@@ -532,16 +565,20 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
     );
 
     if (Math.abs(el.scrollLeft - target) < 0.5 && scrollDurationMs <= 0) {
+      animatingRef.current = false;
       onProgrammaticScrollEndRef.current?.();
       return;
     }
 
     const signal = { cancelled: false };
+    animatingRef.current = true;
     animateScrollLeft(el, target, scrollDurationMs, signal, () => {
+      animatingRef.current = false;
       if (!signal.cancelled) onProgrammaticScrollEndRef.current?.();
     });
     return () => {
       signal.cancelled = true;
+      animatingRef.current = false;
     };
   }, [scrollToIndex, scrollDurationMs, locationId, contentWidth, scrollRef]);
 
@@ -550,6 +587,7 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
     if (!el || typeof ResizeObserver === "undefined") return;
 
     const syncScrollLeft = () => {
+      if (animatingRef.current) return;
       const maxScroll = Math.max(0, el.scrollWidth - el.clientWidth);
       const target = Math.min(
         maxScroll,
@@ -771,6 +809,53 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
                   strokeLinejoin="round"
                 />
               ) : null}
+
+              {/* Day separators + strip bounds */}
+              {Array.from(boundXs).map((x) => (
+                <line
+                  key={`bound-${x}`}
+                  x1={x}
+                  y1={0}
+                  x2={x}
+                  y2={baseline}
+                  stroke={DAY_LINE_STROKE}
+                  strokeWidth={1}
+                />
+              ))}
+              {dayStarts.map(({ index, date }) => {
+                const x = index * HOURLY_COL_WIDTH;
+                const isBound = boundXs.has(x);
+                const inView =
+                  index >= visibleRange.start - 1 &&
+                  index <= visibleRange.end + 1;
+                if (!inView && !isBound) return null;
+                return (
+                  <g key={`day-${date}-${index}`}>
+                    {!isBound ? (
+                      <line
+                        x1={x}
+                        y1={0}
+                        x2={x}
+                        y2={baseline}
+                        stroke={DAY_LINE_STROKE}
+                        strokeWidth={1}
+                        strokeDasharray="3 4"
+                      />
+                    ) : null}
+                    <text
+                      x={x + 4}
+                      y={11}
+                      textAnchor="start"
+                      fill="var(--text-muted)"
+                      fontSize={10}
+                      fontWeight={500}
+                    >
+                      {formatDayShort(date, locale)}
+                    </text>
+                  </g>
+                );
+              })}
+
               {activeIndex != null ? (
                 <line
                   x1={tooltipLeft}
@@ -788,6 +873,13 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
                   index > visibleRange.end ||
                   activeIndex === index
                 ) {
+                  return null;
+                }
+                // Hide temp labels that collide with day labels near day starts
+                const nearDayStart = dayStarts.some(
+                  (d) => Math.abs(d.index - index) <= 0,
+                );
+                if (nearDayStart && point.y < CHART_TOP + 18) {
                   return null;
                 }
                 return (
