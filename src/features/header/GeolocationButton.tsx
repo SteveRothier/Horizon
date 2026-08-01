@@ -14,11 +14,24 @@ type GeocodeReverseResponse = { location: GeoLocation };
 type GeolocationButtonProps = {
   className?: string;
   onError?: (message: string) => void;
+  onSuccess?: () => void;
 };
+
+function isGeolocationError(
+  err: unknown,
+): err is { code: number; PERMISSION_DENIED?: number; TIMEOUT?: number } {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "code" in err &&
+    typeof (err as { code: unknown }).code === "number"
+  );
+}
 
 export function GeolocationButton({
   className,
   onError,
+  onSuccess,
 }: GeolocationButtonProps) {
   const t = useT();
   const [loading, setLoading] = useState(false);
@@ -35,8 +48,8 @@ export function GeolocationButton({
         (resolve, reject) => {
           navigator.geolocation.getCurrentPosition(resolve, reject, {
             enableHighAccuracy: false,
-            timeout: 12_000,
-            maximumAge: 60_000,
+            timeout: 20_000,
+            maximumAge: 120_000,
           });
         },
       );
@@ -46,11 +59,13 @@ export function GeolocationButton({
         `/api/geocode?lat=${latitude}&lon=${longitude}`,
       );
       selectLocation(data.location);
+      onSuccess?.();
     } catch (err) {
-      if (err instanceof GeolocationPositionError) {
-        if (err.code === err.PERMISSION_DENIED) {
+      if (isGeolocationError(err)) {
+        // W3C codes — avoid instanceof (unreliable on Safari)
+        if (err.code === 1) {
           onError?.(t("geo.denied"));
-        } else if (err.code === err.TIMEOUT) {
+        } else if (err.code === 3) {
           onError?.(t("geo.timeout"));
         } else {
           onError?.(t("geo.failed"));
@@ -79,10 +94,7 @@ export function GeolocationButton({
       title={t("header.geolocate")}
     >
       {loading ? (
-        <LoaderCircle
-          className="h-4 w-4 search-spinner"
-          aria-hidden
-        />
+        <LoaderCircle className="h-4 w-4 search-spinner" aria-hidden />
       ) : (
         <MapPin className="h-4 w-4" aria-hidden />
       )}

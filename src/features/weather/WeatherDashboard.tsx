@@ -59,8 +59,12 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
       return;
     }
 
-    const currentSlug = slugifyCity(location.name);
-    if (currentSlug === citySlug) {
+    // Read store at effect time — do not depend on location.name (avoids
+    // re-resolving the old URL slug after the user picks a new city).
+    const storeSlug = slugifyCity(
+      useLocationStore.getState().location.name,
+    );
+    if (storeSlug === citySlug) {
       setSlugError(null);
       setSlugResolving(false);
       return;
@@ -98,7 +102,7 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
     return () => {
       cancelled = true;
     };
-  }, [hydrated, citySlug, location.name, t]);
+  }, [hydrated, citySlug, t]);
 
   useEffect(() => {
     if (!hydrated || slugResolving) return;
@@ -129,7 +133,10 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
       period={period}
       searchSlot={<SearchBar />}
       geolocationSlot={
-        <GeolocationButton onError={(message) => setGeoError(message)} />
+        <GeolocationButton
+          onError={(message) => setGeoError(message)}
+          onSuccess={() => setGeoError(null)}
+        />
       }
       settingsSlot={<SettingsPanel />}
       favoritesSlot={<FavoritesList />}
