@@ -7,6 +7,8 @@ const DRAG_THRESHOLD_PX = 4;
 type UseGrabScrollOptions = {
   /** Fired when a drag starts / ends (DOM class is toggled without React state). */
   onGrabChange?: (grabbing: boolean) => void;
+  /** Fired on pointerup when the gesture never became a drag. */
+  onTap?: (event: PointerEvent) => void;
 };
 
 /**
@@ -20,6 +22,8 @@ export function useGrabScroll<T extends HTMLElement>(
   const grabbingRef = useRef(false);
   const onGrabChangeRef = useRef(options.onGrabChange);
   onGrabChangeRef.current = options.onGrabChange;
+  const onTapRef = useRef(options.onTap);
+  onTapRef.current = options.onTap;
 
   useEffect(() => {
     const el = ref.current;
@@ -68,6 +72,7 @@ export function useGrabScroll<T extends HTMLElement>(
     function endPointer(event: PointerEvent) {
       if (activePointer !== event.pointerId) return;
 
+      const wasDragging = dragging;
       activePointer = null;
       dragging = false;
       setGrabbing(false);
@@ -76,6 +81,10 @@ export function useGrabScroll<T extends HTMLElement>(
         scrollEl.releasePointerCapture(event.pointerId);
       } catch {
         /* already released */
+      }
+
+      if (!wasDragging) {
+        onTapRef.current?.(event);
       }
     }
 

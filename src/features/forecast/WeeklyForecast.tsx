@@ -62,7 +62,6 @@ export function WeeklyForecast({
     >
       {days.map((day) => {
         const selected = day.date === selectedDate;
-        const precip = Math.round(day.precipitationProbability);
 
         return (
           <li
@@ -101,17 +100,6 @@ export function WeeklyForecast({
                 <span className="text-[0.55rem] text-[var(--text-muted)] sm:text-[0.6rem]">
                   {formatTemp(day.temperatureMin, unit)}
                 </span>
-              </span>
-              <span
-                className={cn(
-                  "text-[0.55rem] font-medium tabular-nums leading-none sm:text-[0.6rem]",
-                  precip > 0
-                    ? "text-[var(--accent-cool)]"
-                    : "invisible",
-                )}
-                aria-hidden={precip <= 0}
-              >
-                {precip > 0 ? `${precip}%` : "0%"}
               </span>
             </button>
           </li>

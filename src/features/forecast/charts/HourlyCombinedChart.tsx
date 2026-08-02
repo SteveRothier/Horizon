@@ -273,14 +273,17 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
     top: number;
   } | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [coarsePointer, setCoarsePointer] = useState(false);
   const [chartHeight, setChartHeight] = useState(96);
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: 24 });
   const chartRef = useRef<HTMLDivElement>(null);
   const activeIndexRef = useRef(activeIndex);
   activeIndexRef.current = activeIndex;
+  const coarseRef = useRef(false);
   const pointerRafRef = useRef(0);
   const tooltipRafRef = useRef(0);
   const pointerPosRef = useRef({ x: 0, y: 0 });
+  const hourlyLenRef = useRef(0);
 
   const onGrabChange = useCallback((grabbing: boolean) => {
     if (grabbing && activeIndexRef.current != null) {
@@ -289,8 +292,23 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
     }
   }, []);
 
+  const onTap = useCallback((event: PointerEvent) => {
+    if (!coarseRef.current) return;
+
+    const chartEl = chartRef.current;
+    if (!chartEl) return;
+
+    const chartRect = chartEl.getBoundingClientRect();
+    const x = event.clientX - chartRect.left;
+    const index = Math.floor(x / HOURLY_COL_WIDTH);
+    if (index < 0 || index >= hourlyLenRef.current) return;
+
+    setActiveIndex((prev) => (prev === index ? null : index));
+  }, []);
+
   const { ref: scrollRef, grabbingRef } = useGrabScroll<HTMLDivElement>({
     onGrabChange,
+    onTap,
   });
 
   const gradientId = useMemo(
@@ -309,6 +327,26 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
     setMounted(true);
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      return;
+    }
+    const mqCoarse = window.matchMedia("(pointer: coarse)");
+    const mqNarrow = window.matchMedia("(max-width: 767px)");
+    const update = () => {
+      const next = mqCoarse.matches || mqNarrow.matches;
+      coarseRef.current = next;
+      setCoarsePointer(next);
+    };
+    update();
+    mqCoarse.addEventListener("change", update);
+    mqNarrow.addEventListener("change", update);
+    return () => {
+      mqCoarse.removeEventListener("change", update);
+      mqNarrow.removeEventListener("change", update);
+    };
+  }, []);
+
   useLayoutEffect(() => {
     const el = chartRef.current;
     if (!el || typeof ResizeObserver === "undefined") return;
@@ -324,6 +362,7 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
   }, []);
 
   const hourly = items;
+  hourlyLenRef.current = hourly.length;
   const contentWidth = Math.max(hourly.length, 1) * HOURLY_COL_WIDTH;
 
   const dayStarts = useMemo(() => {
@@ -671,6 +710,25 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
     };
   }, [activeIndex, scrollRef, syncTooltipPos]);
 
+  useEffect(() => {
+    if (!coarsePointer || activeIndex == null) return;
+
+    const onPointerDownCapture = (event: PointerEvent) => {
+      const scrollEl = scrollRef.current;
+      if (!scrollEl) return;
+      if (event.target instanceof Node && scrollEl.contains(event.target)) {
+        return;
+      }
+      setActiveIndex(null);
+      setTooltipPos(null);
+    };
+
+    document.addEventListener("pointerdown", onPointerDownCapture, true);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDownCapture, true);
+    };
+  }, [coarsePointer, activeIndex, scrollRef]);
+
   return (
     <div
       className={cn(
@@ -681,10 +739,14 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
       <div
         ref={scrollRef}
         className="hourly-chart-scroll scrollbar-none flex min-h-0 w-full min-w-0 max-w-full flex-1 overflow-x-auto overflow-y-hidden"
-        onPointerMove={(event) =>
-          updateActiveIndex(event.clientX, event.clientY)
+        onPointerMove={
+          coarsePointer
+            ? undefined
+            : (event) => updateActiveIndex(event.clientX, event.clientY)
         }
-        onPointerLeave={() => setActiveIndex(null)}
+        onPointerLeave={
+          coarsePointer ? undefined : () => setActiveIndex(null)
+        }
       >
         <div
           className="hourly-chart-strip"
