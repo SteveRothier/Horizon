@@ -89,7 +89,8 @@ export function HourlyForecast({
   const [scrollToIndex, setScrollToIndex] = useState(targetCol);
   const [scrollDurationMs, setScrollDurationMs] = useState(0);
   const colRef = useRef(targetCol);
-  const readyRef = useRef(false);
+  /** After initial/location snap, user day changes should animate. */
+  const readyRef = useRef(true);
   /** Click-driven scroll animation in progress — don't push day changes up. */
   const programmaticRef = useRef(false);
   const visibleDateRef = useRef(dateKey);
@@ -145,7 +146,6 @@ export function HourlyForecast({
   }, [locale, writeDayLabel]);
 
   useEffect(() => {
-    readyRef.current = false;
     programmaticRef.current = false;
     if (parentSyncTimerRef.current) {
       clearTimeout(parentSyncTimerRef.current);
@@ -157,6 +157,8 @@ export function HourlyForecast({
     writeDayLabel(dateKey);
     setScrollDurationMs(0);
     setScrollToIndex(col);
+    // Snap on city change is done — next day click must animate.
+    readyRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locationId]);
 
