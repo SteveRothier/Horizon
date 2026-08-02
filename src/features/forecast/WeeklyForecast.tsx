@@ -54,8 +54,8 @@ export function WeeklyForecast({
     <ul
       ref={listRef}
       className={cn(
-        "scrollbar-none flex w-full min-w-0 gap-1 overflow-x-auto overscroll-x-contain py-0.5",
-        embedded && "justify-between gap-0.5 sm:gap-1",
+        "scrollbar-none flex w-full min-w-0 gap-1 overflow-x-auto overscroll-x-contain py-0.5 sm:gap-1.5",
+        embedded && "justify-between",
       )}
       role="listbox"
       aria-label={t("forecast.weekly")}
@@ -78,13 +78,13 @@ export function WeeklyForecast({
               aria-selected={selected}
               onClick={() => onSelectDay(day.date)}
               className={cn(
-                "box-border flex h-full w-full min-w-[2.75rem] flex-col items-center justify-center gap-0.5 rounded-[var(--glass-radius-sm)] px-0.5 py-1.5 transition-colors duration-200 sm:min-w-0 sm:px-1",
+                "box-border flex h-full w-full min-w-[2.75rem] flex-col items-center justify-center gap-1 rounded-[var(--glass-radius-sm)] px-1.5 py-2 transition-colors duration-200 sm:min-w-0 sm:gap-1.5 sm:px-2 sm:py-2.5",
                 selected
                   ? "bg-white/15 text-[var(--text-primary)] ring-1 ring-inset ring-white/25"
                   : "text-[var(--text-secondary)] hover:bg-white/10 hover:text-[var(--text-primary)]",
               )}
             >
-              <span className="flex w-full items-baseline justify-between gap-0.5 px-0.5 text-[0.6rem] font-medium leading-none sm:text-[0.65rem]">
+              <span className="flex w-full items-baseline justify-between gap-0.5 text-[0.6rem] font-medium leading-none sm:text-[0.65rem]">
                 <span className="tabular-nums text-[var(--text-primary)]">
                   {parseInt(day.date.slice(8, 10), 10)}
                 </span>
