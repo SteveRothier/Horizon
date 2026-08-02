@@ -234,7 +234,8 @@ export default function WeatherMapInner({
 
         <div
           className={cn(
-            "pointer-events-auto fixed overflow-hidden",
+            "pointer-events-auto fixed overflow-hidden rounded-[var(--glass-radius)]",
+            "shadow-[var(--glass-shadow)]",
             animating && "map-shell-fly",
           )}
           style={{
@@ -255,7 +256,7 @@ export default function WeatherMapInner({
             id="weather-map"
             tabIndex={-1}
             className={cn(
-              "flex h-full min-h-0 flex-col overflow-hidden p-0 outline-none",
+              "flex h-full min-h-0 flex-col overflow-hidden p-0 outline-none !shadow-none",
               className,
             )}
           >
