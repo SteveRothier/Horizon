@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
+import L from "leaflet";
 import { Crosshair, Maximize2, Minimize2, Minus, Plus } from "lucide-react";
 import { useMap } from "react-leaflet";
 import { useT } from "@/hooks/useT";
@@ -27,16 +28,7 @@ function MapControlButton({
   return (
     <button
       type="button"
-      onClick={(event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        onClick();
-      }}
-      onDoubleClick={(event) => {
-        // Prevent Leaflet map doubleClickZoom from stealing rapid clicks.
-        event.preventDefault();
-        event.stopPropagation();
-      }}
+      onClick={onClick}
       className={cn(
         "glass-control flex h-9 w-9 items-center justify-center",
         "text-[var(--text-primary)]",
@@ -57,51 +49,66 @@ export function MapControls({
 }: MapControlsProps) {
   const map = useMap();
   const t = useT();
-  /** Target zoom while an animation is in flight — avoids getZoom() bounce. */
-  const pendingZoomRef = useRef<number | null>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
+  /** Accumulated zoom while Leaflet ignores setZoom mid-animation. */
+  const targetZoomRef = useRef<number | null>(null);
+  const animatingRef = useRef(false);
 
   useEffect(() => {
-    const onZoomEnd = () => {
-      if (
-        pendingZoomRef.current != null &&
-        map.getZoom() === pendingZoomRef.current
-      ) {
-        pendingZoomRef.current = null;
+    const el = toolbarRef.current;
+    if (!el) return;
+    L.DomEvent.disableClickPropagation(el);
+    L.DomEvent.disableScrollPropagation(el);
+  }, []);
+
+  useEffect(() => {
+    const flushTarget = () => {
+      animatingRef.current = false;
+      const target = targetZoomRef.current;
+      if (target == null) return;
+
+      const current = map.getZoom();
+      if (Math.abs(current - target) < 0.001) {
+        targetZoomRef.current = null;
+        return;
       }
+
+      animatingRef.current = true;
+      map.setZoom(target, { animate: true, duration: ZOOM_DURATION_S });
     };
-    map.on("zoomend", onZoomEnd);
+
+    map.on("zoomend", flushTarget);
     return () => {
-      map.off("zoomend", onZoomEnd);
+      map.off("zoomend", flushTarget);
     };
   }, [map]);
 
   function zoomBy(delta: number) {
-    const base = pendingZoomRef.current ?? map.getZoom();
+    const base = targetZoomRef.current ?? Math.round(map.getZoom());
     const next = Math.max(
       map.getMinZoom(),
-      Math.min(map.getMaxZoom(), Math.round(base) + delta),
+      Math.min(map.getMaxZoom(), base + delta),
     );
-    if (next === map.getZoom() && pendingZoomRef.current == null) return;
+    targetZoomRef.current = next;
 
-    pendingZoomRef.current = next;
-    // Cancel in-flight anim so rapid +/- don't snap backward.
-    map.stop();
+    if (animatingRef.current) return;
+    if (Math.abs(map.getZoom() - next) < 0.001) {
+      targetZoomRef.current = null;
+      return;
+    }
+
+    animatingRef.current = true;
     map.setZoom(next, { animate: true, duration: ZOOM_DURATION_S });
   }
 
   return (
     <div
+      ref={toolbarRef}
       className="pointer-events-none absolute right-3 top-3 z-[1000] flex items-center gap-1.5"
       role="toolbar"
       aria-label={t("map.controls")}
     >
-      <div
-        className="pointer-events-auto flex items-center gap-1.5"
-        onDoubleClick={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-        }}
-      >
+      <div className="pointer-events-auto flex items-center gap-1.5">
         <MapControlButton
           label={t("map.zoomOut")}
           onClick={() => zoomBy(-1)}
@@ -114,8 +121,8 @@ export function MapControls({
         <MapControlButton
           label={t("map.recenter")}
           onClick={() => {
-            pendingZoomRef.current = null;
-            map.stop();
+            targetZoomRef.current = null;
+            animatingRef.current = false;
             map.flyTo([lat, lon], Math.max(map.getZoom(), 10), {
               duration: 0.75,
             });

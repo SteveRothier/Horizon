@@ -271,7 +271,7 @@ export default function WeatherMapInner({
                 attributionControl={false}
                 scrollWheelZoom
                 touchZoom
-                doubleClickZoom
+                doubleClickZoom={false}
                 zoomAnimation
                 fadeAnimation
                 markerZoomAnimation
