@@ -39,8 +39,8 @@ body {
   max-width: 100%;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   grid-template-rows:
-    minmax(0, 0.95fr) minmax(0, 1.7fr) minmax(0, 0.65fr) minmax(0, 0.65fr)
-    minmax(8rem, 0.7fr);
+    minmax(0, 0.9fr) minmax(0, 1.55fr) minmax(0, 0.6fr) minmax(0, 0.6fr)
+    minmax(10rem, 0.95fr);
   grid-template-areas:
     "hero hero"
     "forecast forecast"
@@ -72,15 +72,25 @@ body {
 
 .dashboard-area-map {
   grid-area: map;
-  display: block;
-  min-height: 10rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 11rem;
+  /* Alone on last row (mobile + tablet): keep rounded edge off the screen */
+  padding-bottom: var(--page-gutter);
+}
+
+.dashboard-area-map > * {
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
 }
 
 @media (min-width: 768px) {
   .dashboard-grid {
     grid-template-columns: 1.4fr 1fr 1fr;
     grid-template-rows:
-      minmax(0, 1fr) minmax(0, 1.45fr) minmax(0, 0.75fr) minmax(9rem, 0.7fr);
+      minmax(0, 0.95fr) minmax(0, 1.35fr) minmax(0, 0.7fr) minmax(11rem, 0.95fr);
     grid-template-areas:
       "hero hero hero"
       "forecast forecast forecast"
@@ -101,6 +111,7 @@ body {
 
   .dashboard-area-map {
     min-height: 0;
+    padding-bottom: 0;
   }
 }
 
@@ -111,7 +122,7 @@ body {
     height: auto;
     grid-template-rows:
       minmax(120px, auto) minmax(320px, auto) minmax(100px, auto)
-      minmax(100px, auto) minmax(8rem, auto);
+      minmax(100px, auto) minmax(10rem, auto);
   }
 }
 

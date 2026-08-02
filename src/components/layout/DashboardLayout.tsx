@@ -46,7 +46,7 @@ export function DashboardLayout({
       <section className="dashboard-area-uv min-h-0 min-w-0 [&>*]:h-full [&>*]:min-w-0">
         {uv}
       </section>
-      <section className="dashboard-area-map min-h-0 min-w-0 [&>*]:h-full [&>*]:min-w-0">
+      <section className="dashboard-area-map min-h-0 min-w-0">
         {map}
       </section>
     </div>
