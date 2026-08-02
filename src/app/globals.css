@@ -255,6 +255,19 @@ body {
   z-index: 1;
 }
 
+.glass-control-active {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow:
+    var(--glass-shadow),
+    0 1px 0 rgba(255, 255, 255, 0.12) inset;
+}
+
+.glass-control-active::before {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.07);
+}
+
 /* Frosted overlay panel — readable, still glass-like */
 @keyframes glass-menu-in {
   from {
@@ -562,6 +575,20 @@ body {
   .search-spinner {
     animation-duration: 1s !important;
     animation-iteration-count: infinite !important;
+  }
+
+  /* Map expand morph must stay perceptible. */
+  .map-shell-fly {
+    transition-duration: 520ms !important;
+  }
+
+  .map-backdrop-fly {
+    transition-duration: 520ms !important;
+  }
+
+  .leaflet-fade-anim .leaflet-tile,
+  .leaflet-zoom-anim .leaflet-zoom-animated {
+    transition-duration: 0.35s !important;
   }
 
   .action-bounce {

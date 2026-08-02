@@ -27,5 +27,3 @@ export const useLocationStore = create<LocationState>()(
     { name: "horizon-location" },
   ),
 );
-
-export { PARIS };

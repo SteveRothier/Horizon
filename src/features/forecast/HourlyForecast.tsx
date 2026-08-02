@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import {
   startTransition,
   useCallback,
@@ -10,7 +11,7 @@ import {
   type RefObject,
 } from "react";
 import { GlassCard } from "@/components/ui/GlassCard";
-import { HourlyCombinedChart } from "@/features/forecast/charts/HourlyCombinedChart";
+import { Skeleton } from "@/components/ui/Skeleton";
 import {
   dateKeyFromTime,
   filterHourlyByDate,
@@ -23,6 +24,29 @@ import {
   dashboardCardTitleClass,
 } from "@/constants/layout";
 import { cn } from "@/utils/cn";
+
+const HourlyCombinedChart = dynamic(
+  () =>
+    import("@/features/forecast/charts/HourlyCombinedChart").then(
+      (m) => m.HourlyCombinedChart,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        className="flex h-full min-h-0 w-full flex-1 flex-col gap-1.5"
+        aria-hidden
+      >
+        <Skeleton className="min-h-0 flex-1 w-full rounded-[var(--glass-radius-sm)]" />
+        <div className="flex shrink-0 gap-3 overflow-hidden px-1">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <Skeleton key={i} className="h-5 w-5 shrink-0 rounded-full" />
+          ))}
+        </div>
+      </div>
+    ),
+  },
+);
 
 type HourlyForecastProps = {
   /** Full multi-day hourly series. */

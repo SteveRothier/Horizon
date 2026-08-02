@@ -19,10 +19,6 @@ export function formatTemp(
   return `${rounded}°`;
 }
 
-export function tempUnitLabel(unit: TemperatureUnit): string {
-  return unit === "fahrenheit" ? "°F" : "°C";
-}
-
 export function kmhToMph(kmh: number): number {
   return kmh * 0.621371;
 }

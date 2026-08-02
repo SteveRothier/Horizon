@@ -1,39 +1,75 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import L from "leaflet";
 import {
-  AnimatePresence,
-  motion,
-  useAnimationControls,
-  useReducedMotion,
-} from "framer-motion";
-import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
+  AttributionControl,
+  MapContainer,
+  Marker,
+  Popup,
+  TileLayer,
+  useMap,
+} from "react-leaflet";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { MapControls } from "@/features/map/MapControls";
 import { MapResize } from "@/features/map/MapResize";
+import {
+  OSM_BASE_ATTRIBUTION,
+  OSM_BASE_URL,
+} from "@/features/map/map-layers";
 import { useT } from "@/hooks/useT";
 import type { GeoLocation } from "@/types/weather";
 import { cn } from "@/utils/cn";
 import "leaflet/dist/leaflet.css";
 
 const markerIcon = L.icon({
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  iconRetinaUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconUrl: "/leaflet/marker-icon.png",
+  iconRetinaUrl: "/leaflet/marker-icon-2x.png",
+  shadowUrl: "/leaflet/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
   shadowSize: [41, 41],
 });
 
-const ease = [0.22, 1, 0.36, 1] as const;
+const EXPAND_MS = 520;
+const EXPAND_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
+
+type Rect = { top: number; left: number; width: number; height: number };
+
+function readRect(el: HTMLElement): Rect {
+  const r = el.getBoundingClientRect();
+  return {
+    top: r.top,
+    left: r.left,
+    width: Math.max(r.width, 1),
+    height: Math.max(r.height, 1),
+  };
+}
+
+/** Mirrors inset-3 / sm:inset-5 / md:inset-8 / lg:inset-10 / xl:inset-12 */
+function expandedRect(): Rect {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  let pad = 12;
+  if (w >= 1280) pad = 48;
+  else if (w >= 1024) pad = 40;
+  else if (w >= 768) pad = 32;
+  else if (w >= 640) pad = 20;
+  return { top: pad, left: pad, width: w - pad * 2, height: h - pad * 2 };
+}
+
+function nextFrame(): Promise<void> {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  });
+}
 
 function Recenter({ lat, lon }: { lat: number; lon: number }) {
   const map = useMap();
   useEffect(() => {
-    map.setView([lat, lon], Math.max(map.getZoom(), 10), { animate: true });
+    map.flyTo([lat, lon], Math.max(map.getZoom(), 10), { duration: 0.55 });
   }, [lat, lon, map]);
   return null;
 }
@@ -48,43 +84,106 @@ export default function WeatherMapInner({
   className,
 }: WeatherMapProps) {
   const t = useT();
-  const reduceMotion = useReducedMotion();
-  const expandControls = useAnimationControls();
   const { latitude: lat, longitude: lon, name, displayName } = location;
   const [expanded, setExpanded] = useState(false);
   const [resizeTick, setResizeTick] = useState(0);
+  const [mounted, setMounted] = useState(false);
+  const [slotRect, setSlotRect] = useState<Rect | null>(null);
+  const [shellRect, setShellRect] = useState<Rect | null>(null);
+  const [animating, setAnimating] = useState(false);
+  const [backdropOn, setBackdropOn] = useState(false);
 
-  const collapse = useCallback(async () => {
-    if (!reduceMotion) {
-      await expandControls.start({
-        opacity: 0.8,
-        scale: 0.96,
-        transition: { duration: 0.22, ease },
-      });
+  const slotRef = useRef<HTMLDivElement>(null);
+  const busyRef = useRef(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const syncSlotRect = useCallback(() => {
+    const el = slotRef.current;
+    if (!el) return;
+    const next = readRect(el);
+    setSlotRect(next);
+    if (!expanded && !busyRef.current) {
+      setShellRect(next);
     }
-    setExpanded(false);
-    expandControls.set({ opacity: 1, scale: 1 });
+  }, [expanded]);
+
+  useLayoutEffect(() => {
+    syncSlotRect();
+  }, [syncSlotRect]);
+
+  useEffect(() => {
+    const el = slotRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => syncSlotRect());
+    ro.observe(el);
+    window.addEventListener("resize", syncSlotRect);
+    window.addEventListener("scroll", syncSlotRect, true);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", syncSlotRect);
+      window.removeEventListener("scroll", syncSlotRect, true);
+    };
+  }, [syncSlotRect]);
+
+  const bumpResize = useCallback(() => {
     setResizeTick((n) => n + 1);
-  }, [expandControls, reduceMotion]);
+  }, []);
 
   const expand = useCallback(async () => {
-    setExpanded(true);
-    if (reduceMotion) {
-      setResizeTick((n) => n + 1);
+    if (busyRef.current || expanded) return;
+    const from = slotRef.current ? readRect(slotRef.current) : slotRect;
+    if (!from) {
+      setExpanded(true);
+      setBackdropOn(true);
+      setShellRect(expandedRect());
+      bumpResize();
       return;
     }
-    await expandControls.start({
-      opacity: 0.75,
-      scale: 0.96,
-      transition: { duration: 0 },
-    });
-    await expandControls.start({
-      opacity: 1,
-      scale: 1,
-      transition: { duration: 0.32, ease },
-    });
-    setResizeTick((n) => n + 1);
-  }, [expandControls, reduceMotion]);
+
+    busyRef.current = true;
+    setAnimating(true);
+    setExpanded(true);
+    setBackdropOn(false);
+    setShellRect(from);
+    await nextFrame();
+    setBackdropOn(true);
+    setShellRect(expandedRect());
+    window.setTimeout(() => {
+      setAnimating(false);
+      busyRef.current = false;
+      bumpResize();
+    }, EXPAND_MS + 40);
+  }, [bumpResize, expanded, slotRect]);
+
+  const collapse = useCallback(async () => {
+    if (busyRef.current || !expanded) return;
+    const to = slotRef.current ? readRect(slotRef.current) : slotRect;
+
+    if (!to) {
+      setExpanded(false);
+      setBackdropOn(false);
+      setAnimating(false);
+      bumpResize();
+      return;
+    }
+
+    busyRef.current = true;
+    setAnimating(true);
+    setBackdropOn(false);
+    setShellRect(shellRect ?? expandedRect());
+    await nextFrame();
+    setShellRect(to);
+    window.setTimeout(() => {
+      setExpanded(false);
+      setAnimating(false);
+      busyRef.current = false;
+      setShellRect(to);
+      bumpResize();
+    }, EXPAND_MS + 40);
+  }, [bumpResize, expanded, shellRect, slotRect]);
 
   useEffect(() => {
     if (!expanded) return;
@@ -108,88 +207,112 @@ export default function WeatherMapInner({
   }, [expanded, collapse]);
 
   function toggleExpand() {
+    if (busyRef.current) return;
     if (expanded) void collapse();
     else void expand();
   }
 
-  return (
-    <>
-      <AnimatePresence>
-        {expanded ? (
-          <motion.button
-            key="map-backdrop"
+  const rect = shellRect ?? slotRect;
+
+  const mapShell =
+    mounted && rect ? (
+      <>
+        {(expanded || animating) && (
+          <button
             type="button"
-            initial={reduceMotion ? false : { opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={reduceMotion ? undefined : { opacity: 0 }}
-            transition={{ duration: 0.28, ease }}
-            className="fixed inset-0 z-[55] bg-black/50 backdrop-blur-sm"
+            className={cn(
+              "map-backdrop-fly fixed inset-0 z-[55] border-0 bg-black/50 backdrop-blur-sm",
+              backdropOn ? "opacity-100" : "pointer-events-none opacity-0",
+            )}
+            style={{
+              transition: `opacity ${EXPAND_MS}ms ${EXPAND_EASE}`,
+            }}
             aria-label={t("map.collapse")}
             onClick={() => void collapse()}
           />
-        ) : null}
-      </AnimatePresence>
-
-      {expanded ? (
-        <div className="h-full min-h-[10rem]" aria-hidden />
-      ) : null}
-
-      <motion.div
-        animate={expandControls}
-        initial={{ opacity: 1, scale: 1 }}
-        className={cn(
-          expanded
-            ? "fixed inset-3 z-[60] sm:inset-5 md:inset-8 lg:inset-10 xl:inset-12"
-            : "relative h-full min-h-0",
         )}
-        style={{ transformOrigin: "top right" }}
-      >
-        <GlassCard
-          interactive={false}
-          animate={false}
-          id="weather-map"
-          tabIndex={-1}
+
+        <div
           className={cn(
-            "flex h-full min-h-0 flex-col overflow-hidden p-0 outline-none",
-            className,
+            "pointer-events-auto fixed overflow-hidden",
+            animating && "map-shell-fly",
           )}
+          style={{
+            top: rect.top,
+            left: rect.left,
+            width: rect.width,
+            height: rect.height,
+            zIndex: expanded || animating ? 60 : 40,
+            transition: animating
+              ? `top ${EXPAND_MS}ms ${EXPAND_EASE}, left ${EXPAND_MS}ms ${EXPAND_EASE}, width ${EXPAND_MS}ms ${EXPAND_EASE}, height ${EXPAND_MS}ms ${EXPAND_EASE}`
+              : "none",
+            willChange: animating ? "top, left, width, height" : undefined,
+          }}
         >
-          <div
-            className="relative min-h-[10rem] flex-1 overflow-hidden rounded-[inherit]"
-            role="img"
-            aria-label={t("map.label", { name })}
+          <GlassCard
+            interactive={false}
+            animate={false}
+            id="weather-map"
+            tabIndex={-1}
+            className={cn(
+              "flex h-full min-h-0 flex-col overflow-hidden p-0 outline-none",
+              className,
+            )}
           >
-            <MapContainer
-              center={[lat, lon]}
-              zoom={10}
-              zoomControl={false}
-              scrollWheelZoom
-              touchZoom
-              doubleClickZoom
-              className="h-full min-h-[10rem] w-full [&_.leaflet-control-attribution]:text-[0.55rem]"
-              style={{ background: "transparent" }}
+            <div
+              className="relative min-h-0 flex-1 overflow-hidden rounded-[inherit]"
+              role="img"
+              aria-label={t("map.label", { name })}
             >
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              <Recenter lat={lat} lon={lon} />
-              <MapResize expanded={expanded} resizeTick={resizeTick} />
-              <MapControls
-                expanded={expanded}
-                onToggleExpand={toggleExpand}
-              />
-              <Marker position={[lat, lon]} icon={markerIcon}>
-                <Popup>
-                  <strong>{name}</strong>
-                  <br />
-                  <span className="text-xs">{displayName}</span>
-                </Popup>
-              </Marker>
-            </MapContainer>
-          </div>
-        </GlassCard>
-      </motion.div>
+              <MapContainer
+                center={[lat, lon]}
+                zoom={10}
+                zoomControl={false}
+                attributionControl={false}
+                scrollWheelZoom
+                touchZoom
+                doubleClickZoom
+                zoomAnimation
+                fadeAnimation
+                markerZoomAnimation
+                className="h-full min-h-[10rem] w-full [&_.leaflet-control-attribution]:text-[0.55rem] [&_.leaflet-control-attribution]:bg-black/40 [&_.leaflet-control-attribution]:text-white/80"
+                style={{ background: "transparent" }}
+              >
+                <AttributionControl position="bottomright" />
+                <TileLayer
+                  attribution={OSM_BASE_ATTRIBUTION}
+                  url={OSM_BASE_URL}
+                />
+                <Recenter lat={lat} lon={lon} />
+                <MapResize
+                  expanded={expanded}
+                  resizeTick={resizeTick}
+                  animating={animating}
+                />
+                <MapControls
+                  expanded={expanded}
+                  onToggleExpand={toggleExpand}
+                  lat={lat}
+                  lon={lon}
+                />
+                <Marker position={[lat, lon]} icon={markerIcon}>
+                  <Popup>
+                    <strong>{name}</strong>
+                    <br />
+                    <span className="text-xs">{displayName}</span>
+                  </Popup>
+                </Marker>
+              </MapContainer>
+            </div>
+          </GlassCard>
+        </div>
+      </>
+    ) : null;
+
+  return (
+    <>
+      <div ref={slotRef} className="h-full min-h-[10rem] w-full" aria-hidden />
+      {mounted ? createPortal(mapShell, document.body) : null}
     </>
   );
 }

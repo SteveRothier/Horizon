@@ -35,7 +35,6 @@ export type CurrentWeather = {
   weatherCode: number;
   condition: WeatherCondition;
   description: string;
-  icon?: string;
   isDay: boolean;
   sunrise: string | null;
   sunset: string | null;
@@ -47,7 +46,6 @@ export type HourlyForecastItem = {
   temperature: number;
   weatherCode: number;
   condition: WeatherCondition;
-  icon?: string;
   precipitationProbability: number;
   windSpeed: number;
   windDirection: number;
@@ -58,7 +56,6 @@ export type DailyForecastItem = {
   date: string;
   weatherCode: number;
   condition: WeatherCondition;
-  icon?: string;
   temperatureMin: number;
   temperatureMax: number;
   precipitationProbability: number;

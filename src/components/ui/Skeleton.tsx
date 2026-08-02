@@ -23,23 +23,3 @@ export function Skeleton({ className, label }: SkeletonProps) {
     />
   );
 }
-
-export function SkeletonText({
-  className,
-  lines = 1,
-}: {
-  className?: string;
-  lines?: number;
-}) {
-  return (
-    <div className={cn("flex flex-col gap-2", className)} aria-hidden>
-      {Array.from({ length: lines }).map((_, i) => (
-        <Skeleton
-          key={i}
-          className={cn("h-3 w-full", i === lines - 1 && lines > 1 && "w-2/3")}
-          label=""
-        />
-      ))}
-    </div>
-  );
-}

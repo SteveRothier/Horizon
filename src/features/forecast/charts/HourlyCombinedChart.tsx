@@ -25,7 +25,7 @@ import { tempFillColor, tempStrokeColor } from "@/utils/temp-color";
 import { toDisplaySpeed, toDisplayTemp } from "@/utils/units";
 import { cn } from "@/utils/cn";
 
-export const HOURLY_COL_WIDTH = 56;
+const HOURLY_COL_WIDTH = 56;
 
 const CHART_MIN_HEIGHT = 112;
 const CHART_TOP = 22;

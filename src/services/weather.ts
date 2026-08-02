@@ -5,7 +5,7 @@ import {
   fetchOpenMeteoWeather,
 } from "@/services/open-meteo";
 import {
-  enrichWithOpenWeatherIcons,
+  enrichWithOpenWeather,
   fetchOpenWeatherAirQuality,
   fetchOpenWeatherBundle,
   isOpenWeatherConfigured,
@@ -13,7 +13,7 @@ import {
 
 /**
  * Primary: Open-Meteo. Fallback: OpenWeather.
- * Optionally enrich OM data with OW icons/descriptions.
+ * Optionally enrich OM data with OW description / visibility.
  */
 export async function getWeatherBundle(
   location: GeoLocation,
@@ -25,7 +25,7 @@ export async function getWeatherBundle(
     // Enrichment is best-effort and time-boxed so OM stays on the hot path.
     try {
       return await Promise.race([
-        enrichWithOpenWeatherIcons(bundle),
+        enrichWithOpenWeather(bundle),
         new Promise<WeatherBundle>((resolve) => {
           setTimeout(() => resolve(bundle), 600);
         }),

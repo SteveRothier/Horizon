@@ -90,10 +90,6 @@ function requireApiKey(): string {
   return key;
 }
 
-function owIconUrl(icon: string): string {
-  return `https://openweathermap.org/img/wn/${icon}@2x.png`;
-}
-
 function msToIso(seconds: number): string {
   return new Date(seconds * 1000).toISOString();
 }
@@ -171,7 +167,6 @@ export async function fetchOpenWeatherBundle(
         ? w.description.charAt(0).toUpperCase() + w.description.slice(1)
         : undefined,
     ),
-    icon: owIconUrl(w.icon),
     isDay,
     sunrise: msToIso(current.sys.sunrise),
     sunset: msToIso(current.sys.sunset),
@@ -190,7 +185,6 @@ export async function fetchOpenWeatherBundle(
       temperature: item.main.temp,
       weatherCode: icode,
       condition: icondition,
-      icon: owIconUrl(iw.icon),
       precipitationProbability: Math.round(item.pop * 100),
       windSpeed: toKmh(item.wind.speed),
       windDirection: item.wind.deg ?? 0,
@@ -207,7 +201,6 @@ export async function fetchOpenWeatherBundle(
       pops: number[];
       winds: number[];
       codes: number[];
-      icons: string[];
     }
   >();
 
@@ -221,14 +214,12 @@ export async function fetchOpenWeatherBundle(
       pops: [],
       winds: [],
       codes: [],
-      icons: [],
     };
     bucket.mins.push(item.main.temp_min);
     bucket.maxs.push(item.main.temp_max);
     bucket.pops.push(item.pop * 100);
     bucket.winds.push(toKmh(item.wind.speed));
     bucket.codes.push(icode);
-    bucket.icons.push(iw.icon);
     byDay.set(date, bucket);
   }
 
@@ -241,7 +232,6 @@ export async function fetchOpenWeatherBundle(
         date,
         weatherCode: code,
         condition: conditionFromWeatherCode(code),
-        icon: owIconUrl(bucket.icons[mid] ?? "01d"),
         temperatureMin: Math.min(...bucket.mins),
         temperatureMax: Math.max(...bucket.maxs),
         precipitationProbability: Math.round(
@@ -299,8 +289,8 @@ export async function fetchOpenWeatherAirQuality(
   };
 }
 
-/** Enrich Open-Meteo bundle with OW icons/descriptions when key is present */
-export async function enrichWithOpenWeatherIcons(
+/** Enrich Open-Meteo bundle with OW description / visibility when key is present */
+export async function enrichWithOpenWeather(
   bundle: WeatherBundle,
 ): Promise<WeatherBundle> {
   if (!isOpenWeatherConfigured()) return bundle;
@@ -329,7 +319,6 @@ export async function enrichWithOpenWeatherIcons(
             ? w.description.charAt(0).toUpperCase() + w.description.slice(1)
             : undefined,
         ),
-        icon: owIconUrl(w.icon),
         visibility: current.visibility ?? bundle.current.visibility,
       },
     };

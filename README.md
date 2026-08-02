@@ -7,7 +7,7 @@ Application météo moderne (portfolio) — expérience glassmorphism immersive 
 - **Next.js 15** (App Router) + **React 19** + **TypeScript**
 - **Tailwind CSS** + tokens CSS (scènes météo jour/nuit)
 - **TanStack Query**, **Zustand** (favoris, historique, settings + `localStorage`)
-- **Framer Motion**, **Recharts**, **Leaflet** / **react-leaflet**
+- **Framer Motion**, **Leaflet** / **react-leaflet**
 - APIs : **Open-Meteo** (principal), **OpenWeather** (fallback optionnel), **Nominatim** (géocodage)
 
 ## Démarrage

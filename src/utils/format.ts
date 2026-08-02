@@ -16,16 +16,6 @@ const DAY_SHORT_KEYS = [
   "day.sat.short",
 ] as const;
 
-const DAY_LONG_KEYS = [
-  "day.sun.long",
-  "day.mon.long",
-  "day.tue.long",
-  "day.wed.long",
-  "day.thu.long",
-  "day.fri.long",
-  "day.sat.long",
-] as const;
-
 const WIND_KEYS = [
   "wind.N",
   "wind.NE",
@@ -57,15 +47,6 @@ export function formatDayShort(
     return translate(locale, "format.today");
   }
   return translate(locale, DAY_SHORT_KEYS[d.getDay()]);
-}
-
-export function formatDayLong(
-  isoDate: string,
-  locale: AppLocale = "fr",
-): string {
-  const d = new Date(isoDate.includes("T") ? isoDate : `${isoDate}T12:00:00`);
-  if (Number.isNaN(d.getTime())) return isoDate;
-  return translate(locale, DAY_LONG_KEYS[d.getDay()]);
 }
 
 export function formatTimeShort(

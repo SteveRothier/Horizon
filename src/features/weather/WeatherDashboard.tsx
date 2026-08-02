@@ -13,11 +13,11 @@ import { FavoritesList } from "@/features/favorites/FavoritesList";
 import { HistoryList } from "@/features/history/HistoryList";
 import { SettingsPanel } from "@/features/settings/SettingsPanel";
 import { DaySelectionProvider } from "@/features/forecast/DaySelectionContext";
+import { ForecastPanelSlot } from "@/features/forecast/ForecastSlots";
 import {
   AirQualitySlot,
-  ForecastPanelSlot,
   UVIndexSlot,
-} from "@/features/forecast/ForecastSlots";
+} from "@/features/weather/WeatherSlots";
 import { WeatherMap } from "@/features/map/WeatherMap";
 import { WeatherDetails } from "@/features/weather/WeatherDetails";
 import { WeatherHero } from "@/features/weather/WeatherHero";

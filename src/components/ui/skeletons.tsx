@@ -1,7 +1,10 @@
+"use client";
+
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { dashboardCardClass } from "@/constants/layout";
+import { useT } from "@/hooks/useT";
 
 const skeletonTitleClass = "mb-1.5 h-3.5 shrink-0";
 
@@ -172,12 +175,13 @@ export function DetailsSkeleton() {
 }
 
 export function MapSkeleton() {
+  const t = useT();
   return (
     <GlassCard
       interactive={false}
       animate={false}
       className="h-full min-h-0 overflow-hidden p-0"
-      aria-label="Chargement de la carte"
+      aria-label={t("map.loading")}
     >
       <Skeleton className="h-full w-full rounded-[var(--glass-radius)]" />
     </GlassCard>

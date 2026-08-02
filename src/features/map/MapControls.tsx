@@ -1,14 +1,18 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Maximize2, Minimize2, Minus, Plus } from "lucide-react";
+import { Crosshair, Maximize2, Minimize2, Minus, Plus } from "lucide-react";
 import { useMap } from "react-leaflet";
 import { useT } from "@/hooks/useT";
 import { cn } from "@/utils/cn";
 
+const ZOOM_DURATION_S = 0.55;
+
 type MapControlsProps = {
   expanded: boolean;
   onToggleExpand: () => void;
+  lat: number;
+  lon: number;
 };
 
 function MapControlButton({
@@ -36,9 +40,16 @@ function MapControlButton({
   );
 }
 
-export function MapControls({ expanded, onToggleExpand }: MapControlsProps) {
+export function MapControls({
+  expanded,
+  onToggleExpand,
+  lat,
+  lon,
+}: MapControlsProps) {
   const map = useMap();
   const t = useT();
+
+  const zoomOpts = { animate: true as const, duration: ZOOM_DURATION_S };
 
   return (
     <div
@@ -49,12 +60,29 @@ export function MapControls({ expanded, onToggleExpand }: MapControlsProps) {
       <div className="pointer-events-auto flex items-center gap-1.5">
         <MapControlButton
           label={t("map.zoomOut")}
-          onClick={() => map.zoomOut()}
+          onClick={() => {
+            map.setZoom(map.getZoom() - 1, zoomOpts);
+          }}
         >
           <Minus className="h-4 w-4" strokeWidth={2.5} aria-hidden />
         </MapControlButton>
-        <MapControlButton label={t("map.zoomIn")} onClick={() => map.zoomIn()}>
+        <MapControlButton
+          label={t("map.zoomIn")}
+          onClick={() => {
+            map.setZoom(map.getZoom() + 1, zoomOpts);
+          }}
+        >
           <Plus className="h-4 w-4" strokeWidth={2.5} aria-hidden />
+        </MapControlButton>
+        <MapControlButton
+          label={t("map.recenter")}
+          onClick={() => {
+            map.flyTo([lat, lon], Math.max(map.getZoom(), 10), {
+              duration: 0.75,
+            });
+          }}
+        >
+          <Crosshair className="h-4 w-4" strokeWidth={2.5} aria-hidden />
         </MapControlButton>
         <MapControlButton
           label={expanded ? t("map.collapse") : t("map.expand")}
