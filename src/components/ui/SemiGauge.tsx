@@ -12,7 +12,10 @@ type SemiGaugeProps = {
   color?: string;
 };
 
-/** Compact semi-circular gauge (AQI / UV) */
+/**
+ * Compact upper semi-circular gauge (AQI / UV).
+ * Progress uses stroke-dasharray on a fixed path (avoids SVG arc-flag bugs).
+ */
 export function SemiGauge({
   value,
   max = 100,
@@ -22,28 +25,18 @@ export function SemiGauge({
   color = "var(--accent)",
 }: SemiGaugeProps) {
   const clamped = Math.max(0, Math.min(value, max));
-  const ratio = clamped / max;
-  const r = 42;
+  const ratio = max > 0 ? clamped / max : 0;
+
+  const r = 40;
   const cx = 50;
   const cy = 50;
-  const startAngle = Math.PI;
-  const endAngle = Math.PI + Math.PI * ratio;
-
-  const polar = (angle: number) => ({
-    x: cx + r * Math.cos(angle),
-    y: cy + r * Math.sin(angle),
-  });
-
-  const start = polar(startAngle);
-  const end = polar(endAngle);
-  const largeArc = ratio > 0.5 ? 1 : 0;
-  const trackEnd = polar(2 * Math.PI);
-
-  const trackPath = `M ${start.x} ${start.y} A ${r} ${r} 0 1 1 ${trackEnd.x} ${trackEnd.y}`;
-  const valuePath =
-    ratio <= 0
-      ? ""
-      : `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArc} 1 ${end.x} ${end.y}`;
+  const left = cx - r;
+  const right = cx + r;
+  // Fixed upper semicircle: left → top → right (clockwise in SVG y-down).
+  const arc = `M ${left} ${cy} A ${r} ${r} 0 0 1 ${right} ${cy}`;
+  // Normalized path length so dasharray is simply percentage-based.
+  const pathLen = 100;
+  const filled = ratio * pathLen;
 
   return (
     <div
@@ -52,28 +45,35 @@ export function SemiGauge({
         className,
       )}
     >
-      <svg viewBox="0 0 100 62" className="h-auto w-full max-w-[9rem]">
+      <svg
+        viewBox="0 0 100 60"
+        className="h-auto w-full max-w-[9rem]"
+        aria-hidden
+      >
         <path
-          d={trackPath}
+          d={arc}
+          pathLength={pathLen}
           fill="none"
           stroke="rgba(255,255,255,0.15)"
           strokeWidth="8"
           strokeLinecap="round"
         />
-        {valuePath ? (
+        {ratio > 0.001 ? (
           <path
-            d={valuePath}
+            d={arc}
+            pathLength={pathLen}
             fill="none"
             stroke={color}
             strokeWidth="8"
             strokeLinecap="round"
+            strokeDasharray={`${filled} ${pathLen}`}
           />
         ) : null}
         <text
           x="50"
-          y="48"
+          y="46"
           textAnchor="middle"
-          className="fill-white text-[18px] font-semibold"
+          className="fill-white font-semibold"
           style={{ fontSize: "18px" }}
         >
           {Math.round(clamped)}

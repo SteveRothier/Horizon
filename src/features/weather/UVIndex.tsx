@@ -19,28 +19,29 @@ function uvMeta(
   uv: number,
   t: (key: MessageKey) => string,
 ): { label: string; advice: string; color: string } {
-  if (uv < 3) {
+  // WHO scale on integer UV: 0–2 low, 3–5 mod, 6–7 high, 8–10 very high, 11+ extreme
+  if (uv <= 2) {
     return {
       label: t("uv.low"),
       advice: t("uv.advice.low"),
       color: "#7ddea2",
     };
   }
-  if (uv < 6) {
+  if (uv <= 5) {
     return {
       label: t("uv.moderate"),
       advice: t("uv.advice.moderate"),
       color: "#f5c542",
     };
   }
-  if (uv < 8) {
+  if (uv <= 7) {
     return {
       label: t("uv.high"),
       advice: t("uv.advice.high"),
       color: "#ff9a4a",
     };
   }
-  if (uv < 11) {
+  if (uv <= 10) {
     return {
       label: t("uv.veryHigh"),
       advice: t("uv.advice.veryHigh"),
@@ -56,7 +57,7 @@ function uvMeta(
 
 export function UVIndex({ value, className }: UVIndexProps) {
   const t = useT();
-  const uv = value ?? 0;
+  const uv = Math.round(value ?? 0);
   const meta = uvMeta(uv, t);
 
   return (
