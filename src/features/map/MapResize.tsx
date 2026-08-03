@@ -6,7 +6,7 @@ import { useMap } from "react-leaflet";
 type MapResizeProps = {
   expanded: boolean;
   resizeTick?: number;
-  /** Keep invalidating Leaflet size while the shell morphs. */
+  /** While true, skip invalidate — avoids tile flash mid-FLIP. */
   animating?: boolean;
 };
 
@@ -18,22 +18,12 @@ export function MapResize({
   const map = useMap();
 
   useEffect(() => {
+    if (animating) return;
     const frame = requestAnimationFrame(() => {
-      map.invalidateSize({ animate: false });
+      map.invalidateSize({ animate: false, pan: false });
     });
     return () => cancelAnimationFrame(frame);
-  }, [expanded, resizeTick, map]);
-
-  useEffect(() => {
-    if (!animating) return;
-    let raf = 0;
-    const tick = () => {
-      map.invalidateSize({ animate: false });
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [animating, map]);
+  }, [expanded, resizeTick, animating, map]);
 
   return null;
 }
