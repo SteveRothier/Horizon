@@ -1,8 +1,9 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { RefreshCw } from "lucide-react";
 import {
   CollectionsPanel,
   anchorFromEventTarget,
@@ -11,6 +12,8 @@ import {
 } from "@/components/layout/CollectionsPanel";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { useIsMobileUi } from "@/hooks/useIsMobileUi";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { cn } from "@/utils/cn";
 import type { WeatherCondition, DayPeriod } from "@/types/weather";
 import { DEFAULT_PERIOD, DEFAULT_WEATHER } from "@/constants/design";
@@ -58,6 +61,12 @@ export function AppShell({
   const [collectionsAnchor, setCollectionsAnchor] =
     useState<CollectionsAnchor | null>(null);
   const [mounted, setMounted] = useState(false);
+  const mainRef = useRef<HTMLElement>(null);
+  const isMobile = useIsMobileUi();
+  const { pullPx, refreshing } = usePullToRefresh({
+    scrollRef: mainRef,
+    enabled: mounted && isMobile,
+  });
 
   useEffect(() => {
     setMounted(true);
@@ -109,7 +118,7 @@ export function AppShell({
         data-weather={weather}
         data-period={period}
         className={cn(
-          "app-shell relative z-10 flex h-dvh max-h-dvh flex-col overflow-x-hidden overflow-y-hidden overscroll-none text-[var(--text-primary)]",
+          "app-shell relative z-10 flex h-dvh max-h-dvh flex-col overflow-x-hidden overflow-y-hidden text-[var(--text-primary)]",
           className,
         )}
       >
@@ -131,10 +140,29 @@ export function AppShell({
           />
 
           <main
+            ref={mainRef}
             id="main-content"
-            className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-y-contain px-[var(--page-gutter)] py-[var(--page-gutter)] lg:pl-3"
+            className="relative flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto px-[var(--page-gutter)] py-[var(--page-gutter)] lg:pl-3"
             tabIndex={-1}
           >
+            {(pullPx > 0 || refreshing) && (
+              <div
+                className="pointer-events-none absolute left-0 right-0 top-1 z-20 flex justify-center"
+                style={{
+                  opacity: refreshing ? 1 : Math.min(1, pullPx / 72),
+                  transform: `translateY(${Math.min(40, pullPx * 0.4)}px)`,
+                }}
+                aria-hidden
+              >
+                <RefreshCw
+                  className={cn(
+                    "h-5 w-5 text-[var(--text-primary)] drop-shadow",
+                    refreshing && "animate-spin",
+                  )}
+                  strokeWidth={2.25}
+                />
+              </div>
+            )}
             {children}
           </main>
         </div>

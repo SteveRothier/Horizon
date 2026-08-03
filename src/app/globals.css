@@ -9,7 +9,6 @@
 
 html {
   scroll-behavior: smooth;
-  overscroll-behavior-y: none;
 }
 
 html,
@@ -20,7 +19,6 @@ body {
 body {
   margin: 0;
   overflow: hidden;
-  overscroll-behavior-y: none;
   color: var(--text-primary);
   font-family: var(--font-horizon), system-ui, sans-serif;
   background: linear-gradient(
