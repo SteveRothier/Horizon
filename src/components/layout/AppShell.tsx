@@ -109,7 +109,7 @@ export function AppShell({
         data-weather={weather}
         data-period={period}
         className={cn(
-          "app-shell relative z-10 flex h-dvh max-h-dvh flex-col overflow-x-hidden overflow-y-hidden text-[var(--text-primary)]",
+          "app-shell relative z-10 flex h-dvh max-h-dvh flex-col overflow-x-hidden overflow-y-hidden overscroll-none text-[var(--text-primary)]",
           className,
         )}
       >
@@ -132,7 +132,7 @@ export function AppShell({
 
           <main
             id="main-content"
-            className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto px-[var(--page-gutter)] py-[var(--page-gutter)] lg:pl-3"
+            className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-y-contain px-[var(--page-gutter)] py-[var(--page-gutter)] lg:pl-3"
             tabIndex={-1}
           >
             {children}
