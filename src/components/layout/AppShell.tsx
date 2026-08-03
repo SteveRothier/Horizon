@@ -63,7 +63,7 @@ export function AppShell({
   const [mounted, setMounted] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
   const isMobile = useIsMobileUi();
-  const { pullPx, refreshing } = usePullToRefresh({
+  const { pullPx, refreshing, armed } = usePullToRefresh({
     scrollRef: mainRef,
     enabled: mounted && isMobile,
   });
@@ -156,8 +156,8 @@ export function AppShell({
               >
                 <RefreshCw
                   className={cn(
-                    "h-5 w-5 text-[var(--text-primary)] drop-shadow",
-                    refreshing && "animate-spin",
+                    "h-5 w-5 text-[var(--text-primary)] drop-shadow transition-transform",
+                    armed && "animate-spin",
                   )}
                   strokeWidth={2.25}
                 />

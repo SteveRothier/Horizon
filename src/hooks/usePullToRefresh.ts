@@ -94,5 +94,5 @@ export function usePullToRefresh({
     };
   }, [enabled, refreshing, scrollRef]);
 
-  return { pullPx, refreshing };
+  return { pullPx, refreshing, armed: pullPx >= PULL_THRESHOLD_PX || refreshing };
 }
