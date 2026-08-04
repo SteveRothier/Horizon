@@ -1,10 +1,21 @@
 "use client";
 
-import { cloneElement, isValidElement, useMemo, useState, type ReactNode } from "react";
+import {
+  cloneElement,
+  isValidElement,
+  useMemo,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 import { Search, MapPin, Star, Clock, Settings } from "lucide-react";
 import { useT } from "@/hooks/useT";
 import type { CollectionsView } from "@/components/layout/CollectionsPanel";
 import { cn } from "@/utils/cn";
+
+type SearchFocusableProps = {
+  onFocusChange?: (focused: boolean) => void;
+};
 
 type HeaderProps = {
   searchSlot?: ReactNode;
@@ -26,13 +37,10 @@ export function Header({
   const [searchFocused, setSearchFocused] = useState(false);
   const resolvedSearchSlot = useMemo(() => {
     if (!isValidElement(searchSlot)) return searchSlot;
-    type SearchFocusableProps = {
-      onFocusChange?: (focused: boolean) => void;
-    };
-    const existing = searchSlot.props as SearchFocusableProps;
-    return cloneElement(searchSlot, {
+    const element = searchSlot as ReactElement<SearchFocusableProps>;
+    return cloneElement(element, {
       onFocusChange: (focused: boolean) => {
-        existing.onFocusChange?.(focused);
+        element.props.onFocusChange?.(focused);
         setSearchFocused(focused);
       },
     });
