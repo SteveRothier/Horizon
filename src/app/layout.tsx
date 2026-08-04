@@ -32,9 +32,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr">
+    <html lang="fr" className="h-full overflow-hidden">
       <body
-        className={`${outfit.variable} ${manrope.variable} font-sans antialiased`}
+        className={`${outfit.variable} ${manrope.variable} h-full overflow-hidden font-sans antialiased`}
+        style={{ margin: 0, overflow: "hidden" }}
       >
         <QueryProvider>
           <DocumentLang />

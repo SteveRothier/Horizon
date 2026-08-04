@@ -177,7 +177,9 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
       ) : null}
 
       {isLoading ? (
-        <DashboardSkeleton />
+        <div className="min-h-0 flex-1 overflow-hidden">
+          <DashboardSkeleton />
+        </div>
       ) : isError ? (
         <ErrorCard
           message={messageFromApiError(weatherQuery.error, t)}
@@ -185,7 +187,10 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
           className="min-h-[12rem]"
         />
       ) : weather && coords ? (
-        <CityCrossfade locationId={weather.location.id}>
+        <CityCrossfade
+          locationId={weather.location.id}
+          className="h-full min-h-0 w-full min-w-0 flex-1"
+        >
           <DaySelectionProvider
             todayDate={todayDate}
             resetKey={`${weather.location.id}:${weather.fetchedAt}`}
@@ -228,7 +233,9 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
           </DaySelectionProvider>
         </CityCrossfade>
       ) : (
-        <DashboardSkeleton />
+        <div className="min-h-0 flex-1 overflow-hidden">
+          <DashboardSkeleton />
+        </div>
       )}
     </AppShell>
   );

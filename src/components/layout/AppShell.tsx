@@ -129,7 +129,7 @@ export function AppShell({
         <main
           ref={mainRef}
           id="main-content"
-          className="relative mx-auto flex min-h-0 w-full min-w-0 max-w-[1440px] flex-1 flex-col overflow-x-hidden overflow-y-auto px-[var(--page-gutter)] py-[var(--page-gutter)]"
+          className="relative mx-auto flex min-h-0 w-full min-w-0 max-w-[1440px] flex-1 flex-col overflow-x-hidden overflow-y-hidden px-[var(--page-gutter)] py-[var(--page-gutter)]"
           tabIndex={-1}
         >
           {(pullPx > 0 || refreshing) && (

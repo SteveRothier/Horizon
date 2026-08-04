@@ -27,7 +27,7 @@ export function DashboardLayout({
   return (
     <div
       className={cn(
-        "dashboard-grid h-full min-h-0 w-full min-w-0 max-w-full gap-[var(--grid-gap)] overflow-x-hidden",
+        "dashboard-grid h-full min-h-0 w-full min-w-0 max-w-full gap-[var(--grid-gap)]",
         className,
       )}
     >
