@@ -11,9 +11,14 @@ import { selectLocation } from "@/utils/selectLocation";
 type SearchBarProps = {
   className?: string;
   onSelect?: (location: GeoLocation) => void;
+  onFocusChange?: (focused: boolean) => void;
 };
 
-export function SearchBar({ className, onSelect }: SearchBarProps) {
+export function SearchBar({
+  className,
+  onSelect,
+  onFocusChange,
+}: SearchBarProps) {
   const t = useT();
   const listId = useId();
   const [input, setInput] = useState("");
@@ -43,23 +48,28 @@ export function SearchBar({ className, onSelect }: SearchBarProps) {
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+      if (!rootRef.current?.contains(e.target as Node)) {
+        setOpen(false);
+        onFocusChange?.(false);
+      }
     }
     document.addEventListener("mousedown", onDocClick);
     return () => document.removeEventListener("mousedown", onDocClick);
-  }, []);
+  }, [onFocusChange]);
 
   function choose(loc: GeoLocation) {
     selectLocation(loc);
     onSelect?.(loc);
     setInput(loc.name);
     setOpen(false);
+    onFocusChange?.(false);
   }
 
   function clearInput() {
     setInput("");
     setDebounced("");
     setOpen(false);
+    onFocusChange?.(false);
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -122,7 +132,14 @@ export function SearchBar({ className, onSelect }: SearchBarProps) {
             setInput(e.target.value);
             setOpen(true);
           }}
-          onFocus={() => setOpen(true)}
+          onFocus={() => {
+            setOpen(true);
+            onFocusChange?.(true);
+          }}
+          onBlur={(e) => {
+            if (rootRef.current?.contains(e.relatedTarget as Node | null)) return;
+            onFocusChange?.(false);
+          }}
           onKeyDown={onKeyDown}
           className={cn(
             "min-w-0 flex-1 bg-transparent text-sm text-[var(--text-primary)]",
