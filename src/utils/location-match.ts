@@ -1,5 +1,26 @@
 import type { GeoLocation } from "@/types/weather";
 
+/** Finite lat/lon from a GeoLocation (handles bad persist / aliases). */
+export function coordsFromLocation(
+  location: Pick<GeoLocation, "latitude" | "longitude"> & {
+    lat?: unknown;
+    lon?: unknown;
+    lng?: unknown;
+  },
+): { lat: number; lon: number } | null {
+  const lat = Number(
+    location.latitude ?? (location as { lat?: unknown }).lat,
+  );
+  const lon = Number(
+    location.longitude ??
+      (location as { lon?: unknown }).lon ??
+      (location as { lng?: unknown }).lng,
+  );
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+  if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return null;
+  return { lat, lon };
+}
+
 /** Same place even when Nominatim / default IDs differ. */
 export function sameLocation(a: GeoLocation, b: GeoLocation): boolean {
   if (a.id === b.id) return true;

@@ -123,6 +123,7 @@ export function MapControls({
           onClick={() => {
             targetZoomRef.current = null;
             animatingRef.current = false;
+            if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
             map.flyTo([lat, lon], Math.max(map.getZoom(), 10), {
               duration: 0.75,
             });

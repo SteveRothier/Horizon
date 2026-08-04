@@ -38,7 +38,6 @@
 
   /* Spacing / layout — densifié pour un dashboard sans scroll */
   --header-height: 3.5rem;
-  --sidebar-width: 14rem;
   --collections-panel-width: 16rem;
   --page-gutter: 0.5rem;
   --grid-gap: 0.4rem;
@@ -200,7 +199,6 @@
     --page-gutter: 0.75rem;
     --grid-gap: 0.5rem;
     --card-pad: 0.75rem;
-    --sidebar-width: 15rem;
     --glass-radius: 24px;
   }
 }
@@ -211,7 +209,6 @@
     --page-gutter: 0.875rem;
     --grid-gap: 0.625rem;
     --card-pad: 0.875rem;
-    --sidebar-width: 15.5rem;
     --glass-radius: 28px;
   }
 }

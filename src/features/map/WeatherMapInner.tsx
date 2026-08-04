@@ -20,6 +20,7 @@ import {
 import { useT } from "@/hooks/useT";
 import type { GeoLocation } from "@/types/weather";
 import { cn } from "@/utils/cn";
+import { coordsFromLocation } from "@/utils/location-match";
 import "leaflet/dist/leaflet.css";
 
 const markerIcon = L.icon({
@@ -68,6 +69,7 @@ function nextFrame(): Promise<void> {
 function Recenter({ lat, lon }: { lat: number; lon: number }) {
   const map = useMap();
   useEffect(() => {
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
     map.flyTo([lat, lon], Math.max(map.getZoom(), 10), { duration: 0.55 });
   }, [lat, lon, map]);
   return null;
@@ -83,7 +85,10 @@ export default function WeatherMapInner({
   className,
 }: WeatherMapProps) {
   const t = useT();
-  const { latitude: lat, longitude: lon, name, displayName } = location;
+  const coords = coordsFromLocation(location);
+  const lat = coords?.lat ?? 48.8566;
+  const lon = coords?.lon ?? 2.3522;
+  const { name, displayName } = location;
   const [expanded, setExpanded] = useState(false);
   const [resizeTick, setResizeTick] = useState(0);
   const [slotRect, setSlotRect] = useState<Rect | null>(null);

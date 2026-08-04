@@ -85,6 +85,6 @@ L’app fonctionne **sans** `OPENWEATHER_API_KEY` (Open-Meteo seul).
 ## Accessibilité & responsive
 
 - Skip link, focus visible, combobox recherche au clavier
-- Sidebar en drawer mobile (`Escape` pour fermer)
+- Favoris, historique et réglages via flyouts header (`Escape` pour fermer)
 - Breakpoints cibles : ~390 / 768 / 1280 / 1440
-- Carte Leaflet visible à partir de 1280px
+- Carte Leaflet responsive (agrandie au besoin)

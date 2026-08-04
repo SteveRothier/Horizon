@@ -11,7 +11,6 @@ import {
   type CollectionsView,
 } from "@/components/layout/CollectionsPanel";
 import { Header } from "@/components/layout/Header";
-import { Sidebar } from "@/components/layout/Sidebar";
 import { useIsMobileUi } from "@/hooks/useIsMobileUi";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { cn } from "@/utils/cn";
@@ -40,7 +39,7 @@ type AppShellProps = {
 };
 
 /**
- * Viewport-locked chrome: header + sidebar + main filling remaining height.
+ * Viewport-locked chrome: header + main filling remaining height.
  */
 export function AppShell({
   children,
@@ -54,7 +53,6 @@ export function AppShell({
   historySlot,
   className,
 }: AppShellProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collectionsOpen, setCollectionsOpen] = useState(false);
   const [collectionsView, setCollectionsView] =
     useState<CollectionsView>("history");
@@ -125,47 +123,35 @@ export function AppShell({
         <Header
           searchSlot={searchSlot}
           geolocationSlot={geolocationSlot}
-          menuOpen={sidebarOpen}
-          onMenuClick={() => setSidebarOpen(true)}
           onOpenCollections={openCollections}
         />
 
-        <div className="relative mx-auto flex min-h-0 w-full min-w-0 max-w-[1440px] flex-1 flex-col overflow-x-hidden lg:flex-row">
-          <Sidebar
-            open={sidebarOpen}
-            onClose={() => setSidebarOpen(false)}
-            favoritesSlot={favoritesSlot}
-            historySlot={historySlot}
-            settingsSlot={settingsSlot}
-          />
-
-          <main
-            ref={mainRef}
-            id="main-content"
-            className="relative flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto px-[var(--page-gutter)] py-[var(--page-gutter)] lg:pl-3"
-            tabIndex={-1}
-          >
-            {(pullPx > 0 || refreshing) && (
-              <div
-                className="pointer-events-none absolute left-0 right-0 top-1 z-20 flex justify-center"
-                style={{
-                  opacity: refreshing ? 1 : Math.min(1, pullPx / 72),
-                  transform: `translateY(${Math.min(40, pullPx * 0.4)}px)`,
-                }}
-                aria-hidden
-              >
-                <RefreshCw
-                  className={cn(
-                    "h-5 w-5 text-[var(--text-primary)] drop-shadow transition-transform",
-                    armed && "animate-spin",
-                  )}
-                  strokeWidth={2.25}
-                />
-              </div>
-            )}
-            {children}
-          </main>
-        </div>
+        <main
+          ref={mainRef}
+          id="main-content"
+          className="relative mx-auto flex min-h-0 w-full min-w-0 max-w-[1440px] flex-1 flex-col overflow-x-hidden overflow-y-auto px-[var(--page-gutter)] py-[var(--page-gutter)]"
+          tabIndex={-1}
+        >
+          {(pullPx > 0 || refreshing) && (
+            <div
+              className="pointer-events-none absolute left-0 right-0 top-1 z-20 flex justify-center"
+              style={{
+                opacity: refreshing ? 1 : Math.min(1, pullPx / 72),
+                transform: `translateY(${Math.min(40, pullPx * 0.4)}px)`,
+              }}
+              aria-hidden
+            >
+              <RefreshCw
+                className={cn(
+                  "h-5 w-5 text-[var(--text-primary)] drop-shadow transition-transform",
+                  armed && "animate-spin",
+                )}
+                strokeWidth={2.25}
+              />
+            </div>
+          )}
+          {children}
+        </main>
 
         <CollectionsPanel
           open={collectionsOpen}
@@ -174,6 +160,7 @@ export function AppShell({
           anchor={collectionsAnchor}
           favoritesSlot={favoritesSlot}
           historySlot={historySlot}
+          settingsSlot={settingsSlot}
         />
       </div>
     </>

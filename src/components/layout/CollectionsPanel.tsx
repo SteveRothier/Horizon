@@ -13,7 +13,7 @@ import {
 import { useT } from "@/hooks/useT";
 import { cn } from "@/utils/cn";
 
-export type CollectionsView = "favorites" | "history";
+export type CollectionsView = "favorites" | "history" | "settings";
 
 export type CollectionsAnchor = {
   top: number;
@@ -35,6 +35,7 @@ type CollectionsPanelProps = {
   anchor?: CollectionsAnchor | null;
   favoritesSlot?: ReactNode;
   historySlot?: ReactNode;
+  settingsSlot?: ReactNode;
   className?: string;
 };
 
@@ -72,7 +73,7 @@ export function anchorFromEventTarget(
 }
 
 /**
- * Compact glass flyout — one list (favorites or history), anchored to its trigger.
+ * Compact glass flyout — favorites, history, or settings, anchored to its trigger.
  */
 export function CollectionsPanel({
   open = false,
@@ -81,6 +82,7 @@ export function CollectionsPanel({
   anchor = null,
   favoritesSlot,
   historySlot,
+  settingsSlot,
   className,
 }: CollectionsPanelProps) {
   const t = useT();
@@ -90,12 +92,24 @@ export function CollectionsPanel({
     null,
   );
 
-  const isFavorites = view === "favorites";
-  const title = isFavorites ? t("sidebar.favorites") : t("sidebar.recent");
-  const content = withCloseOnSelect(
-    isFavorites ? favoritesSlot : historySlot,
-    onClose,
-  );
+  const title =
+    view === "favorites"
+      ? t("sidebar.favorites")
+      : view === "settings"
+        ? t("nav.settings")
+        : t("sidebar.recent");
+
+  const listSlot =
+    view === "favorites"
+      ? favoritesSlot
+      : view === "history"
+        ? historySlot
+        : null;
+
+  const content =
+    view === "settings"
+      ? settingsSlot
+      : withCloseOnSelect(listSlot, onClose);
 
   useLayoutEffect(() => {
     if (!open || !anchor || !panelRef.current) {
@@ -197,7 +211,11 @@ export function CollectionsPanel({
       <div className="glass-menu-scroll">
         {content ?? (
           <p className="px-1 text-xs text-[var(--text-muted)]">
-            {isFavorites ? t("sidebar.noFavorites") : t("sidebar.noRecent")}
+            {view === "favorites"
+              ? t("sidebar.noFavorites")
+              : view === "history"
+                ? t("sidebar.noRecent")
+                : null}
           </p>
         )}
       </div>
