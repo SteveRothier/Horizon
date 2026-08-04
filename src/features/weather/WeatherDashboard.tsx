@@ -26,13 +26,19 @@ import { useT } from "@/hooks/useT";
 import { useWeather } from "@/hooks/useWeather";
 import { clientFetchJson } from "@/services/client-api";
 import { useLocationStore } from "@/stores/locationStore";
-import type { DayPeriod, GeoLocation } from "@/types/weather";
+import { DEFAULT_PERIOD, DEFAULT_WEATHER } from "@/constants/design";
+import type { DayPeriod, GeoLocation, WeatherCondition } from "@/types/weather";
 import { messageFromApiError } from "@/utils/api-error";
 import { queryFromSlug, toCityPath } from "@/utils/city-url";
 import { selectLocation } from "@/utils/selectLocation";
 import { slugifyCity } from "@/utils/weather-code";
 
 type GeocodeSearchResponse = { results: GeoLocation[] };
+
+type SceneState = {
+  condition: WeatherCondition;
+  period: DayPeriod;
+};
 
 type WeatherDashboardProps = {
   citySlug?: string;
@@ -47,6 +53,10 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
   const [slugError, setSlugError] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [slugResolving, setSlugResolving] = useState(Boolean(citySlug));
+  const [scene, setScene] = useState<SceneState>({
+    condition: DEFAULT_WEATHER,
+    period: DEFAULT_PERIOD,
+  });
   const resolvingSlug = useRef<string | null>(null);
 
   useEffect(() => {
@@ -120,8 +130,15 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
   const weatherQuery = useWeather(coords);
 
   const weather = weatherQuery.data;
-  const period: DayPeriod = weather?.current.isDay ? "day" : "night";
-  const condition = weather?.current.condition ?? "clear";
+
+  // Hold last scene while loading — avoid clear/night flash then real weather.
+  useEffect(() => {
+    if (!weather) return;
+    setScene({
+      condition: weather.current.condition,
+      period: weather.current.isDay ? "day" : "night",
+    });
+  }, [weather]);
 
   const todayDate = weather?.daily[0]?.date ?? null;
   const isLoading = !hydrated || slugResolving || weatherQuery.isLoading;
@@ -129,8 +146,8 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
 
   return (
     <AppShell
-      weather={condition}
-      period={period}
+      weather={scene.condition}
+      period={scene.period}
       searchSlot={<SearchBar />}
       geolocationSlot={
         <GeolocationButton

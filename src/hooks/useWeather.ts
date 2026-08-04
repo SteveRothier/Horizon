@@ -16,6 +16,7 @@ export function useWeather(coords: WeatherCoords, enabled = true) {
       ),
     enabled: enabled && coords != null,
     staleTime: WEATHER_STALE_TIME_MS,
+    placeholderData: (previousData) => previousData,
   });
 }
 
