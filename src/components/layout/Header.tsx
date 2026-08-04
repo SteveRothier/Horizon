@@ -56,10 +56,13 @@ export function Header({
         {/* Mobile idle: search + ★/⏱/⚙ + pin. Focus: search expands over ★/⏱/⚙. */}
         <div className="relative flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2">
           <div
+            data-header-search=""
             className={cn(
               "header-search-fly min-w-0 flex-1",
               "max-sm:absolute max-sm:inset-y-0 max-sm:left-0 max-sm:right-[calc(9.75rem+1.125rem)] max-sm:z-20",
-              searchFocused && "max-sm:right-[calc(2.25rem+0.375rem)]",
+              "max-sm:w-[calc(100%-9.75rem-1.125rem)]",
+              searchFocused &&
+                "max-sm:right-[calc(2.25rem+0.375rem)] max-sm:w-[calc(100%-2.25rem-0.375rem)]",
             )}
           >
             {resolvedSearchSlot ?? (

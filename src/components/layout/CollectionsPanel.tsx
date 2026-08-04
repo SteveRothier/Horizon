@@ -10,6 +10,7 @@ import {
   type ReactElement,
   type ReactNode,
 } from "react";
+import { Clock, Settings, Star } from "lucide-react";
 import { useT } from "@/hooks/useT";
 import { cn } from "@/utils/cn";
 
@@ -38,6 +39,10 @@ type CollectionsPanelProps = {
   settingsSlot?: ReactNode;
   className?: string;
 };
+
+const PANEL_MS = 200;
+/** Keep in sync with --collections-panel-width (16rem). */
+const PANEL_WIDTH_PX = 256;
 
 function withCloseOnSelect(slot: ReactNode, onClose?: () => void): ReactNode {
   if (!isValidElement(slot) || !onClose) return slot;
@@ -72,8 +77,29 @@ export function anchorFromEventTarget(
   return trigger ? rectFromElement(trigger) : rectFromElement(target);
 }
 
+function placeUnderIcon(
+  anchor: CollectionsAnchor,
+  panelHeight: number,
+): { top: number; left: number } {
+  const gap = 6;
+  const margin = 8;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const width = Math.min(PANEL_WIDTH_PX, vw - margin * 2);
+
+  let left = anchor.right - width;
+  let top = anchor.bottom + gap;
+
+  left = Math.max(margin, Math.min(left, vw - width - margin));
+  if (top + panelHeight > vh - margin) {
+    top = Math.max(margin, anchor.top - gap - panelHeight);
+  }
+
+  return { top, left };
+}
+
 /**
- * Compact glass flyout — favorites, history, or settings, anchored to its trigger.
+ * Compact glass flyout — favorites, history, or settings, under its trigger icon.
  */
 export function CollectionsPanel({
   open = false,
@@ -88,9 +114,12 @@ export function CollectionsPanel({
   const t = useT();
   const panelRef = useRef<HTMLDivElement>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
+  const wasOpenRef = useRef(false);
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(
     null,
   );
+  const [mounted, setMounted] = useState(false);
+  const [phase, setPhase] = useState<"in" | "out">("in");
 
   const title =
     view === "favorites"
@@ -98,6 +127,9 @@ export function CollectionsPanel({
       : view === "settings"
         ? t("nav.settings")
         : t("sidebar.recent");
+
+  const TitleIcon =
+    view === "favorites" ? Star : view === "settings" ? Settings : Clock;
 
   const listSlot =
     view === "favorites"
@@ -111,33 +143,32 @@ export function CollectionsPanel({
       ? settingsSlot
       : withCloseOnSelect(listSlot, onClose);
 
-  useLayoutEffect(() => {
-    if (!open || !anchor || !panelRef.current) {
-      if (!open) setCoords(null);
+  useEffect(() => {
+    if (open) {
+      wasOpenRef.current = true;
+      setMounted(true);
+      setPhase("in");
       return;
     }
+    if (!wasOpenRef.current) return;
+    setPhase("out");
+  }, [open]);
 
-    const panel = panelRef.current;
-    const gap = 8;
-    const margin = 12;
-    const pw = panel.offsetWidth;
-    const ph = panel.offsetHeight;
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
+  useEffect(() => {
+    if (open || phase !== "out") return;
+    const timer = window.setTimeout(() => {
+      setMounted(false);
+      setCoords(null);
+    }, PANEL_MS);
+    return () => window.clearTimeout(timer);
+  }, [open, phase]);
 
-    let left = anchor.right + gap;
-    let top = anchor.top;
+  useLayoutEffect(() => {
+    if (!mounted || !anchor) return;
 
-    if (left + pw > vw - margin) {
-      left = Math.min(anchor.right - pw, vw - pw - margin);
-      top = anchor.bottom + gap;
-    }
-
-    left = Math.max(margin, Math.min(left, vw - pw - margin));
-    top = Math.max(margin, Math.min(top, vh - ph - margin));
-
-    setCoords({ top, left });
-  }, [open, anchor, view]);
+    const height = panelRef.current?.offsetHeight ?? 240;
+    setCoords(placeUnderIcon(anchor, height));
+  }, [mounted, open, anchor, view]);
 
   useEffect(() => {
     if (!open) return;
@@ -184,6 +215,8 @@ export function CollectionsPanel({
     };
   }, [open, onClose]);
 
+  if (!mounted) return null;
+
   return (
     <div
       ref={panelRef}
@@ -191,11 +224,9 @@ export function CollectionsPanel({
       tabIndex={-1}
       className={cn(
         "glass-menu fixed z-[60] w-[min(calc(100vw-1.5rem),var(--collections-panel-width))] outline-none",
-        "max-h-[min(22rem,calc(100dvh-1.5rem))] px-3 py-3",
-        "rounded-[var(--glass-radius)]",
-        open && coords
-          ? "opacity-100"
-          : "pointer-events-none invisible opacity-0",
+        "max-h-[min(22rem,calc(100dvh-1.5rem))]",
+        phase === "out" && "glass-menu-out",
+        !coords && "pointer-events-none opacity-0 [animation:none]",
         className,
       )}
       style={
@@ -205,12 +236,28 @@ export function CollectionsPanel({
       aria-hidden={!open ? true : undefined}
       role={open ? "dialog" : undefined}
     >
-      <p className="mb-2 px-1 text-sm font-semibold text-[var(--text-primary)]">
-        {title}
-      </p>
-      <div className="glass-menu-scroll">
+      <div className="flex items-center gap-2 border-b border-white/10 px-3 py-2.5">
+        <TitleIcon
+          className={cn(
+            "h-3.5 w-3.5 shrink-0",
+            view === "favorites"
+              ? "fill-current text-[var(--accent)]"
+              : "text-[var(--text-muted)]",
+          )}
+          aria-hidden
+        />
+        <p className="text-xs font-semibold tracking-wide text-[var(--text-primary)]">
+          {title}
+        </p>
+      </div>
+      <div
+        className={cn(
+          "p-1.5",
+          view !== "settings" && "glass-menu-scroll",
+        )}
+      >
         {content ?? (
-          <p className="px-1 text-xs text-[var(--text-muted)]">
+          <p className="px-2.5 py-2 text-sm text-[var(--text-muted)]">
             {view === "favorites"
               ? t("sidebar.noFavorites")
               : view === "history"

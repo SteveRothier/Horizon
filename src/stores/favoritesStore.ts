@@ -3,6 +3,8 @@ import { persist } from "zustand/middleware";
 import type { GeoLocation } from "@/types/weather";
 import { dedupeLocations, sameLocation } from "@/utils/location-match";
 
+export const FAVORITES_MAX = 10;
+
 type FavoritesState = {
   favorites: GeoLocation[];
   addFavorite: (location: GeoLocation) => void;
@@ -21,7 +23,9 @@ export const useFavoritesStore = create<FavoritesState>()(
           if (state.favorites.some((f) => sameLocation(f, location))) {
             return state;
           }
-          return { favorites: [location, ...state.favorites] };
+          return {
+            favorites: [location, ...state.favorites].slice(0, FAVORITES_MAX),
+          };
         }),
       removeFavorite: (id) =>
         set((state) => {
@@ -60,7 +64,9 @@ export const useFavoritesStore = create<FavoritesState>()(
         return {
           ...current,
           ...stored,
-          favorites: dedupeLocations(stored.favorites ?? current.favorites),
+          favorites: dedupeLocations(
+            stored.favorites ?? current.favorites,
+          ).slice(0, FAVORITES_MAX),
         };
       },
     },
