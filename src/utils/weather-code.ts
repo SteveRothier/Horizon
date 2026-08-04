@@ -38,6 +38,92 @@ export function conditionFromWeatherCode(code: number): WeatherCondition {
   return "cloudy";
 }
 
+/** Chart-facing precip type derived from WMO code (finer than WeatherCondition). */
+export type PrecipKind =
+  | "none"
+  | "drizzle"
+  | "rain"
+  | "freezing"
+  | "snow"
+  | "storm"
+  | "hail";
+
+export function precipKindFromWeatherCode(code: number): PrecipKind {
+  if (code === 96 || code === 99) return "hail";
+  if (code === 95) return "storm";
+  if (
+    code === 71 ||
+    code === 73 ||
+    code === 75 ||
+    code === 77 ||
+    code === 85 ||
+    code === 86
+  ) {
+    return "snow";
+  }
+  if (code === 56 || code === 57 || code === 66 || code === 67) {
+    return "freezing";
+  }
+  if (code === 51 || code === 53 || code === 55) return "drizzle";
+  if (
+    code === 61 ||
+    code === 63 ||
+    code === 65 ||
+    code === 80 ||
+    code === 81 ||
+    code === 82
+  ) {
+    return "rain";
+  }
+  return "none";
+}
+
+/** Fill color for precip area — intensity t in 0..1. */
+export function precipFillColor(kind: PrecipKind, t: number): string {
+  const intensity = Math.min(1, Math.max(0, t));
+  const a = (0.04 + intensity * 0.5).toFixed(3);
+  switch (kind) {
+    case "snow":
+      return `rgba(220, 240, 255, ${a})`;
+    case "storm":
+      return `rgba(168, 130, 255, ${a})`;
+    case "hail":
+      return `rgba(255, 176, 96, ${a})`;
+    case "freezing":
+      return `rgba(110, 230, 235, ${a})`;
+    case "drizzle":
+      return `rgba(170, 210, 255, ${a})`;
+    case "rain":
+    case "none":
+    default: {
+      const r = Math.round(120 - intensity * 55);
+      const g = Math.round(205 - intensity * 55);
+      return `rgba(${r}, ${g}, 255, ${a})`;
+    }
+  }
+}
+
+/** Stroke color for precip line — intensity t in 0..1. */
+export function precipStrokeColor(kind: PrecipKind, t: number): string {
+  const intensity = Math.min(1, Math.max(0, t));
+  switch (kind) {
+    case "snow":
+      return `rgba(230, 245, 255, ${0.55 + intensity * 0.4})`;
+    case "storm":
+      return `rgba(186, 150, 255, ${0.65 + intensity * 0.35})`;
+    case "hail":
+      return `rgba(255, 190, 110, ${0.7 + intensity * 0.3})`;
+    case "freezing":
+      return `rgba(120, 235, 240, ${0.65 + intensity * 0.35})`;
+    case "drizzle":
+      return `rgba(180, 215, 255, ${0.55 + intensity * 0.4})`;
+    case "rain":
+    case "none":
+    default:
+      return `rgba(110, 200, 255, ${0.65 + intensity * 0.35})`;
+  }
+}
+
 /** Approximate WMO code from OpenWeather main + id */
 export function weatherCodeFromOpenWeather(
   weatherId: number,

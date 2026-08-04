@@ -12,7 +12,7 @@ import {
 import { createPortal } from "react-dom";
 import { WeatherIcon } from "@/components/ui/WeatherIcon";
 import { useGrabScroll } from "@/hooks/useGrabScroll";
-import { useLocale } from "@/hooks/useT";
+import { useLocale, useT } from "@/hooks/useT";
 import {
   useSettingsStore,
   type AppLocale,
@@ -23,7 +23,14 @@ import { dateKeyFromTime } from "@/features/forecast/filterHourlyByDate";
 import { formatDayShort, formatHour } from "@/utils/format";
 import { tempFillColor, tempStrokeColor } from "@/utils/temp-color";
 import { toDisplaySpeed, toDisplayTemp } from "@/utils/units";
+import {
+  precipFillColor,
+  precipKindFromWeatherCode,
+  precipStrokeColor,
+  type PrecipKind,
+} from "@/utils/weather-code";
 import { cn } from "@/utils/cn";
+import type { MessageKey } from "@/i18n/messages";
 
 const HOURLY_COL_WIDTH = 56;
 
@@ -81,7 +88,12 @@ function animateScrollLeft(
   requestAnimationFrame(tick);
 }
 
-type PlotPoint = { x: number; y: number; value: number };
+type PlotPoint = { x: number; y: number; value: number; kind?: PrecipKind };
+
+function precipKindLabelKey(kind: PrecipKind): MessageKey | null {
+  if (kind === "none") return null;
+  return `forecast.precip.${kind}` as MessageKey;
+}
 
 function buildSmoothPath(points: PlotPoint[]): string {
   if (points.length === 0) return "";
@@ -134,9 +146,10 @@ function buildTempGradientStops(
   return stops;
 }
 
-/** Horizontal precip fill — more opaque/saturated blue as % rises. */
+/** Horizontal precip fill — color by precip kind, opacity by %. */
 function buildPrecipGradientStops(
   points: PlotPoint[],
+  mode: "fill" | "stroke" = "fill",
 ): { offset: string; color: string }[] {
   if (points.length === 0) return [];
   const x0 = points[0].x;
@@ -146,11 +159,11 @@ function buildPrecipGradientStops(
 
   for (let i = 0; i < points.length; i++) {
     const t = Math.min(1, Math.max(0, points[i].value / 100));
-    const alpha = 0.03 + t * 0.48;
-    const r = Math.round(120 - t * 55);
-    const g = Math.round(205 - t * 55);
-    const b = 255;
-    const color = `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(3)})`;
+    const kind = points[i].kind ?? "none";
+    const color =
+      mode === "stroke"
+        ? precipStrokeColor(kind, t)
+        : precipFillColor(kind, t);
     const isEdge = i === 0 || i === points.length - 1;
     if (!isEdge && color === lastColor) continue;
     lastColor = color;
@@ -265,6 +278,7 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
   className,
 }: HourlyCombinedChartProps) {
   const locale = useLocale();
+  const t = useT();
   const temperatureUnit = useSettingsStore((s) => s.temperatureUnit);
   const speedUnit = useSettingsStore((s) => s.speedUnit);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
@@ -428,6 +442,7 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
           x: index * HOURLY_COL_WIDTH + HOURLY_COL_WIDTH / 2,
           y: CHART_TOP + plotHeight * (1 - ratio),
           value: precip,
+          kind: precipKindFromWeatherCode(item.weatherCode),
         };
       });
 
@@ -486,7 +501,20 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
     [tempPoints, domainMin, domainMax],
   );
   const precipFillStops = useMemo(
-    () => buildPrecipGradientStops(precipPoints),
+    () => buildPrecipGradientStops(precipPoints, "fill"),
+    [precipPoints],
+  );
+  const precipStrokeStops = useMemo(
+    () => buildPrecipGradientStops(precipPoints, "stroke"),
+    [precipPoints],
+  );
+  const precipMarkers = useMemo(
+    () =>
+      precipPoints.filter(
+        (p) =>
+          (p.kind === "storm" || p.kind === "hail") &&
+          (p.value > 0 || p.kind === "storm" || p.kind === "hail"),
+      ),
     [precipPoints],
   );
   const tempGradientX = useMemo(() => {
@@ -540,6 +568,15 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
     activeIndex != null ? tempPoints[activeIndex]?.value : null;
   const activePrecip =
     activeIndex != null ? precipPoints[activeIndex]?.value : null;
+  const activePrecipKind =
+    activeIndex != null ? precipPoints[activeIndex]?.kind : undefined;
+  const activePrecipLabelKey = activePrecipKind
+    ? precipKindLabelKey(activePrecipKind)
+    : null;
+  const activePrecipColor =
+    activePrecipKind != null
+      ? precipStrokeColor(activePrecipKind, Math.min(1, (activePrecip ?? 0) / 100))
+      : "var(--accent-cool)";
   const tooltipLeft =
     activeIndex != null
       ? activeIndex * HOURLY_COL_WIDTH + HOURLY_COL_WIDTH / 2
@@ -805,6 +842,22 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
                   ))}
                 </linearGradient>
                 <linearGradient
+                  id={`${gradientId}-precip-stroke`}
+                  gradientUnits="userSpaceOnUse"
+                  x1={precipGradientX.x1}
+                  y1={0}
+                  x2={precipGradientX.x2}
+                  y2={0}
+                >
+                  {precipStrokeStops.map((stop) => (
+                    <stop
+                      key={`ps-${stop.offset}`}
+                      offset={stop.offset}
+                      stopColor={stop.color}
+                    />
+                  ))}
+                </linearGradient>
+                <linearGradient
                   id={`${gradientId}-temp-fill`}
                   gradientUnits="userSpaceOnUse"
                   x1={tempGradientX.x1}
@@ -848,12 +901,40 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
                 <path
                   d={precipLinePath}
                   fill="none"
-                  stroke="var(--accent-cool)"
+                  stroke={`url(#${gradientId}-precip-stroke)`}
                   strokeWidth={2.25}
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
               ) : null}
+              {precipMarkers.map((point) => {
+                const isHail = point.kind === "hail";
+                const color = precipStrokeColor(point.kind ?? "storm", 1);
+                return (
+                  <g
+                    key={`mk-${point.x}`}
+                    transform={`translate(${point.x}, ${point.y - 10})`}
+                  >
+                    {isHail ? (
+                      <polygon
+                        points="0,-5 4.5,0 0,5 -4.5,0"
+                        fill={color}
+                        stroke="var(--surface-elevated)"
+                        strokeWidth={0.75}
+                        opacity={0.95}
+                      />
+                    ) : (
+                      <path
+                        d="M1.5-6 L-2.5 0.5 H0.5 L-1.5 6 L3.5-0.5 H0.5 Z"
+                        fill={color}
+                        stroke="var(--surface-elevated)"
+                        strokeWidth={0.5}
+                        opacity={0.95}
+                      />
+                    )}
+                  </g>
+                );
+              })}
               {tempAreaPath ? (
                 <path
                   d={tempAreaPath}
@@ -989,7 +1070,10 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
           >
             <span className="text-[var(--text-primary)]">{activeTemp}°</span>
             <span className="text-[var(--text-muted)]"> · </span>
-            <span className="text-[var(--accent-cool)]">{activePrecip}%</span>
+            <span style={{ color: activePrecipColor }}>
+              {activePrecip}%
+              {activePrecipLabelKey ? ` ${t(activePrecipLabelKey)}` : null}
+            </span>
           </div>,
           document.body,
         )}
