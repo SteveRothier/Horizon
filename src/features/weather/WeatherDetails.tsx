@@ -5,8 +5,6 @@ import {
   Droplets,
   Eye,
   Gauge,
-  Sunrise,
-  Sunset,
   Thermometer,
   Wind,
 } from "lucide-react";
@@ -14,7 +12,7 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { useLocale, useT } from "@/hooks/useT";
 import { useSettingsStore } from "@/stores/settingsStore";
 import type { CurrentWeather } from "@/types/weather";
-import { formatTimeShort, windDirectionLabel } from "@/utils/format";
+import { windDirectionLabel } from "@/utils/format";
 import { formatSpeed, formatTemp, formatVisibility } from "@/utils/units";
 import {
   dashboardCardClass,
@@ -63,16 +61,6 @@ export function WeatherDetails({ current, className }: WeatherDetailsProps) {
       icon: Eye,
       label: t("details.visibility"),
       value: formatVisibility(current.visibility, speedUnit),
-    },
-    {
-      icon: Sunrise,
-      label: t("details.sunrise"),
-      value: formatTimeShort(current.sunrise, locale),
-    },
-    {
-      icon: Sunset,
-      label: t("details.sunset"),
-      value: formatTimeShort(current.sunset, locale),
     },
   ];
 

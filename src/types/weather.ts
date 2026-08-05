@@ -85,4 +85,6 @@ export type WeatherBundle = {
   timezone: string;
   source: WeatherSource;
   fetchedAt: string;
+  /** Present when /api/weather fetches AQI in the same RTT. */
+  airQuality?: AirQualityData | null;
 };

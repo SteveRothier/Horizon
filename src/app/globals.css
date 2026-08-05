@@ -524,14 +524,19 @@ body::-webkit-scrollbar {
 /* Header mobile focus animation (search expand + actions fade). */
 .header-search-fly {
   transition: right 300ms var(--ease-out);
-  will-change: right;
 }
 
 .header-actions-fly {
   transition:
     opacity 300ms var(--ease-out),
     transform 300ms var(--ease-out);
-  will-change: opacity, transform;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .header-search-fly.is-flying,
+  .header-actions-fly.is-flying {
+    will-change: opacity, transform, right;
+  }
 }
 
 /* Hide scrollbar but keep scroll (hourly forecast) */

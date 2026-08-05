@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, m, useReducedMotion } from "framer-motion";
 import { useIsMobileUi } from "@/hooks/useIsMobileUi";
 
 const ease = [0.22, 1, 0.36, 1] as const;
@@ -12,7 +12,10 @@ type CityCrossfadeProps = {
   className?: string;
 };
 
-/** Crossfade content when the selected city changes. */
+/**
+ * Soft opacity pulse on city change — children stay mounted (map / chart
+ * keep their internal state instead of remounting via AnimatePresence key).
+ */
 export function CityCrossfade({
   locationId,
   children,
@@ -21,39 +24,39 @@ export function CityCrossfade({
   const reduceMotion = useReducedMotion();
   const isMobile = useIsMobileUi();
   const [mounted, setMounted] = useState(false);
+  const [pulse, setPulse] = useState(false);
+  const [prevId, setPrevId] = useState(locationId);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  useEffect(() => {
+    if (locationId === prevId) return;
+    setPrevId(locationId);
+    if (!mounted || reduceMotion) return;
+    setPulse(true);
+    const timer = window.setTimeout(() => setPulse(false), isMobile ? 200 : 280);
+    return () => window.clearTimeout(timer);
+  }, [locationId, prevId, mounted, reduceMotion, isMobile]);
+
   const canAnimate = mounted && !reduceMotion;
-  // Mobile: opacity-only (no y) to avoid backdrop+transform flicker
-  const useSlide = canAnimate && !isMobile;
 
   return (
-    <AnimatePresence mode="wait" initial={false}>
-      <motion.div
-        key={locationId}
+    <AnimatePresence initial={false}>
+      <m.div
         className={className}
-        initial={
+        animate={
           canAnimate
-            ? useSlide
-              ? { opacity: 0, y: 8 }
-              : { opacity: 0 }
-            : false
+            ? pulse
+              ? { opacity: isMobile ? 0.92 : 0.88 }
+              : { opacity: 1 }
+            : { opacity: 1 }
         }
-        animate={useSlide ? { opacity: 1, y: 0 } : { opacity: 1 }}
-        exit={
-          canAnimate
-            ? useSlide
-              ? { opacity: 0, y: -6 }
-              : { opacity: 0 }
-            : undefined
-        }
-        transition={{ duration: isMobile ? 0.2 : 0.3, ease }}
+        transition={{ duration: isMobile ? 0.2 : 0.28, ease }}
       >
         {children}
-      </motion.div>
+      </m.div>
     </AnimatePresence>
   );
 }

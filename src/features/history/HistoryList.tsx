@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, m, useReducedMotion } from "framer-motion";
 import { X } from "lucide-react";
+import { usePrefetchWeather } from "@/hooks/usePrefetchWeather";
 import { useT } from "@/hooks/useT";
 import { useHistoryStore } from "@/stores/historyStore";
 import { selectLocation } from "@/utils/selectLocation";
@@ -17,6 +18,7 @@ const ease = [0.22, 1, 0.36, 1] as const;
 
 export function HistoryList({ className, onSelect }: HistoryListProps) {
   const t = useT();
+  const prefetchWeather = usePrefetchWeather();
   const items = useHistoryStore((s) => s.items);
   const removeFromHistory = useHistoryStore((s) => s.removeFromHistory);
   const clearHistory = useHistoryStore((s) => s.clearHistory);
@@ -42,9 +44,8 @@ export function HistoryList({ className, onSelect }: HistoryListProps) {
       <ul className="space-y-0.5">
         <AnimatePresence initial={false}>
           {items.map((loc) => (
-            <motion.li
+            <m.li
               key={loc.id}
-              layout={canAnimate}
               initial={canAnimate ? { opacity: 0, x: -8 } : false}
               animate={{ opacity: 1, x: 0 }}
               exit={
@@ -60,6 +61,10 @@ export function HistoryList({ className, onSelect }: HistoryListProps) {
               <button
                 type="button"
                 className="flex min-w-0 flex-1 items-center rounded-[calc(var(--glass-radius-sm)-4px)] px-2.5 py-2 text-left text-sm text-[var(--text-secondary)] transition-colors hover:bg-white/10 hover:text-[var(--text-primary)]"
+                onMouseEnter={() =>
+                  prefetchWeather(loc.latitude, loc.longitude)
+                }
+                onFocus={() => prefetchWeather(loc.latitude, loc.longitude)}
                 onClick={() => {
                   selectLocation(loc);
                   onSelect?.();
@@ -77,7 +82,7 @@ export function HistoryList({ className, onSelect }: HistoryListProps) {
               >
                 <X className="h-3.5 w-3.5" aria-hidden />
               </button>
-            </motion.li>
+            </m.li>
           ))}
         </AnimatePresence>
       </ul>

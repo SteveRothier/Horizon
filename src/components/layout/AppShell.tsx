@@ -15,7 +15,7 @@ import { useIsMobileUi } from "@/hooks/useIsMobileUi";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { cn } from "@/utils/cn";
 import type { WeatherCondition, DayPeriod } from "@/types/weather";
-import { DEFAULT_PERIOD, DEFAULT_WEATHER } from "@/constants/design";
+import { DEFAULT_PERIOD, DEFAULT_WEATHER, SCENE_GRADIENT } from "@/constants/design";
 
 const WeatherBackground = dynamic(
   () =>
@@ -98,8 +98,7 @@ export function AppShell({
       <div
         className="absolute inset-0"
         style={{
-          background:
-            "linear-gradient(145deg, var(--scene-from) 0%, var(--scene-via) 48%, var(--scene-to) 100%)",
+          background: SCENE_GRADIENT,
         }}
       />
       {backgroundSlot ?? (

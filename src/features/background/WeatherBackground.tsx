@@ -1,7 +1,8 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { m, useReducedMotion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
+import { SCENE_GRADIENT } from "@/constants/design";
 import { useIsMobileUi } from "@/hooks/useIsMobileUi";
 import type { DayPeriod, WeatherCondition } from "@/types/weather";
 import { cn } from "@/utils/cn";
@@ -32,13 +33,24 @@ export function WeatherBackground({
   className,
 }: WeatherBackgroundProps) {
   const [mounted, setMounted] = useState(false);
+  const [pageVisible, setPageVisible] = useState(true);
   const isMobile = useIsMobileUi();
   const reduceMotionHook = useReducedMotion();
   // Until mounted, assume reduced motion so SSR markup stays simple/static
-  const reduceMotion = !mounted || !!reduceMotionHook || isMobile;
+  const reduceMotion =
+    !mounted || !!reduceMotionHook || isMobile || !pageVisible;
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    const onVisibility = () => {
+      setPageVisible(document.visibilityState !== "hidden");
+    };
+    onVisibility();
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
   }, []);
 
   return (
@@ -116,8 +128,7 @@ function GradientLayer() {
     <div
       className="absolute inset-0 transition-[opacity] duration-500"
       style={{
-        background:
-          "linear-gradient(145deg, var(--scene-from) 0%, var(--scene-via) 48%, var(--scene-to) 100%)",
+        background: SCENE_GRADIENT,
       }}
     />
   );
@@ -146,7 +157,7 @@ function NightSky({
   reduceMotion: boolean;
   light?: boolean;
 }) {
-  const count = light ? 12 : 36;
+  const count = light ? 12 : 18;
   const stars = useMemo(
     () =>
       Array.from({ length: count }, (_, i) => ({
@@ -211,7 +222,7 @@ function Clouds({
   return (
     <>
       {clouds.map((c) => (
-        <motion.div
+        <m.div
           key={c.id}
           className="absolute rounded-[100%] blur-md"
           style={{
@@ -257,7 +268,7 @@ function Rain({
   heavy: boolean;
   light?: boolean;
 }) {
-  const count = light ? 12 : heavy ? 48 : 32;
+  const count = light ? 12 : heavy ? 24 : 18;
   const drops = useMemo(
     () =>
       Array.from({ length: count }, (_, i) => ({
@@ -301,7 +312,7 @@ function Snow({
   reduceMotion: boolean;
   light?: boolean;
 }) {
-  const count = light ? 12 : 28;
+  const count = light ? 12 : 16;
   const flakes = useMemo(
     () =>
       Array.from({ length: count }, (_, i) => ({
@@ -365,7 +376,7 @@ function Fog({ reduceMotion }: { reduceMotion: boolean }) {
   return (
     <>
       {layers.map((i) => (
-        <motion.div
+        <m.div
           key={i}
           className="absolute inset-x-[-20%] h-1/3 rounded-full bg-white/25 blur-3xl"
           style={{ top: `${20 + i * 22}%` }}
@@ -389,7 +400,7 @@ function Lightning({ reduceMotion }: { reduceMotion: boolean }) {
   if (reduceMotion) return null;
 
   return (
-    <motion.div
+    <m.div
       className="absolute inset-0 bg-violet-100/30"
       initial={{ opacity: 0 }}
       animate={{ opacity: [0, 0, 0, 0.55, 0, 0.3, 0, 0, 0, 0] }}
@@ -406,7 +417,7 @@ function Lightning({ reduceMotion }: { reduceMotion: boolean }) {
 function GoldenParticles({ reduceMotion }: { reduceMotion: boolean }) {
   const particles = useMemo(
     () =>
-      Array.from({ length: 14 }, (_, i) => ({
+      Array.from({ length: 8 }, (_, i) => ({
         id: i,
         left: pct(20 + seeded(i + 21) * 60),
         top: pct(10 + seeded(i + 25) * 50),

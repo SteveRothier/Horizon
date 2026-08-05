@@ -117,65 +117,347 @@ function buildAreaPath(points: PlotPoint[], baseline: number): string {
   return `${line} L ${last.x} ${baseline} L ${first.x} ${baseline} Z`;
 }
 
-/** Horizontal gradient matching temp colors along the strip (one stroke, not N lines). */
+/** Horizontal gradient stops along the strip (shared by temp + precip). */
+function buildHorizontalGradientStops(
+  points: PlotPoint[],
+  colorAt: (point: PlotPoint) => string,
+): { offset: string; color: string }[] {
+  if (points.length === 0) return [];
+  const x0 = points[0].x;
+  const span = points[points.length - 1].x - x0 || 1;
+  const stops: { offset: string; color: string }[] = [];
+  let lastColor = "";
+
+  for (let i = 0; i < points.length; i++) {
+    const color = colorAt(points[i]);
+    const isEdge = i === 0 || i === points.length - 1;
+    if (!isEdge && color === lastColor) continue;
+    lastColor = color;
+    stops.push({
+      offset: `${(((points[i].x - x0) / span) * 100).toFixed(2)}%`,
+      color,
+    });
+  }
+  return stops;
+}
+
 function buildTempGradientStops(
   points: PlotPoint[],
   domainMin: number,
   domainMax: number,
   mode: "stroke" | "fill" = "stroke",
 ): { offset: string; color: string }[] {
-  if (points.length === 0) return [];
-  const x0 = points[0].x;
-  const span = points[points.length - 1].x - x0 || 1;
-  const stops: { offset: string; color: string }[] = [];
-  let lastColor = "";
-
-  for (let i = 0; i < points.length; i++) {
-    const color =
-      mode === "fill"
-        ? tempFillColor(points[i].value, domainMin, domainMax, 0.36)
-        : tempStrokeColor(points[i].value, domainMin, domainMax);
-    const isEdge = i === 0 || i === points.length - 1;
-    if (!isEdge && color === lastColor) continue;
-    lastColor = color;
-    stops.push({
-      offset: `${(((points[i].x - x0) / span) * 100).toFixed(2)}%`,
-      color,
-    });
-  }
-  return stops;
+  return buildHorizontalGradientStops(points, (point) =>
+    mode === "fill"
+      ? tempFillColor(point.value, domainMin, domainMax, 0.36)
+      : tempStrokeColor(point.value, domainMin, domainMax),
+  );
 }
 
-/** Horizontal precip fill — color by precip kind, opacity by %. */
 function buildPrecipGradientStops(
   points: PlotPoint[],
   mode: "fill" | "stroke" = "fill",
 ): { offset: string; color: string }[] {
-  if (points.length === 0) return [];
-  const x0 = points[0].x;
-  const span = points[points.length - 1].x - x0 || 1;
-  const stops: { offset: string; color: string }[] = [];
-  let lastColor = "";
-
-  for (let i = 0; i < points.length; i++) {
-    const t = Math.min(1, Math.max(0, points[i].value / 100));
-    const kind = points[i].kind ?? "none";
-    const color =
-      mode === "stroke"
-        ? precipStrokeColor(kind, t)
-        : precipFillColor(kind, t);
-    const isEdge = i === 0 || i === points.length - 1;
-    if (!isEdge && color === lastColor) continue;
-    lastColor = color;
-    stops.push({
-      offset: `${(((points[i].x - x0) / span) * 100).toFixed(2)}%`,
-      color,
-    });
-  }
-  return stops;
+  return buildHorizontalGradientStops(points, (point) => {
+    const t = Math.min(1, Math.max(0, point.value / 100));
+    const kind = point.kind ?? "none";
+    return mode === "stroke"
+      ? precipStrokeColor(kind, t)
+      : precipFillColor(kind, t);
+  });
 }
 
 const VISIBLE_BUFFER = 4;
+/** Extra columns for smooth path continuity beyond the visible strip. */
+const PATH_BUFFER = 8;
+
+type GradientStop = { offset: string; color: string };
+
+type ChartSeriesLayerProps = {
+  gradientId: string;
+  contentWidth: number;
+  chartHeight: number;
+  baseline: number;
+  maskWindow: { x: number; w: number };
+  precipGradientX: { x1: number; x2: number };
+  tempGradientX: { x1: number; x2: number };
+  precipFillStops: GradientStop[];
+  precipStrokeStops: GradientStop[];
+  tempFillStops: GradientStop[];
+  tempGradientStops: GradientStop[];
+  precipAreaPath: string;
+  precipLinePath: string;
+  tempAreaPath: string;
+  tempLinePath: string;
+  precipMarkers: PlotPoint[];
+  boundXs: Set<number>;
+  dayStarts: { index: number; date: string }[];
+  visibleRange: { start: number; end: number };
+  locale: AppLocale;
+};
+
+const ChartSeriesLayer = memo(function ChartSeriesLayer({
+  gradientId,
+  contentWidth,
+  chartHeight,
+  baseline,
+  maskWindow,
+  precipGradientX,
+  tempGradientX,
+  precipFillStops,
+  precipStrokeStops,
+  tempFillStops,
+  tempGradientStops,
+  precipAreaPath,
+  precipLinePath,
+  tempAreaPath,
+  tempLinePath,
+  precipMarkers,
+  boundXs,
+  dayStarts,
+  visibleRange,
+  locale,
+}: ChartSeriesLayerProps) {
+  return (
+    <>
+      <defs>
+        <linearGradient
+          id={`${gradientId}-area-fade`}
+          gradientUnits="userSpaceOnUse"
+          x1={0}
+          y1={CHART_TOP}
+          x2={0}
+          y2={baseline}
+        >
+          <stop offset="0%" stopColor="#fff" stopOpacity={1} />
+          <stop offset="55%" stopColor="#fff" stopOpacity={0.55} />
+          <stop offset="100%" stopColor="#fff" stopOpacity={0} />
+        </linearGradient>
+        <mask
+          id={`${gradientId}-area-mask`}
+          maskUnits="userSpaceOnUse"
+          x={maskWindow.x}
+          y={0}
+          width={maskWindow.w}
+          height={chartHeight}
+        >
+          <rect
+            x={maskWindow.x}
+            y={0}
+            width={maskWindow.w}
+            height={chartHeight}
+            fill={`url(#${gradientId}-area-fade)`}
+          />
+        </mask>
+        <linearGradient
+          id={`${gradientId}-precip`}
+          gradientUnits="userSpaceOnUse"
+          x1={precipGradientX.x1}
+          y1={0}
+          x2={precipGradientX.x2}
+          y2={0}
+        >
+          {precipFillStops.map((stop) => (
+            <stop
+              key={`p-${stop.offset}`}
+              offset={stop.offset}
+              stopColor={stop.color}
+            />
+          ))}
+        </linearGradient>
+        <linearGradient
+          id={`${gradientId}-precip-stroke`}
+          gradientUnits="userSpaceOnUse"
+          x1={precipGradientX.x1}
+          y1={0}
+          x2={precipGradientX.x2}
+          y2={0}
+        >
+          {precipStrokeStops.map((stop) => (
+            <stop
+              key={`ps-${stop.offset}`}
+              offset={stop.offset}
+              stopColor={stop.color}
+            />
+          ))}
+        </linearGradient>
+        <linearGradient
+          id={`${gradientId}-temp-fill`}
+          gradientUnits="userSpaceOnUse"
+          x1={tempGradientX.x1}
+          y1={0}
+          x2={tempGradientX.x2}
+          y2={0}
+        >
+          {tempFillStops.map((stop) => (
+            <stop
+              key={`f-${stop.offset}`}
+              offset={stop.offset}
+              stopColor={stop.color}
+            />
+          ))}
+        </linearGradient>
+        <linearGradient
+          id={`${gradientId}-temp-stroke`}
+          gradientUnits="userSpaceOnUse"
+          x1={tempGradientX.x1}
+          y1={0}
+          x2={tempGradientX.x2}
+          y2={0}
+        >
+          {tempGradientStops.map((stop) => (
+            <stop
+              key={stop.offset}
+              offset={stop.offset}
+              stopColor={stop.color}
+            />
+          ))}
+        </linearGradient>
+      </defs>
+      {precipAreaPath ? (
+        <path
+          d={precipAreaPath}
+          fill={`url(#${gradientId}-precip)`}
+          mask={`url(#${gradientId}-area-mask)`}
+        />
+      ) : null}
+      {precipLinePath ? (
+        <path
+          d={precipLinePath}
+          fill="none"
+          stroke={`url(#${gradientId}-precip-stroke)`}
+          strokeWidth={2.25}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      ) : null}
+      {precipMarkers.map((point) => {
+        const isHail = point.kind === "hail";
+        const color = precipStrokeColor(point.kind ?? "storm", 1);
+        return (
+          <g
+            key={`mk-${point.x}`}
+            transform={`translate(${point.x}, ${point.y - 10})`}
+          >
+            {isHail ? (
+              <polygon
+                points="0,-5 4.5,0 0,5 -4.5,0"
+                fill={color}
+                stroke="var(--surface-elevated)"
+                strokeWidth={0.75}
+                opacity={0.95}
+              />
+            ) : (
+              <path
+                d="M1.5-6 L-2.5 0.5 H0.5 L-1.5 6 L3.5-0.5 H0.5 Z"
+                fill={color}
+                stroke="var(--surface-elevated)"
+                strokeWidth={0.5}
+                opacity={0.95}
+              />
+            )}
+          </g>
+        );
+      })}
+      {tempAreaPath ? (
+        <path
+          d={tempAreaPath}
+          fill={`url(#${gradientId}-temp-fill)`}
+          mask={`url(#${gradientId}-area-mask)`}
+        />
+      ) : null}
+      {tempLinePath ? (
+        <path
+          d={tempLinePath}
+          fill="none"
+          stroke={`url(#${gradientId}-temp-stroke)`}
+          strokeWidth={2.75}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      ) : null}
+      {Array.from(boundXs).map((x) => (
+        <line
+          key={`bound-${x}`}
+          x1={x}
+          y1={0}
+          x2={x}
+          y2={baseline}
+          stroke={DAY_LINE_STROKE}
+          strokeWidth={1}
+        />
+      ))}
+      {dayStarts.map(({ index, date }) => {
+        const x = index * HOURLY_COL_WIDTH;
+        const isBound = boundXs.has(x);
+        const inView =
+          index >= visibleRange.start - 1 && index <= visibleRange.end + 1;
+        if (!inView && !isBound) return null;
+        return (
+          <g key={`day-${date}-${index}`}>
+            {!isBound ? (
+              <line
+                x1={x}
+                y1={0}
+                x2={x}
+                y2={baseline}
+                stroke={DAY_LINE_STROKE}
+                strokeWidth={1}
+                strokeDasharray="3 4"
+              />
+            ) : null}
+            <text
+              x={x + 4}
+              y={11}
+              textAnchor="start"
+              fill="var(--text-muted)"
+              fontSize={10}
+              fontWeight={500}
+            >
+              {formatDayShort(date, locale)}
+            </text>
+          </g>
+        );
+      })}
+      {/* contentWidth kept so the layer identity stays tied to strip size */}
+      <rect width={contentWidth} height={0} fill="none" />
+    </>
+  );
+});
+
+type ChartHoverTooltipProps = {
+  left: number;
+  top: number;
+  temp: number;
+  precip: number;
+  precipColor: string;
+  precipLabel: string | null;
+};
+
+const ChartHoverTooltip = memo(function ChartHoverTooltip({
+  left,
+  top,
+  temp,
+  precip,
+  precipColor,
+  precipLabel,
+}: ChartHoverTooltipProps) {
+  return (
+    <div
+      className="glass-menu-tip pointer-events-none fixed z-[200] -translate-x-1/2 -translate-y-full whitespace-nowrap px-2.5 py-1 text-[0.65rem] font-medium sm:text-xs"
+      style={{ left, top, marginTop: -6 }}
+      role="status"
+      aria-live="polite"
+    >
+      <span className="text-[var(--text-primary)]">{temp}°</span>
+      <span className="text-[var(--text-muted)]"> · </span>
+      <span style={{ color: precipColor }}>
+        {precip}%
+        {precipLabel ? ` ${precipLabel}` : null}
+      </span>
+    </div>
+  );
+});
 
 const MetaStrip = memo(function MetaStrip({
   items,
@@ -342,6 +624,13 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
   }, []);
 
   useEffect(() => {
+    return () => {
+      if (pointerRafRef.current) cancelAnimationFrame(pointerRafRef.current);
+      if (tooltipRafRef.current) cancelAnimationFrame(tooltipRafRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
       return;
     }
@@ -476,61 +765,111 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
     }));
   }, [precipPoints, contentWidth]);
 
+  const pathWindow = useMemo(() => {
+    const start = Math.max(0, visibleRange.start - PATH_BUFFER);
+    const end = Math.min(
+      Math.max(tempRenderPoints.length, precipRenderPoints.length),
+      visibleRange.end + PATH_BUFFER,
+    );
+    return { start, end };
+  }, [
+    visibleRange.start,
+    visibleRange.end,
+    tempRenderPoints.length,
+    precipRenderPoints.length,
+  ]);
+
+  const tempWindowPoints = useMemo(
+    () => tempRenderPoints.slice(pathWindow.start, pathWindow.end),
+    [tempRenderPoints, pathWindow],
+  );
+  const precipWindowPoints = useMemo(
+    () => precipRenderPoints.slice(pathWindow.start, pathWindow.end),
+    [precipRenderPoints, pathWindow],
+  );
+  const tempWindowForGradient = useMemo(
+    () => tempPoints.slice(pathWindow.start, pathWindow.end),
+    [tempPoints, pathWindow],
+  );
+  const precipWindowForGradient = useMemo(
+    () => precipPoints.slice(pathWindow.start, pathWindow.end),
+    [precipPoints, pathWindow],
+  );
+
   const precipAreaPath = useMemo(
-    () => buildAreaPath(precipRenderPoints, baseline),
-    [precipRenderPoints, baseline],
+    () => buildAreaPath(precipWindowPoints, baseline),
+    [precipWindowPoints, baseline],
   );
   const tempAreaPath = useMemo(
-    () => buildAreaPath(tempRenderPoints, baseline),
-    [tempRenderPoints, baseline],
+    () => buildAreaPath(tempWindowPoints, baseline),
+    [tempWindowPoints, baseline],
   );
   const precipLinePath = useMemo(
-    () => buildSmoothPath(precipRenderPoints),
-    [precipRenderPoints],
+    () => buildSmoothPath(precipWindowPoints),
+    [precipWindowPoints],
   );
   const tempLinePath = useMemo(
-    () => buildSmoothPath(tempRenderPoints),
-    [tempRenderPoints],
+    () => buildSmoothPath(tempWindowPoints),
+    [tempWindowPoints],
   );
   const tempGradientStops = useMemo(
-    () => buildTempGradientStops(tempPoints, domainMin, domainMax, "stroke"),
-    [tempPoints, domainMin, domainMax],
+    () =>
+      buildTempGradientStops(
+        tempWindowForGradient,
+        domainMin,
+        domainMax,
+        "stroke",
+      ),
+    [tempWindowForGradient, domainMin, domainMax],
   );
   const tempFillStops = useMemo(
-    () => buildTempGradientStops(tempPoints, domainMin, domainMax, "fill"),
-    [tempPoints, domainMin, domainMax],
+    () =>
+      buildTempGradientStops(
+        tempWindowForGradient,
+        domainMin,
+        domainMax,
+        "fill",
+      ),
+    [tempWindowForGradient, domainMin, domainMax],
   );
   const precipFillStops = useMemo(
-    () => buildPrecipGradientStops(precipPoints, "fill"),
-    [precipPoints],
+    () => buildPrecipGradientStops(precipWindowForGradient, "fill"),
+    [precipWindowForGradient],
   );
   const precipStrokeStops = useMemo(
-    () => buildPrecipGradientStops(precipPoints, "stroke"),
-    [precipPoints],
+    () => buildPrecipGradientStops(precipWindowForGradient, "stroke"),
+    [precipWindowForGradient],
   );
   const precipMarkers = useMemo(
     () =>
-      precipPoints.filter(
-        (p) =>
-          (p.kind === "storm" || p.kind === "hail") &&
-          (p.value > 0 || p.kind === "storm" || p.kind === "hail"),
+      precipWindowForGradient.filter(
+        (p) => p.kind === "storm" || p.kind === "hail",
       ),
-    [precipPoints],
+    [precipWindowForGradient],
   );
   const tempGradientX = useMemo(() => {
-    if (tempPoints.length === 0) return { x1: 0, x2: 0 };
+    if (tempWindowForGradient.length === 0) return { x1: 0, x2: 0 };
     return {
-      x1: tempPoints[0].x,
-      x2: tempPoints[tempPoints.length - 1].x,
+      x1: tempWindowForGradient[0].x,
+      x2: tempWindowForGradient[tempWindowForGradient.length - 1].x,
     };
-  }, [tempPoints]);
+  }, [tempWindowForGradient]);
   const precipGradientX = useMemo(() => {
-    if (precipPoints.length === 0) return { x1: 0, x2: 0 };
+    if (precipWindowForGradient.length === 0) return { x1: 0, x2: 0 };
     return {
-      x1: precipPoints[0].x,
-      x2: precipPoints[precipPoints.length - 1].x,
+      x1: precipWindowForGradient[0].x,
+      x2: precipWindowForGradient[precipWindowForGradient.length - 1].x,
     };
-  }, [precipPoints]);
+  }, [precipWindowForGradient]);
+
+  const maskWindow = useMemo(() => {
+    const x = Math.max(0, pathWindow.start * HOURLY_COL_WIDTH);
+    const w = Math.max(
+      HOURLY_COL_WIDTH,
+      (pathWindow.end - pathWindow.start) * HOURLY_COL_WIDTH,
+    );
+    return { x, w };
+  }, [pathWindow]);
 
   const updateActiveIndex = useCallback(
     (clientX: number, clientY: number) => {
@@ -796,208 +1135,28 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
               className="block overflow-visible"
               aria-hidden
             >
-              <defs>
-                <linearGradient
-                  id={`${gradientId}-area-fade`}
-                  gradientUnits="userSpaceOnUse"
-                  x1={0}
-                  y1={CHART_TOP}
-                  x2={0}
-                  y2={baseline}
-                >
-                  <stop offset="0%" stopColor="#fff" stopOpacity={1} />
-                  <stop offset="55%" stopColor="#fff" stopOpacity={0.55} />
-                  <stop offset="100%" stopColor="#fff" stopOpacity={0} />
-                </linearGradient>
-                <mask
-                  id={`${gradientId}-area-mask`}
-                  maskUnits="userSpaceOnUse"
-                  x={0}
-                  y={0}
-                  width={contentWidth}
-                  height={chartHeight}
-                >
-                  <rect
-                    x={0}
-                    y={0}
-                    width={contentWidth}
-                    height={chartHeight}
-                    fill={`url(#${gradientId}-area-fade)`}
-                  />
-                </mask>
-                <linearGradient
-                  id={`${gradientId}-precip`}
-                  gradientUnits="userSpaceOnUse"
-                  x1={precipGradientX.x1}
-                  y1={0}
-                  x2={precipGradientX.x2}
-                  y2={0}
-                >
-                  {precipFillStops.map((stop) => (
-                    <stop
-                      key={`p-${stop.offset}`}
-                      offset={stop.offset}
-                      stopColor={stop.color}
-                    />
-                  ))}
-                </linearGradient>
-                <linearGradient
-                  id={`${gradientId}-precip-stroke`}
-                  gradientUnits="userSpaceOnUse"
-                  x1={precipGradientX.x1}
-                  y1={0}
-                  x2={precipGradientX.x2}
-                  y2={0}
-                >
-                  {precipStrokeStops.map((stop) => (
-                    <stop
-                      key={`ps-${stop.offset}`}
-                      offset={stop.offset}
-                      stopColor={stop.color}
-                    />
-                  ))}
-                </linearGradient>
-                <linearGradient
-                  id={`${gradientId}-temp-fill`}
-                  gradientUnits="userSpaceOnUse"
-                  x1={tempGradientX.x1}
-                  y1={0}
-                  x2={tempGradientX.x2}
-                  y2={0}
-                >
-                  {tempFillStops.map((stop) => (
-                    <stop
-                      key={`f-${stop.offset}`}
-                      offset={stop.offset}
-                      stopColor={stop.color}
-                    />
-                  ))}
-                </linearGradient>
-                <linearGradient
-                  id={`${gradientId}-temp-stroke`}
-                  gradientUnits="userSpaceOnUse"
-                  x1={tempGradientX.x1}
-                  y1={0}
-                  x2={tempGradientX.x2}
-                  y2={0}
-                >
-                  {tempGradientStops.map((stop) => (
-                    <stop
-                      key={stop.offset}
-                      offset={stop.offset}
-                      stopColor={stop.color}
-                    />
-                  ))}
-                </linearGradient>
-              </defs>
-              {precipAreaPath ? (
-                <path
-                  d={precipAreaPath}
-                  fill={`url(#${gradientId}-precip)`}
-                  mask={`url(#${gradientId}-area-mask)`}
-                />
-              ) : null}
-              {precipLinePath ? (
-                <path
-                  d={precipLinePath}
-                  fill="none"
-                  stroke={`url(#${gradientId}-precip-stroke)`}
-                  strokeWidth={2.25}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              ) : null}
-              {precipMarkers.map((point) => {
-                const isHail = point.kind === "hail";
-                const color = precipStrokeColor(point.kind ?? "storm", 1);
-                return (
-                  <g
-                    key={`mk-${point.x}`}
-                    transform={`translate(${point.x}, ${point.y - 10})`}
-                  >
-                    {isHail ? (
-                      <polygon
-                        points="0,-5 4.5,0 0,5 -4.5,0"
-                        fill={color}
-                        stroke="var(--surface-elevated)"
-                        strokeWidth={0.75}
-                        opacity={0.95}
-                      />
-                    ) : (
-                      <path
-                        d="M1.5-6 L-2.5 0.5 H0.5 L-1.5 6 L3.5-0.5 H0.5 Z"
-                        fill={color}
-                        stroke="var(--surface-elevated)"
-                        strokeWidth={0.5}
-                        opacity={0.95}
-                      />
-                    )}
-                  </g>
-                );
-              })}
-              {tempAreaPath ? (
-                <path
-                  d={tempAreaPath}
-                  fill={`url(#${gradientId}-temp-fill)`}
-                  mask={`url(#${gradientId}-area-mask)`}
-                />
-              ) : null}
-              {tempLinePath ? (
-                <path
-                  d={tempLinePath}
-                  fill="none"
-                  stroke={`url(#${gradientId}-temp-stroke)`}
-                  strokeWidth={2.75}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              ) : null}
-
-              {/* Day separators + strip bounds */}
-              {Array.from(boundXs).map((x) => (
-                <line
-                  key={`bound-${x}`}
-                  x1={x}
-                  y1={0}
-                  x2={x}
-                  y2={baseline}
-                  stroke={DAY_LINE_STROKE}
-                  strokeWidth={1}
-                />
-              ))}
-              {dayStarts.map(({ index, date }) => {
-                const x = index * HOURLY_COL_WIDTH;
-                const isBound = boundXs.has(x);
-                const inView =
-                  index >= visibleRange.start - 1 &&
-                  index <= visibleRange.end + 1;
-                if (!inView && !isBound) return null;
-                return (
-                  <g key={`day-${date}-${index}`}>
-                    {!isBound ? (
-                      <line
-                        x1={x}
-                        y1={0}
-                        x2={x}
-                        y2={baseline}
-                        stroke={DAY_LINE_STROKE}
-                        strokeWidth={1}
-                        strokeDasharray="3 4"
-                      />
-                    ) : null}
-                    <text
-                      x={x + 4}
-                      y={11}
-                      textAnchor="start"
-                      fill="var(--text-muted)"
-                      fontSize={10}
-                      fontWeight={500}
-                    >
-                      {formatDayShort(date, locale)}
-                    </text>
-                  </g>
-                );
-              })}
+              <ChartSeriesLayer
+                gradientId={gradientId}
+                contentWidth={contentWidth}
+                chartHeight={chartHeight}
+                baseline={baseline}
+                maskWindow={maskWindow}
+                precipGradientX={precipGradientX}
+                tempGradientX={tempGradientX}
+                precipFillStops={precipFillStops}
+                precipStrokeStops={precipStrokeStops}
+                tempFillStops={tempFillStops}
+                tempGradientStops={tempGradientStops}
+                precipAreaPath={precipAreaPath}
+                precipLinePath={precipLinePath}
+                tempAreaPath={tempAreaPath}
+                tempLinePath={tempLinePath}
+                precipMarkers={precipMarkers}
+                boundXs={boundXs}
+                dayStarts={dayStarts}
+                visibleRange={visibleRange}
+                locale={locale}
+              />
 
               {activeIndex != null ? (
                 <line
@@ -1018,7 +1177,6 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
                 ) {
                   return null;
                 }
-                // Hide temp labels that collide with day labels near day starts
                 const nearDayStart = dayStarts.some(
                   (d) => Math.abs(d.index - index) <= 0,
                 );
@@ -1058,23 +1216,16 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
         tooltipPos &&
         activeTemp != null &&
         createPortal(
-          <div
-            className="glass-menu-tip pointer-events-none fixed z-[200] -translate-x-1/2 -translate-y-full whitespace-nowrap px-2.5 py-1 text-[0.65rem] font-medium sm:text-xs"
-            style={{
-              left: tooltipPos.left,
-              top: tooltipPos.top,
-              marginTop: -6,
-            }}
-            role="status"
-            aria-live="polite"
-          >
-            <span className="text-[var(--text-primary)]">{activeTemp}°</span>
-            <span className="text-[var(--text-muted)]"> · </span>
-            <span style={{ color: activePrecipColor }}>
-              {activePrecip}%
-              {activePrecipLabelKey ? ` ${t(activePrecipLabelKey)}` : null}
-            </span>
-          </div>,
+          <ChartHoverTooltip
+            left={tooltipPos.left}
+            top={tooltipPos.top}
+            temp={activeTemp}
+            precip={activePrecip ?? 0}
+            precipColor={activePrecipColor}
+            precipLabel={
+              activePrecipLabelKey ? t(activePrecipLabelKey) : null
+            }
+          />,
           document.body,
         )}
     </div>

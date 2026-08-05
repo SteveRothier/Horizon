@@ -2,14 +2,11 @@
 
 import { useState } from "react";
 import { LoaderCircle, MapPin } from "lucide-react";
+import { useFetchReverseGeocode } from "@/hooks/useGeocode";
 import { useT } from "@/hooks/useT";
-import { clientFetchJson } from "@/services/client-api";
-import type { GeoLocation } from "@/types/weather";
 import { AppApiError } from "@/types/api";
 import { cn } from "@/utils/cn";
 import { selectLocation } from "@/utils/selectLocation";
-
-type GeocodeReverseResponse = { location: GeoLocation };
 
 type GeolocationButtonProps = {
   className?: string;
@@ -34,6 +31,7 @@ export function GeolocationButton({
   onSuccess,
 }: GeolocationButtonProps) {
   const t = useT();
+  const fetchReverse = useFetchReverseGeocode();
   const [loading, setLoading] = useState(false);
 
   async function locate() {
@@ -55,10 +53,8 @@ export function GeolocationButton({
       );
 
       const { latitude, longitude } = position.coords;
-      const data = await clientFetchJson<GeocodeReverseResponse>(
-        `/api/geocode?lat=${latitude}&lon=${longitude}`,
-      );
-      selectLocation(data.location);
+      const location = await fetchReverse(latitude, longitude);
+      selectLocation(location);
       onSuccess?.();
     } catch (err) {
       if (isGeolocationError(err)) {

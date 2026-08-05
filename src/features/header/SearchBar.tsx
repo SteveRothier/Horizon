@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Search, LoaderCircle, X } from "lucide-react";
 import { useCitySearch } from "@/hooks/useGeocode";
+import { usePrefetchWeather } from "@/hooks/usePrefetchWeather";
 import { useT } from "@/hooks/useT";
 import type { GeoLocation } from "@/types/weather";
 import { cn } from "@/utils/cn";
@@ -21,6 +22,7 @@ export function SearchBar({
 }: SearchBarProps) {
   const t = useT();
   const listId = useId();
+  const prefetchWeather = usePrefetchWeather();
   const [input, setInput] = useState("");
   const [debounced, setDebounced] = useState("");
   const [open, setOpen] = useState(false);
@@ -192,7 +194,11 @@ export function SearchBar({
                         ? "bg-white/15 text-[var(--text-primary)]"
                         : "text-[var(--text-secondary)] hover:bg-white/10",
                     )}
-                    onMouseEnter={() => setActiveIndex(i)}
+                    onMouseEnter={() => {
+                      setActiveIndex(i);
+                      prefetchWeather(loc.latitude, loc.longitude);
+                    }}
+                    onFocus={() => prefetchWeather(loc.latitude, loc.longitude)}
                     onClick={() => choose(loc)}
                   >
                     <span className="font-medium text-[var(--text-primary)]">

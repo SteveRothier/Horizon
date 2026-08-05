@@ -62,7 +62,7 @@ export function Header({
               "max-sm:absolute max-sm:inset-y-0 max-sm:left-0 max-sm:right-[calc(9.75rem+1.125rem)] max-sm:z-20",
               "max-sm:w-[calc(100%-9.75rem-1.125rem)]",
               searchFocused &&
-                "max-sm:right-[calc(2.25rem+0.375rem)] max-sm:w-[calc(100%-2.25rem-0.375rem)]",
+                "is-flying max-sm:right-[calc(2.25rem+0.375rem)] max-sm:w-[calc(100%-2.25rem-0.375rem)]",
             )}
           >
             {resolvedSearchSlot ?? (
@@ -84,7 +84,7 @@ export function Header({
               className={cn(
                 "header-actions-fly flex items-center gap-1.5 sm:gap-2",
                 searchFocused &&
-                  "max-sm:pointer-events-none max-sm:translate-x-1 max-sm:opacity-0",
+                  "is-flying max-sm:pointer-events-none max-sm:translate-x-1 max-sm:opacity-0",
               )}
             >
               <button

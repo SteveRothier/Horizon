@@ -1,17 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ErrorCard } from "@/components/ui/ErrorCard";
 import { OfflineBanner } from "@/components/ui/OfflineBanner";
 import { DashboardSkeleton, MapSkeleton } from "@/components/ui/skeletons";
-import { SearchBar } from "@/features/header/SearchBar";
-import { GeolocationButton } from "@/features/header/GeolocationButton";
-import { FavoritesList } from "@/features/favorites/FavoritesList";
-import { HistoryList } from "@/features/history/HistoryList";
-import { SettingsPanel } from "@/features/settings/SettingsPanel";
+import {
+  StableFavoritesSlot,
+  StableGeolocationSlot,
+  StableHistorySlot,
+  StableSearchSlot,
+  StableSettingsSlot,
+  useStableGeoHandlers,
+} from "@/features/weather/HeaderSlots";
 import { DaySelectionProvider } from "@/features/forecast/DaySelectionContext";
 import { ForecastPanelSlot } from "@/features/forecast/ForecastSlots";
 import {
@@ -22,18 +25,17 @@ import { WeatherMap } from "@/features/map/WeatherMap";
 import { WeatherDetails } from "@/features/weather/WeatherDetails";
 import { WeatherHero } from "@/features/weather/WeatherHero";
 import { CityCrossfade } from "@/features/weather/CityCrossfade";
+import { useCitySearch } from "@/hooks/useGeocode";
+import { usePersistHydrated } from "@/hooks/usePersistHydrated";
 import { useT } from "@/hooks/useT";
 import { useWeather } from "@/hooks/useWeather";
-import { clientFetchJson } from "@/services/client-api";
 import { useLocationStore } from "@/stores/locationStore";
 import { DEFAULT_PERIOD, DEFAULT_WEATHER } from "@/constants/design";
-import type { DayPeriod, GeoLocation, WeatherCondition } from "@/types/weather";
+import type { DayPeriod, WeatherCondition } from "@/types/weather";
 import { messageFromApiError } from "@/utils/api-error";
 import { queryFromSlug, toCityPath } from "@/utils/city-url";
 import { selectLocation } from "@/utils/selectLocation";
 import { slugifyCity } from "@/utils/weather-code";
-
-type GeocodeSearchResponse = { results: GeoLocation[] };
 
 type SceneState = {
   condition: WeatherCondition;
@@ -49,70 +51,65 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
   const router = useRouter();
   const pathname = usePathname();
   const location = useLocationStore((s) => s.location);
+  const hydrated = usePersistHydrated(useLocationStore);
   const [geoError, setGeoError] = useState<string | null>(null);
   const [slugError, setSlugError] = useState<string | null>(null);
-  const [hydrated, setHydrated] = useState(false);
-  const [slugResolving, setSlugResolving] = useState(Boolean(citySlug));
   const [scene, setScene] = useState<SceneState>({
     condition: DEFAULT_WEATHER,
     period: DEFAULT_PERIOD,
   });
-  const resolvingSlug = useRef<string | null>(null);
+  const geoHandlers = useStableGeoHandlers(setGeoError);
+
+  const storeSlug = slugifyCity(location.name);
+  const slugQuery = citySlug ? queryFromSlug(citySlug) : "";
+  const slugGeocodeEnabled =
+    Boolean(citySlug && hydrated && slugQuery.length >= 2);
+  const slugGeocode = useCitySearch(slugQuery, slugGeocodeEnabled);
 
   useEffect(() => {
-    setHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated || !citySlug) {
-      setSlugResolving(false);
-      return;
-    }
-
-    // Read store at effect time — do not depend on location.name (avoids
-    // re-resolving the old URL slug after the user picks a new city).
-    const storeSlug = slugifyCity(
-      useLocationStore.getState().location.name,
-    );
-    if (storeSlug === citySlug) {
+    if (!slugGeocodeEnabled) {
       setSlugError(null);
-      setSlugResolving(false);
+      return;
+    }
+    if (slugGeocode.isFetching) return;
+
+    if (slugGeocode.isError) {
+      setSlugError(
+        messageFromApiError(slugGeocode.error, t, "error.slugNotFound"),
+      );
       return;
     }
 
-    if (resolvingSlug.current === citySlug) return;
-    resolvingSlug.current = citySlug;
-    let cancelled = false;
-
-    setSlugResolving(true);
-    setSlugError(null);
-    (async () => {
-      try {
-        const data = await clientFetchJson<GeocodeSearchResponse>(
-          `/api/geocode?q=${encodeURIComponent(queryFromSlug(citySlug))}`,
-        );
-        if (cancelled) return;
-        const match = data.results[0];
-        if (match) {
-          selectLocation(match);
-          setSlugError(null);
-        } else {
-          setSlugError(t("error.slugNotFound"));
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setSlugError(messageFromApiError(err, t, "error.slugNotFound"));
-        }
-      } finally {
-        if (!cancelled) setSlugResolving(false);
-        if (resolvingSlug.current === citySlug) resolvingSlug.current = null;
+    const match = slugGeocode.data?.[0];
+    if (match) {
+      const sameCoords =
+        Math.abs(match.latitude - location.latitude) < 1e-4 &&
+        Math.abs(match.longitude - location.longitude) < 1e-4;
+      if (storeSlug !== citySlug || !sameCoords) {
+        selectLocation(match);
       }
-    })();
+      setSlugError(null);
+    } else if (slugGeocode.isSuccess && storeSlug !== citySlug) {
+      setSlugError(t("error.slugNotFound"));
+    }
+  }, [
+    slugGeocodeEnabled,
+    slugGeocode.isFetching,
+    slugGeocode.isError,
+    slugGeocode.isSuccess,
+    slugGeocode.data,
+    slugGeocode.error,
+    storeSlug,
+    citySlug,
+    location.latitude,
+    location.longitude,
+    t,
+  ]);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [hydrated, citySlug, t]);
+  const slugResolving =
+    slugGeocodeEnabled &&
+    (slugGeocode.isFetching || !slugGeocode.isFetched) &&
+    storeSlug !== citySlug;
 
   useEffect(() => {
     if (!hydrated || slugResolving) return;
@@ -128,10 +125,8 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
       : null;
 
   const weatherQuery = useWeather(coords);
-
   const weather = weatherQuery.data;
 
-  // Hold last scene while loading — avoid clear/night flash then real weather.
   useEffect(() => {
     if (!weather) return;
     setScene({
@@ -148,16 +143,16 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
     <AppShell
       weather={scene.condition}
       period={scene.period}
-      searchSlot={<SearchBar />}
+      searchSlot={<StableSearchSlot />}
       geolocationSlot={
-        <GeolocationButton
-          onError={(message) => setGeoError(message)}
-          onSuccess={() => setGeoError(null)}
+        <StableGeolocationSlot
+          onError={geoHandlers.onError}
+          onSuccess={geoHandlers.onSuccess}
         />
       }
-      settingsSlot={<SettingsPanel />}
-      favoritesSlot={<FavoritesList />}
-      historySlot={<HistoryList />}
+      settingsSlot={<StableSettingsSlot />}
+      favoritesSlot={<StableFavoritesSlot />}
+      historySlot={<StableHistorySlot />}
     >
       <OfflineBanner />
 
@@ -228,10 +223,16 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
                 />
               }
               details={<WeatherDetails current={weather.current} />}
-              airQuality={<AirQualitySlot coords={coords} />}
+              airQuality={
+                <AirQualitySlot
+                  coords={coords}
+                  airQuality={weather.airQuality}
+                />
+              }
               uv={
                 <UVIndexSlot
                   coords={coords}
+                  airQuality={weather.airQuality}
                   fallbackUv={
                     weather.current.uvIndex ??
                     weather.daily[0]?.uvIndexMax ??

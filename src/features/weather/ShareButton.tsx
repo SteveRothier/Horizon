@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import { Check, Share2 } from "lucide-react";
 import { useT } from "@/hooks/useT";
 import { cn } from "@/utils/cn";
@@ -85,7 +85,7 @@ export function ShareButton({ className }: ShareButtonProps) {
 
       <AnimatePresence>
         {copied ? (
-          <motion.span
+          <m.span
             key="copied-tip"
             role="status"
             aria-live="polite"
@@ -96,7 +96,7 @@ export function ShareButton({ className }: ShareButtonProps) {
             className="glass-menu-tip pointer-events-none absolute top-[calc(100%+0.35rem)] left-1/2 z-20 whitespace-nowrap px-2.5 py-1 text-[0.65rem] text-[var(--text-primary)]"
           >
             {t("share.copied")}
-          </motion.span>
+          </m.span>
         ) : null}
       </AnimatePresence>
     </div>

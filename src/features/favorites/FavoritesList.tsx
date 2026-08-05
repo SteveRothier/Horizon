@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type AnimationEvent } from "react";
 import { X } from "lucide-react";
+import { usePrefetchWeather } from "@/hooks/usePrefetchWeather";
 import { useT } from "@/hooks/useT";
 import { useFavoritesStore } from "@/stores/favoritesStore";
 import type { GeoLocation } from "@/types/weather";
@@ -20,6 +21,7 @@ type VisibleItem = {
 
 export function FavoritesList({ className, onSelect }: FavoritesListProps) {
   const t = useT();
+  const prefetchWeather = usePrefetchWeather();
   const favorites = useFavoritesStore((s) => s.favorites);
   const removeFavorite = useFavoritesStore((s) => s.removeFavorite);
   const [items, setItems] = useState<VisibleItem[]>([]);
@@ -112,6 +114,10 @@ export function FavoritesList({ className, onSelect }: FavoritesListProps) {
             <button
               type="button"
               className="flex min-w-0 flex-1 items-center rounded-[calc(var(--glass-radius-sm)-4px)] px-2.5 py-2 text-left text-sm text-[var(--text-secondary)] transition-colors hover:bg-white/10 hover:text-[var(--text-primary)]"
+              onMouseEnter={() =>
+                prefetchWeather(loc.latitude, loc.longitude)
+              }
+              onFocus={() => prefetchWeather(loc.latitude, loc.longitude)}
               onClick={() => {
                 selectLocation(loc);
                 onSelect?.();

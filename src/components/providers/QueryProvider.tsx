@@ -1,6 +1,7 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { LazyMotion, domAnimation } from "framer-motion";
 import { useState, type ReactNode } from "react";
 import { WEATHER_STALE_TIME_MS } from "@/constants/api";
 
@@ -19,5 +20,11 @@ export function QueryProvider({ children }: { children: ReactNode }) {
       }),
   );
 
-  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={client}>
+      <LazyMotion features={domAnimation} strict>
+        {children}
+      </LazyMotion>
+    </QueryClientProvider>
+  );
 }

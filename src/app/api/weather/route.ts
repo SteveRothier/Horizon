@@ -1,5 +1,5 @@
 import { reverseGeocode, searchCities } from "@/services/nominatim";
-import { getWeatherBundle } from "@/services/weather";
+import { getAirQuality, getWeatherBundle } from "@/services/weather";
 import { AppApiError } from "@/types/api";
 import type { GeoLocation } from "@/types/weather";
 import { cachedJson } from "@/utils/api-cache";
@@ -30,16 +30,18 @@ export async function GET(request: Request) {
         displayName: `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`,
       };
 
-      // Reverse geocode + weather in parallel (weather only needs lat/lon).
-      const [location, weather] = await Promise.all([
+      // Reverse geocode + weather + AQI in parallel (weather only needs lat/lon).
+      const [location, weather, airQuality] = await Promise.all([
         reverseGeocode(latitude, longitude).catch(() => provisional),
         getWeatherBundle(provisional),
+        getAirQuality(latitude, longitude).catch(() => null),
       ]);
 
       return cachedJson(
         {
           ...weather,
           location,
+          airQuality,
         },
         300,
       );
@@ -48,8 +50,11 @@ export async function GET(request: Request) {
     if (q && q.trim().length >= 2) {
       const results = await searchCities(q.trim(), 1);
       const location = results[0];
-      const weather = await getWeatherBundle(location);
-      return cachedJson(weather, 300);
+      const [weather, airQuality] = await Promise.all([
+        getWeatherBundle(location),
+        getAirQuality(location.latitude, location.longitude).catch(() => null),
+      ]);
+      return cachedJson({ ...weather, airQuality }, 300);
     }
 
     throw new AppApiError(

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Clock, Droplets, Gauge, Sun, Wind } from "lucide-react";
+import { Clock, Droplets, Sunrise, Sunset, Wind } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { WeatherIcon } from "@/components/ui/WeatherIcon";
 import { FavoriteButton } from "@/features/favorites/FavoriteButton";
@@ -9,7 +9,7 @@ import { ShareButton } from "@/features/weather/ShareButton";
 import { useLocale, useT } from "@/hooks/useT";
 import { useSettingsStore } from "@/stores/settingsStore";
 import type { CurrentWeather, GeoLocation } from "@/types/weather";
-import { formatLocalClock } from "@/utils/format";
+import { formatLocalClock, formatTimeShort } from "@/utils/format";
 import { formatSpeed, formatTemp } from "@/utils/units";
 import { descriptionFromCondition } from "@/utils/weather-code";
 import {
@@ -69,15 +69,14 @@ export function WeatherHero({
       value: `${Math.round(current.humidity)}%`,
     },
     {
-      icon: Gauge,
-      label: t("hero.pressure"),
-      value: `${Math.round(current.pressure)} hPa`,
+      icon: Sunrise,
+      label: t("hero.sunrise"),
+      value: formatTimeShort(current.sunrise, locale),
     },
     {
-      icon: Sun,
-      label: t("hero.uv"),
-      value:
-        current.uvIndex != null ? String(Math.round(current.uvIndex)) : "—",
+      icon: Sunset,
+      label: t("hero.sunset"),
+      value: formatTimeShort(current.sunset, locale),
     },
   ];
 
@@ -103,7 +102,7 @@ export function WeatherHero({
             <p className="mt-2 text-sm font-medium text-[var(--text-primary)] sm:text-base">
               {description}
             </p>
-            <p className="text-xs text-[var(--text-secondary)] sm:text-sm">
+            <p className="mb-3 text-xs text-[var(--text-secondary)] sm:text-sm">
               {t("hero.feelsLike")}{" "}
               {formatTemp(current.feelsLike, temperatureUnit)}
             </p>
@@ -117,16 +116,27 @@ export function WeatherHero({
           />
         </div>
 
-        <div className="mt-auto flex w-full items-end justify-between gap-2">
+        <div className="mt-auto flex w-full items-center justify-between gap-2 sm:items-end">
           {metrics.map(({ icon: Icon, label, value }) => (
             <div key={label} className="min-w-0 flex-1">
-              <div className="flex items-center gap-1 text-[0.65rem] text-[var(--text-muted)] sm:text-xs">
+              {/* Mobile: only icon + value on the same line */}
+              <div className="flex items-center gap-1 text-[var(--text-muted)] sm:hidden">
                 <Icon className="h-3 w-3 shrink-0" aria-hidden />
-                {label}
+                <span className="truncate text-sm font-medium sm:text-base">
+                  {value}
+                </span>
               </div>
-              <p className="truncate text-sm font-medium sm:text-base">
-                {value}
-              </p>
+
+              {/* Desktop+: keep icon + label (small) and value below */}
+              <div className="hidden sm:block">
+                <div className="flex items-center gap-1 text-[0.65rem] text-[var(--text-muted)] sm:text-xs">
+                  <Icon className="h-3 w-3 shrink-0" aria-hidden />
+                  {label}
+                </div>
+                <p className="truncate text-sm font-medium sm:text-base">
+                  {value}
+                </p>
+              </div>
             </div>
           ))}
         </div>

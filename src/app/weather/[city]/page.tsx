@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { HydrationBoundary } from "@tanstack/react-query";
 import { WeatherDashboard } from "@/features/weather/WeatherDashboard";
+import { dehydrateCityWeather } from "@/features/weather/dehydrateCityWeather";
 import { titleFromSlug } from "@/utils/city-url";
 
 type PageProps = {
@@ -25,5 +27,13 @@ export async function generateMetadata({
 
 export default async function CityWeatherPage({ params }: PageProps) {
   const { city } = await params;
-  return <WeatherDashboard citySlug={city} />;
+  const state = await dehydrateCityWeather(city);
+
+  const dashboard = <WeatherDashboard citySlug={city} />;
+
+  if (!state) return dashboard;
+
+  return (
+    <HydrationBoundary state={state}>{dashboard}</HydrationBoundary>
+  );
 }

@@ -68,8 +68,18 @@ function nextFrame(): Promise<void> {
 
 function Recenter({ lat, lon }: { lat: number; lon: number }) {
   const map = useMap();
+  const prevRef = useRef<{ lat: number; lon: number } | null>(null);
   useEffect(() => {
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+    const prev = prevRef.current;
+    if (
+      prev &&
+      Math.abs(prev.lat - lat) < 1e-6 &&
+      Math.abs(prev.lon - lon) < 1e-6
+    ) {
+      return;
+    }
+    prevRef.current = { lat, lon };
     map.flyTo([lat, lon], Math.max(map.getZoom(), 10), { duration: 0.55 });
   }, [lat, lon, map]);
   return null;
@@ -98,6 +108,7 @@ export default function WeatherMapInner({
 
   const slotRef = useRef<HTMLDivElement>(null);
   const busyRef = useRef(false);
+  const animTimerRef = useRef(0);
 
   const measureSlot = useCallback(() => {
     const el = slotRef.current;
@@ -108,6 +119,12 @@ export default function WeatherMapInner({
   useLayoutEffect(() => {
     measureSlot();
   }, [measureSlot]);
+
+  useEffect(() => {
+    return () => {
+      if (animTimerRef.current) window.clearTimeout(animTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     const el = slotRef.current;
@@ -144,7 +161,9 @@ export default function WeatherMapInner({
     await nextFrame();
     setBackdropOn(true);
     setShellRect(expandedRect());
-    window.setTimeout(() => {
+    if (animTimerRef.current) window.clearTimeout(animTimerRef.current);
+    animTimerRef.current = window.setTimeout(() => {
+      animTimerRef.current = 0;
       setAnimating(false);
       busyRef.current = false;
       bumpResize();
@@ -170,7 +189,9 @@ export default function WeatherMapInner({
     setShellRect(shellRect ?? expandedRect());
     await nextFrame();
     setShellRect(to);
-    window.setTimeout(() => {
+    if (animTimerRef.current) window.clearTimeout(animTimerRef.current);
+    animTimerRef.current = window.setTimeout(() => {
+      animTimerRef.current = 0;
       setExpanded(false);
       setAnimating(false);
       busyRef.current = false;
@@ -275,8 +296,8 @@ export default function WeatherMapInner({
               touchZoom
               doubleClickZoom={false}
               zoomAnimation
-              fadeAnimation
-              markerZoomAnimation
+              fadeAnimation={false}
+              markerZoomAnimation={false}
               className="h-full min-h-0 w-full [&_.leaflet-container]:h-full [&_.leaflet-container]:w-full [&_.leaflet-control-attribution]:text-[0.55rem] [&_.leaflet-control-attribution]:bg-black/40 [&_.leaflet-control-attribution]:text-white/80"
               style={{ background: "transparent" }}
             >
