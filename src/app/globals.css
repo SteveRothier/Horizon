@@ -223,6 +223,81 @@ body::-webkit-scrollbar {
   border-radius: var(--glass-radius-sm);
 }
 
+/* Brand wordmark — glass pill + scene gradient text (tokens via data-weather/period) */
+.brand-wordmark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    var(--glass-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  text-decoration: none;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.brand-wordmark:hover,
+.brand-wordmark:focus-visible {
+  background: var(--glass-bg-hover);
+  border-color: var(--glass-border-strong);
+  box-shadow:
+    var(--glass-shadow-hover),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.brand-wordmark-text {
+  font-family: var(--font-horizon-display), system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  background-image: linear-gradient(
+    115deg,
+    var(--accent) 0%,
+    #ffffff 42%,
+    var(--accent-cool) 100%
+  );
+  background-size: 100% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.28));
+}
+
+@media (min-width: 640px) {
+  .brand-wordmark {
+    padding: 0.3rem 0.75rem;
+  }
+
+  .brand-wordmark-text {
+    font-size: 1.125rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .brand-wordmark-text {
+    font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 767px), (pointer: coarse) {
+  .brand-wordmark {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(14, 22, 34, 0.78);
+  }
+}
+
 @keyframes glass-card-in {
   from {
     opacity: 0;

@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { Search, MapPin, Star, Clock, Settings } from "lucide-react";
+import { BrandWordmark } from "@/components/brand/BrandWordmark";
 import { useT } from "@/hooks/useT";
 import type { CollectionsView } from "@/components/layout/CollectionsPanel";
 import { cn } from "@/utils/cn";
@@ -49,9 +50,7 @@ export function Header({
   return (
     <header className={cn("sticky top-0 z-40 w-full min-w-0 shrink-0", className)}>
       <div className="mx-auto flex h-[var(--header-height)] w-full min-w-0 max-w-[1440px] items-center gap-2 px-[var(--page-gutter)] sm:gap-3">
-        <span className="shrink-0 font-[family-name:var(--font-horizon-display)] text-base font-semibold tracking-tight text-[var(--text-primary)] sm:text-lg xl:text-xl">
-          {t("header.brand")}
-        </span>
+        <BrandWordmark />
 
         {/* Mobile idle: search + ★/⏱/⚙ + pin. Focus: search expands over ★/⏱/⚙. */}
         <div className="relative flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2">
