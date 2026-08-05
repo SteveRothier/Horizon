@@ -13,6 +13,7 @@ import {
 import { GlassCard } from "@/components/ui/GlassCard";
 import { MapControls } from "@/features/map/MapControls";
 import { MapResize } from "@/features/map/MapResize";
+import { flyToSafe } from "@/features/map/flyToSafe";
 import {
   OSM_BASE_ATTRIBUTION,
   OSM_BASE_URL,
@@ -66,6 +67,9 @@ function nextFrame(): Promise<void> {
   });
 }
 
+const FALLBACK_LAT = 48.8566;
+const FALLBACK_LON = 2.3522;
+
 function Recenter({ lat, lon }: { lat: number; lon: number }) {
   const map = useMap();
   const prevRef = useRef<{ lat: number; lon: number } | null>(null);
@@ -80,7 +84,7 @@ function Recenter({ lat, lon }: { lat: number; lon: number }) {
       return;
     }
     prevRef.current = { lat, lon };
-    map.flyTo([lat, lon], Math.max(map.getZoom(), 10), { duration: 0.55 });
+    flyToSafe(map, lat, lon, { duration: 0.55 });
   }, [lat, lon, map]);
   return null;
 }
@@ -96,8 +100,8 @@ export default function WeatherMapInner({
 }: WeatherMapProps) {
   const t = useT();
   const coords = coordsFromLocation(location);
-  const lat = coords?.lat ?? 48.8566;
-  const lon = coords?.lon ?? 2.3522;
+  const lat = coords?.lat ?? FALLBACK_LAT;
+  const lon = coords?.lon ?? FALLBACK_LON;
   const { name, displayName } = location;
   const [expanded, setExpanded] = useState(false);
   const [resizeTick, setResizeTick] = useState(0);

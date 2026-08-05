@@ -72,7 +72,7 @@ export function WeatherDetails({ current, className }: WeatherDetailsProps) {
       <h2 className={dashboardCardTitleClass}>
         {t("details.title")}
       </h2>
-      <div className="grid min-h-0 flex-1 grid-cols-2 content-center gap-x-3 gap-y-2 overflow-auto scrollbar-none">
+      <div className="grid min-h-0 flex-1 grid-cols-2 content-center gap-x-3 gap-y-3 overflow-auto scrollbar-none">
         {items.map(({ icon: Icon, label, value }) => (
           <div key={label} className="min-w-0">
             <div className="flex items-center gap-1 text-[0.65rem] text-[var(--text-muted)]">

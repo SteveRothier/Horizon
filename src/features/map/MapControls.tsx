@@ -4,6 +4,7 @@ import { useEffect, useRef, type ReactNode } from "react";
 import L from "leaflet";
 import { Crosshair, Maximize2, Minimize2, Minus, Plus } from "lucide-react";
 import { useMap } from "react-leaflet";
+import { flyToSafe } from "@/features/map/flyToSafe";
 import { useT } from "@/hooks/useT";
 import { cn } from "@/utils/cn";
 
@@ -123,10 +124,7 @@ export function MapControls({
           onClick={() => {
             targetZoomRef.current = null;
             animatingRef.current = false;
-            if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
-            map.flyTo([lat, lon], Math.max(map.getZoom(), 10), {
-              duration: 0.75,
-            });
+            flyToSafe(map, lat, lon, { duration: 0.75 });
           }}
         >
           <Crosshair className="h-4 w-4" strokeWidth={2.5} aria-hidden />

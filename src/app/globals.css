@@ -52,6 +52,7 @@ body::-webkit-scrollbar {
 
 /* Main scrollport: allow PTR / short screens, never show a bar (avoids refresh flash). */
 #main-content {
+  overflow-y: auto;
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
 }
@@ -62,17 +63,19 @@ body::-webkit-scrollbar {
   height: 0 !important;
 }
 
-/* Dashboard grid — tout visible sans scroll page */
+/* Dashboard grid — fills tall viewports, grows + scrolls when content needs more space */
 .dashboard-grid {
   display: grid;
   min-width: 0;
   max-width: 100%;
+  min-height: calc(100dvh - var(--header-height) - 2 * var(--page-gutter));
+  height: auto;
   overflow-x: hidden;
-  overflow-y: hidden;
+  overflow-y: visible;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   grid-template-rows:
-    minmax(0, 0.9fr) minmax(0, 1.55fr) minmax(0, 0.6fr) minmax(0, 0.6fr)
-    minmax(10rem, 0.95fr);
+    minmax(min-content, 0.9fr) minmax(16rem, 1.55fr) minmax(min-content, 0.6fr)
+    minmax(min-content, 0.6fr) minmax(11rem, 0.95fr);
   grid-template-areas:
     "hero hero"
     "forecast forecast"
@@ -122,7 +125,8 @@ body::-webkit-scrollbar {
   .dashboard-grid {
     grid-template-columns: 1.4fr 1fr 1fr;
     grid-template-rows:
-      minmax(0, 0.95fr) minmax(0, 1.35fr) minmax(0, 0.7fr) minmax(11rem, 0.95fr);
+      minmax(min-content, 0.95fr) minmax(16rem, 1.35fr) minmax(min-content, 0.7fr)
+      minmax(11rem, 0.95fr);
     grid-template-areas:
       "hero hero hero"
       "forecast forecast forecast"
@@ -134,7 +138,8 @@ body::-webkit-scrollbar {
 @media (min-width: 1280px) {
   .dashboard-grid {
     grid-template-columns: 1.5fr 1fr 0.95fr 0.95fr;
-    grid-template-rows: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 0.85fr);
+    grid-template-rows:
+      minmax(min-content, 1fr) minmax(16rem, 1.4fr) minmax(min-content, 0.85fr);
     grid-template-areas:
       "hero hero hero hero"
       "forecast forecast forecast forecast"
@@ -142,32 +147,8 @@ body::-webkit-scrollbar {
   }
 
   .dashboard-area-map {
-    min-height: 0;
+    min-height: 11rem;
     padding-bottom: 0;
-  }
-}
-
-/* Mobile court : autoriser le scroll dans main, pas sur body */
-@media (max-width: 767px) and (max-height: 700px) {
-  .dashboard-grid {
-    min-height: calc(100dvh - var(--header-height) - 1rem);
-    height: auto;
-    overflow-y: visible;
-    grid-template-rows:
-      minmax(120px, auto) minmax(320px, auto) minmax(100px, auto)
-      minmax(100px, auto) minmax(10rem, auto);
-  }
-
-  #main-content {
-    overflow-y: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-
-  #main-content::-webkit-scrollbar {
-    display: none;
-    width: 0;
-    height: 0;
   }
 }
 

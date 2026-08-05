@@ -19,7 +19,7 @@ type CityCrossfadeProps = {
 export function CityCrossfade({
   locationId,
   children,
-  className = "h-full min-h-0 w-full min-w-0",
+  className = "w-full min-w-0",
 }: CityCrossfadeProps) {
   const reduceMotion = useReducedMotion();
   const isMobile = useIsMobileUi();

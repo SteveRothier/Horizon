@@ -189,7 +189,7 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
       ) : null}
 
       {isLoading ? (
-        <div className="min-h-0 flex-1 overflow-hidden">
+        <div className="min-h-0 w-full">
           <DashboardSkeleton />
         </div>
       ) : isError ? (
@@ -201,7 +201,7 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
       ) : weather && coords ? (
         <CityCrossfade
           locationId={weather.location.id}
-          className="h-full min-h-0 w-full min-w-0 flex-1"
+          className="w-full min-w-0"
         >
           <DaySelectionProvider
             todayDate={todayDate}
@@ -251,7 +251,7 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
           </DaySelectionProvider>
         </CityCrossfade>
       ) : (
-        <div className="min-h-0 flex-1 overflow-hidden">
+        <div className="min-h-0 w-full">
           <DashboardSkeleton />
         </div>
       )}

@@ -12,8 +12,7 @@ type DashboardLayoutProps = {
 };
 
 /**
- * Viewport-filling dashboard grid — no page scroll on tablet+.
- * Mobile: compact grid that still aims to fit short viewports.
+ * Dashboard grid — fills tall viewports, scrolls in #main-content when content overflows.
  */
 export function DashboardLayout({
   hero,
@@ -27,23 +26,23 @@ export function DashboardLayout({
   return (
     <div
       className={cn(
-        "dashboard-grid h-full min-h-0 w-full min-w-0 max-w-full gap-[var(--grid-gap)]",
+        "dashboard-grid w-full min-w-0 max-w-full gap-[var(--grid-gap)]",
         className,
       )}
     >
-      <section className="dashboard-area-hero min-h-0 min-w-0 [&>*]:h-full [&>*]:min-w-0">
+      <section className="dashboard-area-hero min-h-0 min-w-0 [&>*]:min-h-full [&>*]:w-full [&>*]:min-w-0">
         {hero}
       </section>
-      <section className="dashboard-area-forecast min-h-0 min-w-0 [&>*]:h-full [&>*]:min-w-0">
+      <section className="dashboard-area-forecast min-h-0 min-w-0 [&>*]:min-h-full [&>*]:w-full [&>*]:min-w-0">
         {forecast}
       </section>
-      <section className="dashboard-area-details min-h-0 min-w-0 [&>*]:h-full [&>*]:min-w-0">
+      <section className="dashboard-area-details min-h-0 min-w-0 [&>*]:min-h-full [&>*]:w-full [&>*]:min-w-0">
         {details}
       </section>
-      <section className="dashboard-area-aqi min-h-0 min-w-0 [&>*]:h-full [&>*]:min-w-0">
+      <section className="dashboard-area-aqi min-h-0 min-w-0 [&>*]:min-h-full [&>*]:w-full [&>*]:min-w-0">
         {airQuality}
       </section>
-      <section className="dashboard-area-uv min-h-0 min-w-0 [&>*]:h-full [&>*]:min-w-0">
+      <section className="dashboard-area-uv min-h-0 min-w-0 [&>*]:min-h-full [&>*]:w-full [&>*]:min-w-0">
         {uv}
       </section>
       <section className="dashboard-area-map min-h-0 min-w-0">
