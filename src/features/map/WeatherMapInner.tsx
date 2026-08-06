@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import L from "leaflet";
 import {
@@ -33,45 +33,19 @@ const markerIcon = L.icon({
   shadowSize: [41, 41],
 });
 
-const EXPAND_MS = 520;
-const EXPAND_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
+const FADE_MS = 240;
+const FADE_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 
-type Rect = { top: number; left: number; width: number; height: number };
+const MAP_CLASS =
+  "h-full min-h-0 w-full [&_.leaflet-container]:h-full [&_.leaflet-container]:w-full [&_.leaflet-control-attribution]:text-[0.55rem] [&_.leaflet-control-attribution]:bg-black/40 [&_.leaflet-control-attribution]:text-white/80";
 
-function readRect(el: HTMLElement): Rect {
-  const r = el.getBoundingClientRect();
-  return {
-    top: r.top,
-    left: r.left,
-    width: Math.max(r.width, 1),
-    height: Math.max(r.height, 1),
-  };
-}
-
-/** Mirrors inset-3 / sm:inset-5 / md:inset-8 / lg:inset-10 / xl:inset-12 */
-function expandedRect(): Rect {
-  const w = window.innerWidth;
-  const h = window.innerHeight;
-  let pad = 12;
-  if (w >= 1280) pad = 48;
-  else if (w >= 1024) pad = 40;
-  else if (w >= 768) pad = 32;
-  else if (w >= 640) pad = 20;
-  return { top: pad, left: pad, width: w - pad * 2, height: h - pad * 2 };
-}
-
-function nextFrame(): Promise<void> {
-  return new Promise((resolve) => {
-    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-  });
-}
-
-function applyShellRectDom(el: HTMLElement, rect: Rect) {
-  el.style.top = `${rect.top}px`;
-  el.style.left = `${rect.left}px`;
-  el.style.width = `${rect.width}px`;
-  el.style.height = `${rect.height}px`;
-}
+/** Preview: gestures go to page scroll; toolbar stays clickable. */
+const PREVIEW_MAP_CLASS = cn(
+  MAP_CLASS,
+  "[touch-action:pan-y]",
+  "[&_.leaflet-pane]:!pointer-events-none",
+  "[&_.leaflet-control]:!pointer-events-auto",
+);
 
 function Recenter({ lat, lon }: { lat: number; lon: number }) {
   const map = useMap();
@@ -81,15 +55,79 @@ function Recenter({ lat, lon }: { lat: number; lon: number }) {
   return null;
 }
 
+type MapBodyProps = {
+  lat: number;
+  lon: number;
+  name: string;
+  displayName: string;
+  expanded: boolean;
+  interactive: boolean;
+  onToggleExpand: () => void;
+  resizeTick?: number;
+  className?: string;
+};
+
+function MapBody({
+  lat,
+  lon,
+  name,
+  displayName,
+  expanded,
+  interactive,
+  onToggleExpand,
+  resizeTick = 0,
+  className,
+}: MapBodyProps) {
+  return (
+    <MapContainer
+      center={[lat, lon]}
+      zoom={10}
+      zoomControl={false}
+      attributionControl={false}
+      dragging={interactive}
+      scrollWheelZoom={interactive}
+      touchZoom={interactive}
+      doubleClickZoom={false}
+      boxZoom={interactive}
+      keyboard={interactive}
+      zoomAnimation
+      fadeAnimation
+      markerZoomAnimation
+      className={cn(interactive ? MAP_CLASS : PREVIEW_MAP_CLASS, className)}
+      style={{
+        background: "transparent",
+        touchAction: interactive ? undefined : "pan-y",
+      }}
+    >
+      <AttributionControl position="bottomright" />
+      <TileLayer attribution={OSM_BASE_ATTRIBUTION} url={OSM_BASE_URL} />
+      <Recenter lat={lat} lon={lon} />
+      <MapResize resizeTick={resizeTick} />
+      <MapControls
+        expanded={expanded}
+        onToggleExpand={onToggleExpand}
+        lat={lat}
+        lon={lon}
+      />
+      <Marker position={[lat, lon]} icon={markerIcon}>
+        <Popup>
+          <strong>{name}</strong>
+          <br />
+          <span className="text-xs">{displayName}</span>
+        </Popup>
+      </Marker>
+    </MapContainer>
+  );
+}
+
 type WeatherMapProps = {
   location: GeoLocation;
   className?: string;
 };
 
 /**
- * Always portal + fixed. Collapsed position follows the slot via rAF DOM
- * writes (no React setState on scroll) to avoid compositor lag / jiggle.
- * Expand/collapse still uses React state for CSS transitions.
+ * Collapsed: in-flow preview (non-interactive Leaflet — native page scroll).
+ * Expanded: separate fullscreen portal instance (interactive), preview untouched.
  */
 export default function WeatherMapInner({
   location,
@@ -98,139 +136,33 @@ export default function WeatherMapInner({
   const t = useT();
   const { latitude: lat, longitude: lon, name, displayName } = location;
   const [expanded, setExpanded] = useState(false);
-  const [resizeTick, setResizeTick] = useState(0);
+  const [overlayVisible, setOverlayVisible] = useState(false);
+  const [overlayTick, setOverlayTick] = useState(0);
   const [mounted, setMounted] = useState(false);
-  const [shellReady, setShellReady] = useState(false);
-  const [shellRect, setShellRect] = useState<Rect | null>(null);
-  const [animating, setAnimating] = useState(false);
-  const [backdropOn, setBackdropOn] = useState(false);
-
-  const slotRef = useRef<HTMLDivElement>(null);
-  const shellRef = useRef<HTMLDivElement>(null);
-  const slotRectRef = useRef<Rect | null>(null);
-  const busyRef = useRef(false);
-  const flyingRef = useRef(false);
-  const rafRef = useRef(0);
-
-  const flying = expanded || animating;
-  flyingRef.current = flying;
+  const collapsingRef = useRef(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const syncShellToSlot = useCallback(() => {
-    const slot = slotRef.current;
-    const shell = shellRef.current;
-    if (!slot || !shell) return;
-    if (flyingRef.current || busyRef.current) return;
-    const next = readRect(slot);
-    slotRectRef.current = next;
-    applyShellRectDom(shell, next);
-  }, []);
-
-  const scheduleSync = useCallback(() => {
-    if (rafRef.current) return;
-    rafRef.current = requestAnimationFrame(() => {
-      rafRef.current = 0;
-      syncShellToSlot();
-    });
-  }, [syncShellToSlot]);
-
-  useLayoutEffect(() => {
-    if (!mounted) return;
-    setShellReady(true);
-  }, [mounted]);
-
-  // Apply slot rect once the portaled shell exists (and on every collapsed resume).
-  useLayoutEffect(() => {
-    if (!shellReady || flying) return;
-    syncShellToSlot();
-  }, [shellReady, flying, syncShellToSlot]);
-
-  useEffect(() => {
-    if (!mounted || !shellReady) return;
-    const el = slotRef.current;
-    if (!el) return;
-
-    const ro = new ResizeObserver(() => scheduleSync());
-    ro.observe(el);
-    window.addEventListener("resize", scheduleSync);
-    window.addEventListener("scroll", scheduleSync, true);
-
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      rafRef.current = 0;
-      ro.disconnect();
-      window.removeEventListener("resize", scheduleSync);
-      window.removeEventListener("scroll", scheduleSync, true);
-    };
-  }, [mounted, shellReady, scheduleSync]);
-
-  const bumpResize = useCallback(() => {
-    setResizeTick((n) => n + 1);
-  }, []);
-
-  const expand = useCallback(async () => {
-    if (busyRef.current || expanded) return;
-    const from = slotRef.current
-      ? readRect(slotRef.current)
-      : slotRectRef.current;
-    if (!from) {
-      setExpanded(true);
-      setBackdropOn(true);
-      setShellRect(expandedRect());
-      bumpResize();
-      return;
-    }
-
-    busyRef.current = true;
-    setAnimating(true);
+  const expand = useCallback(() => {
+    if (expanded || collapsingRef.current) return;
     setExpanded(true);
-    setBackdropOn(false);
-    setShellRect(from);
-    await nextFrame();
-    setBackdropOn(true);
-    setShellRect(expandedRect());
-    window.setTimeout(() => {
-      setAnimating(false);
-      busyRef.current = false;
-      bumpResize();
-    }, EXPAND_MS + 40);
-  }, [bumpResize, expanded]);
+    setOverlayTick((n) => n + 1);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => setOverlayVisible(true));
+    });
+  }, [expanded]);
 
-  const collapse = useCallback(async () => {
-    if (busyRef.current || !expanded) return;
-    const to = slotRef.current
-      ? readRect(slotRef.current)
-      : slotRectRef.current;
-
-    if (!to) {
-      setExpanded(false);
-      setBackdropOn(false);
-      setAnimating(false);
-      setShellRect(null);
-      bumpResize();
-      scheduleSync();
-      return;
-    }
-
-    busyRef.current = true;
-    setAnimating(true);
-    setBackdropOn(false);
-    setShellRect((prev) => prev ?? expandedRect());
-    await nextFrame();
-    setShellRect(to);
+  const collapse = useCallback(() => {
+    if (!expanded || collapsingRef.current) return;
+    collapsingRef.current = true;
+    setOverlayVisible(false);
     window.setTimeout(() => {
       setExpanded(false);
-      setAnimating(false);
-      busyRef.current = false;
-      setShellRect(null);
-      bumpResize();
-      // Resume DOM sync after React releases style ownership.
-      requestAnimationFrame(() => scheduleSync());
-    }, EXPAND_MS + 40);
-  }, [bumpResize, expanded, scheduleSync]);
+      collapsingRef.current = false;
+    }, FADE_MS);
+  }, [expanded]);
 
   useEffect(() => {
     if (!expanded) return;
@@ -246,64 +178,81 @@ export default function WeatherMapInner({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
-        void collapse();
+        collapse();
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [expanded, collapse]);
 
-  function toggleExpand() {
-    if (busyRef.current) return;
-    if (expanded) void collapse();
-    else void expand();
-  }
+  const mapProps = {
+    lat,
+    lon,
+    name,
+    displayName,
+  };
 
-  const mapShell =
-    mounted && shellReady ? (
-      <>
-        {flying && (
-          <button
-            type="button"
-            className={cn(
-              "map-backdrop-fly fixed inset-0 z-[55] border-0 bg-black/50 backdrop-blur-sm",
-              backdropOn ? "opacity-100" : "pointer-events-none opacity-0",
-            )}
-            style={{
-              transition: `opacity ${EXPAND_MS}ms ${EXPAND_EASE}`,
-            }}
-            aria-label={t("map.collapse")}
-            onClick={() => void collapse()}
-          />
-        )}
+  const overlay =
+    mounted && expanded
+      ? createPortal(
+          <div className="pointer-events-none fixed inset-0 z-[60]">
+            <button
+              type="button"
+              className={cn(
+                "map-backdrop-fly pointer-events-auto absolute inset-0 border-0 bg-black/55",
+                overlayVisible ? "opacity-100" : "opacity-0",
+              )}
+              style={{
+                transition: `opacity ${FADE_MS}ms ${FADE_EASE}`,
+              }}
+              aria-label={t("map.collapse")}
+              onClick={collapse}
+            />
+            <div
+              className={cn(
+                "pointer-events-auto absolute inset-3 overflow-hidden rounded-[var(--glass-radius)] shadow-[var(--glass-shadow)] sm:inset-5 md:inset-8 lg:inset-10 xl:inset-12",
+                overlayVisible ? "opacity-100" : "opacity-0",
+              )}
+              style={{
+                transition: `opacity ${FADE_MS}ms ${FADE_EASE}`,
+              }}
+            >
+              <GlassCard
+                interactive={false}
+                animate={false}
+                className={cn(
+                  "flex h-full min-h-0 flex-col overflow-hidden p-0 outline-none !shadow-none",
+                  "![backdrop-filter:none] ![-webkit-backdrop-filter:none] bg-[rgba(12,18,28,0.97)]",
+                )}
+              >
+                <div
+                  className="relative h-full min-h-0 w-full flex-1 overflow-hidden rounded-[inherit]"
+                  role="img"
+                  aria-label={t("map.label", { name })}
+                >
+                  <MapBody
+                    {...mapProps}
+                    expanded
+                    interactive
+                    onToggleExpand={collapse}
+                    resizeTick={overlayTick}
+                  />
+                </div>
+              </GlassCard>
+            </div>
+          </div>,
+          document.body,
+        )
+      : null;
 
+  return (
+    <>
+      <div className="relative h-full min-h-[10rem] w-full">
         <div
-          ref={shellRef}
           className={cn(
-            "pointer-events-auto fixed overflow-hidden rounded-[var(--glass-radius)]",
+            "h-full w-full overflow-hidden rounded-[var(--glass-radius)]",
             "shadow-[var(--glass-shadow)]",
-            animating && "map-shell-fly",
           )}
-          style={
-            flying && shellRect
-              ? {
-                  top: shellRect.top,
-                  left: shellRect.left,
-                  width: shellRect.width,
-                  height: shellRect.height,
-                  zIndex: 60,
-                  transition: animating
-                    ? `top ${EXPAND_MS}ms ${EXPAND_EASE}, left ${EXPAND_MS}ms ${EXPAND_EASE}, width ${EXPAND_MS}ms ${EXPAND_EASE}, height ${EXPAND_MS}ms ${EXPAND_EASE}`
-                    : "none",
-                  willChange: animating
-                    ? "top, left, width, height"
-                    : undefined,
-                }
-              : {
-                  zIndex: 40,
-                  transition: "none",
-                }
-          }
         >
           <GlassCard
             interactive={false}
@@ -312,65 +261,25 @@ export default function WeatherMapInner({
             tabIndex={-1}
             className={cn(
               "flex h-full min-h-0 flex-col overflow-hidden p-0 outline-none !shadow-none",
-              flying &&
-                "![backdrop-filter:none] ![-webkit-backdrop-filter:none] bg-[rgba(12,18,28,0.97)]",
               className,
             )}
           >
             <div
-              className="relative min-h-0 flex-1 overflow-hidden rounded-[inherit]"
+              className="relative h-full min-h-0 w-full flex-1 overflow-hidden rounded-[inherit] [touch-action:pan-y]"
               role="img"
               aria-label={t("map.label", { name })}
             >
-              <MapContainer
-                center={[lat, lon]}
-                zoom={10}
-                zoomControl={false}
-                attributionControl={false}
-                scrollWheelZoom
-                touchZoom
-                doubleClickZoom={false}
-                zoomAnimation
-                fadeAnimation
-                markerZoomAnimation
-                className="h-full min-h-[10rem] w-full [&_.leaflet-control-attribution]:text-[0.55rem] [&_.leaflet-control-attribution]:bg-black/40 [&_.leaflet-control-attribution]:text-white/80"
-                style={{ background: "transparent" }}
-              >
-                <AttributionControl position="bottomright" />
-                <TileLayer
-                  attribution={OSM_BASE_ATTRIBUTION}
-                  url={OSM_BASE_URL}
-                />
-                <Recenter lat={lat} lon={lon} />
-                <MapResize
-                  expanded={expanded}
-                  resizeTick={resizeTick}
-                  animating={animating}
-                />
-                <MapControls
-                  expanded={expanded}
-                  onToggleExpand={toggleExpand}
-                  lat={lat}
-                  lon={lon}
-                />
-                <Marker position={[lat, lon]} icon={markerIcon}>
-                  <Popup>
-                    <strong>{name}</strong>
-                    <br />
-                    <span className="text-xs">{displayName}</span>
-                  </Popup>
-                </Marker>
-              </MapContainer>
+              <MapBody
+                {...mapProps}
+                expanded={false}
+                interactive={false}
+                onToggleExpand={expand}
+              />
             </div>
           </GlassCard>
         </div>
-      </>
-    ) : null;
-
-  return (
-    <>
-      <div ref={slotRef} className="h-full min-h-[10rem] w-full" aria-hidden />
-      {mounted ? createPortal(mapShell, document.body) : null}
+      </div>
+      {overlay}
     </>
   );
 }

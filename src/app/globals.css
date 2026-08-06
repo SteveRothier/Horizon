@@ -57,6 +57,8 @@ body::-webkit-scrollbar {
   -ms-overflow-style: none !important;
   /* Prevent classic Windows scrollbar gutter from appearing */
   scrollbar-gutter: auto;
+  /* Kill rubber-band overscroll that amplifies map bounce at the bottom */
+  overscroll-behavior-y: none;
 }
 
 #main-content::-webkit-scrollbar {
@@ -779,13 +781,9 @@ body::-webkit-scrollbar {
     animation-iteration-count: infinite !important;
   }
 
-  /* Map expand morph must stay perceptible. */
-  .map-shell-fly {
-    transition-duration: 520ms !important;
-  }
-
+  /* Map expand overlay fade must stay perceptible. */
   .map-backdrop-fly {
-    transition-duration: 520ms !important;
+    transition-duration: 240ms !important;
   }
 
   .leaflet-fade-anim .leaflet-tile,

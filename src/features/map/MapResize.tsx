@@ -4,17 +4,12 @@ import { useEffect } from "react";
 import { useMap } from "react-leaflet";
 
 type MapResizeProps = {
-  expanded: boolean;
+  /** Bump to force a size pass (e.g. after overlay mount). */
   resizeTick?: number;
-  /** Keep invalidating Leaflet size while the shell morphs. */
-  animating?: boolean;
 };
 
-export function MapResize({
-  expanded,
-  resizeTick = 0,
-  animating = false,
-}: MapResizeProps) {
+/** Invalidate Leaflet size once on mount and when resizeTick changes. */
+export function MapResize({ resizeTick = 0 }: MapResizeProps) {
   const map = useMap();
 
   useEffect(() => {
@@ -22,18 +17,7 @@ export function MapResize({
       map.invalidateSize({ animate: false });
     });
     return () => cancelAnimationFrame(frame);
-  }, [expanded, resizeTick, map]);
-
-  useEffect(() => {
-    if (!animating) return;
-    let raf = 0;
-    const tick = () => {
-      map.invalidateSize({ animate: false });
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [animating, map]);
+  }, [resizeTick, map]);
 
   return null;
 }
