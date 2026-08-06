@@ -59,9 +59,8 @@ export function Header({
             className={cn(
               "header-search-fly min-w-0 flex-1",
               "max-sm:absolute max-sm:inset-y-0 max-sm:left-0 max-sm:right-[calc(9.75rem+1.125rem)] max-sm:z-20",
-              "max-sm:w-[calc(100%-9.75rem-1.125rem)]",
               searchFocused &&
-                "is-flying max-sm:right-[calc(2.25rem+0.375rem)] max-sm:w-[calc(100%-2.25rem-0.375rem)]",
+                "is-flying max-sm:right-[calc(2.25rem+0.375rem)]",
             )}
           >
             {resolvedSearchSlot ?? (

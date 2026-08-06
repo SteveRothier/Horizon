@@ -7,8 +7,12 @@ import { FavoritesList } from "@/features/favorites/FavoritesList";
 import { HistoryList } from "@/features/history/HistoryList";
 import { SettingsPanel } from "@/features/settings/SettingsPanel";
 
-export const StableSearchSlot = memo(function StableSearchSlot() {
-  return <SearchBar />;
+export const StableSearchSlot = memo(function StableSearchSlot({
+  onFocusChange,
+}: {
+  onFocusChange?: (focused: boolean) => void;
+}) {
+  return <SearchBar onFocusChange={onFocusChange} />;
 });
 
 export const StableSettingsSlot = memo(function StableSettingsSlot() {
