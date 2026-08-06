@@ -26,17 +26,17 @@ export function DashboardLayout({
   return (
     <div
       className={cn(
-        "dashboard-grid w-full min-w-0 max-w-full gap-[var(--grid-gap)]",
+        "dashboard-grid h-full min-h-0 w-full min-w-0 max-w-full gap-[var(--grid-gap)]",
         className,
       )}
     >
-      <section className="dashboard-area-hero min-h-0 min-w-0 [&>*]:min-h-full [&>*]:w-full [&>*]:min-w-0">
+      <section className="dashboard-area-hero min-h-0 min-w-0 [&>*]:w-full [&>*]:min-w-0 max-sm:[&>*]:min-h-0 sm:[&>*]:min-h-full">
         {hero}
       </section>
-      <section className="dashboard-area-forecast min-h-0 min-w-0 [&>*]:min-h-full [&>*]:w-full [&>*]:min-w-0">
+      <section className="dashboard-area-forecast min-h-0 min-w-0 [&>*]:w-full [&>*]:min-w-0 max-sm:[&>*]:min-h-0 sm:[&>*]:min-h-full">
         {forecast}
       </section>
-      <section className="dashboard-area-details min-h-0 min-w-0 [&>*]:min-h-full [&>*]:w-full [&>*]:min-w-0">
+      <section className="dashboard-area-details min-h-0 min-w-0 [&>*]:w-full [&>*]:min-w-0 max-sm:[&>*]:min-h-0 sm:[&>*]:min-h-full">
         {details}
       </section>
       <section className="dashboard-area-aqi min-h-0 min-w-0 [&>*]:min-h-full [&>*]:w-full [&>*]:min-w-0">

@@ -44,7 +44,7 @@ export function AirQuality({ data, className }: AirQualityProps) {
   return (
     <GlassCard
       interactive={false}
-      className={cn("@container", dashboardCardClass, className)}
+      className={cn("@container", dashboardCardClass, "h-full", className)}
     >
       <h2 className={dashboardCardTitleClass}>
         {t("aqi.title")}

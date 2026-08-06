@@ -26,17 +26,30 @@ export const metadata: Metadata = {
     "Application météo moderne — expérience immersive glassmorphism",
 };
 
+/** Inlined so it paints before any CSS chunk (App Router may drop a manual <head>). */
+const CRITICAL_SCROLL_CSS = `
+html,body{margin:0;height:100%;max-height:100dvh;overflow:hidden!important;scrollbar-width:none!important;-ms-overflow-style:none!important}
+html::-webkit-scrollbar,body::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}
+#main-content,.app-shell{scrollbar-width:none!important;-ms-overflow-style:none!important}
+#main-content::-webkit-scrollbar,.app-shell::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" className="h-full overflow-hidden">
+    <html
+      lang="fr"
+      className="h-full overflow-hidden"
+      style={{ height: "100%", overflow: "hidden" }}
+    >
       <body
         className={`${outfit.variable} ${manrope.variable} h-full overflow-hidden font-sans antialiased`}
-        style={{ margin: 0, overflow: "hidden" }}
+        style={{ margin: 0, overflow: "hidden", height: "100%" }}
       >
+        <style dangerouslySetInnerHTML={{ __html: CRITICAL_SCROLL_CSS }} />
         <QueryProvider>
           <DocumentLang />
           <SkipLink />

@@ -63,20 +63,22 @@ export function UVIndex({ value, className }: UVIndexProps) {
   return (
     <GlassCard
       interactive={false}
-      className={cn(dashboardCardClass, className)}
+      className={cn(dashboardCardClass, "h-full", className)}
     >
       <h2 className={dashboardCardTitleClass}>
         {t("uv.title")}
       </h2>
-      <div className="flex min-h-0 flex-1 flex-col items-center justify-center">
+      <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-1">
         <SemiGauge
           value={uv}
           max={11}
           label={meta.label}
-          sublabel={meta.advice}
           color={meta.color}
           className="w-28 sm:w-32"
         />
+        <p className="max-w-[12rem] text-center text-[0.65rem] leading-snug text-[var(--text-muted)]">
+          {meta.advice}
+        </p>
       </div>
     </GlassCard>
   );

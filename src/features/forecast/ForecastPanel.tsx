@@ -46,7 +46,7 @@ export function ForecastPanel({
       interactive={false}
       className={cn(dashboardCardClass, className)}
     >
-      <h2 className={cn(dashboardCardTitleClass, "mb-1")}>
+      <h2 className={cn(dashboardCardTitleClass, "mb-0.5 sm:mb-1")}>
         {t("forecast.title")}
         <span ref={dayLabelRef} className="text-[var(--text-muted)]">
           {" "}
@@ -54,9 +54,9 @@ export function ForecastPanel({
         </span>
       </h2>
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-col gap-1 sm:flex-1">
         <section
-          className="flex min-h-0 min-w-0 flex-1 flex-col"
+          className="flex min-h-0 min-w-0 flex-col sm:flex-[1_1_0%]"
           aria-label={t("forecast.hourly")}
         >
           <HourlyForecast
@@ -72,7 +72,7 @@ export function ForecastPanel({
         </section>
 
         <section
-          className="mt-1.5 w-full min-w-0 shrink-0 pb-0.5"
+          className="w-full min-w-0 shrink-0 sm:min-h-[5rem] sm:flex-[0.32_1_0%]"
           aria-label={t("forecast.weekly")}
         >
           <WeeklyForecast

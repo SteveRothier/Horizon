@@ -495,57 +495,51 @@ const MetaStrip = memo(function MetaStrip({
   }
 
   return (
-    <>
-      <div className="grid" style={gridStyle}>
-        {cells.map((item, i) => {
-          const index = start + i;
-          return (
-            <div
-              key={`icon-${item.time}`}
-              className="hourly-meta-cell flex items-center justify-center"
-              style={{ gridColumn: index + 1 }}
-            >
-              <WeatherIcon
-                condition={item.condition}
-                isDay={item.isDay}
-                size={18}
-              />
-            </div>
-          );
-        })}
-      </div>
+    <div className="grid gap-y-0.5" style={gridStyle}>
+      {cells.map((item, i) => {
+        const index = start + i;
+        return (
+          <div
+            key={`icon-${item.time}`}
+            className="hourly-meta-cell flex items-center justify-center"
+            style={{ gridColumn: index + 1, gridRow: 1 }}
+          >
+            <WeatherIcon
+              condition={item.condition}
+              isDay={item.isDay}
+              size={16}
+            />
+          </div>
+        );
+      })}
 
-      <div className="grid" style={gridStyle}>
-        {cells.map((item, i) => {
-          const index = start + i;
-          const speed = toDisplaySpeed(item.windSpeed, speedUnit);
-          return (
-            <div
-              key={`wind-${item.time}`}
-              className="hourly-meta-cell flex items-center justify-center text-center text-[0.65rem] text-[var(--text-primary)] sm:text-xs"
-              style={{ gridColumn: index + 1 }}
-            >
-              {speedFormatter.format(speed)} {speedSuffix}
-            </div>
-          );
-        })}
-      </div>
+      {cells.map((item, i) => {
+        const index = start + i;
+        const speed = toDisplaySpeed(item.windSpeed, speedUnit);
+        return (
+          <div
+            key={`wind-${item.time}`}
+            className="hourly-meta-cell flex items-center justify-center text-center text-[0.6rem] leading-none text-[var(--text-primary)] sm:text-[0.65rem]"
+            style={{ gridColumn: index + 1, gridRow: 2 }}
+          >
+            {speedFormatter.format(speed)} {speedSuffix}
+          </div>
+        );
+      })}
 
-      <div className="grid" style={gridStyle}>
-        {cells.map((item, i) => {
-          const index = start + i;
-          return (
-            <div
-              key={`time-${item.time}`}
-              className="hourly-meta-cell truncate px-0.5 text-center text-[0.65rem] text-[var(--text-muted)] sm:text-xs"
-              style={{ gridColumn: index + 1 }}
-            >
-              {formatHour(item.time, locale)}
-            </div>
-          );
-        })}
-      </div>
-    </>
+      {cells.map((item, i) => {
+        const index = start + i;
+        return (
+          <div
+            key={`time-${item.time}`}
+            className="hourly-meta-cell truncate px-0.5 text-center text-[0.6rem] leading-none text-[var(--text-muted)] sm:text-[0.65rem]"
+            style={{ gridColumn: index + 1, gridRow: 3 }}
+          >
+            {formatHour(item.time, locale)}
+          </div>
+        );
+      })}
+    </div>
   );
 });
 
@@ -1108,7 +1102,7 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
   return (
     <div
       className={cn(
-        "flex h-full min-h-0 min-w-0 w-full max-w-full flex-col",
+        "flex min-h-0 min-w-0 w-full max-w-full flex-col sm:h-full",
         className,
       )}
     >
@@ -1128,7 +1122,10 @@ export const HourlyCombinedChart = memo(function HourlyCombinedChart({
           className="hourly-chart-strip"
           style={{ width: contentWidth }}
         >
-          <div ref={chartRef} className="relative min-h-0 flex-1">
+          <div
+            ref={chartRef}
+            className="relative h-[7.5rem] min-h-0 shrink-0 sm:h-auto sm:min-h-0 sm:flex-1"
+          >
             <svg
               width={contentWidth}
               height={chartHeight}

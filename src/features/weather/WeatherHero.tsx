@@ -90,7 +90,7 @@ export function WeatherHero({
         <FavoriteButton location={location} className="h-8 w-8" />
       </div>
 
-      <div className="flex flex-col">
+      <div className="flex h-full min-h-0 flex-col">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <p className="truncate pr-20 text-xs text-[var(--text-muted)] sm:text-sm">

@@ -257,14 +257,14 @@ export function HourlyForecast({
   }, [writeDayLabel]);
 
   const body = (
-    <div className="relative flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden">
+    <div className="relative flex min-h-0 w-full min-w-0 flex-col overflow-hidden sm:min-h-0 sm:flex-1">
       {continuous.length === 0 ? (
         <p className="flex h-full min-h-0 items-center justify-center text-center text-xs text-[var(--text-muted)]">
           {t("forecast.noHourly")}
         </p>
       ) : (
         <HourlyCombinedChart
-          className="h-full"
+          className="sm:h-full"
           items={continuous}
           scrollToIndex={scrollToIndex}
           scrollDurationMs={scrollDurationMs}
@@ -278,7 +278,16 @@ export function HourlyForecast({
   );
 
   if (embedded) {
-    return <div className={cn("flex min-h-0 min-w-0 flex-1 flex-col", className)}>{body}</div>;
+    return (
+      <div
+        className={cn(
+          "flex min-h-0 min-w-0 flex-col sm:flex-1",
+          className,
+        )}
+      >
+        {body}
+      </div>
+    );
   }
 
   return (

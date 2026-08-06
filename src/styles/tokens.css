@@ -42,8 +42,8 @@
   --page-gutter: 0.5rem;
   --grid-gap: 0.4rem;
   --card-pad: 0.625rem;
-  --glass-radius: 22px;
-  --glass-radius-sm: 16px;
+  --glass-radius: 18px;
+  --glass-radius-sm: 12px;
 
   /* Motion */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);

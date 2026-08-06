@@ -54,7 +54,7 @@ export function WeeklyForecast({
     <ul
       ref={listRef}
       className={cn(
-        "scrollbar-none flex w-full min-w-0 gap-1 overflow-x-auto overscroll-x-contain py-0.5 sm:gap-1.5",
+        "scrollbar-none flex w-full min-w-0 gap-1 overflow-x-auto overscroll-x-contain py-0.5 sm:h-full sm:items-stretch sm:gap-1.5",
         embedded && "justify-between",
       )}
       role="listbox"
@@ -70,7 +70,7 @@ export function WeeklyForecast({
               if (node) pillRefs.current.set(day.date, node);
               else pillRefs.current.delete(day.date);
             }}
-            className={cn("shrink-0", embedded && "min-w-0 flex-1")}
+            className={cn("shrink-0 sm:flex", embedded && "min-w-0 flex-1")}
           >
             <button
               type="button"
@@ -78,7 +78,7 @@ export function WeeklyForecast({
               aria-selected={selected}
               onClick={() => onSelectDay(day.date)}
               className={cn(
-                "box-border flex h-full w-full min-w-[2.75rem] flex-col items-center justify-center gap-1 rounded-[var(--glass-radius-sm)] px-1.5 py-2 transition-colors duration-200 sm:min-w-0 sm:gap-1.5 sm:px-2 sm:py-2.5",
+                "box-border flex h-full w-full min-w-[2.75rem] flex-col items-center justify-center gap-0.5 rounded-[var(--glass-radius-sm)] px-1.5 py-1.5 transition-colors duration-200 sm:min-w-0 sm:gap-1.5 sm:px-2 sm:py-3",
                 selected
                   ? "bg-white/15 text-[var(--text-primary)] ring-1 ring-inset ring-white/25"
                   : "text-[var(--text-secondary)] hover:bg-white/10 hover:text-[var(--text-primary)]",
@@ -110,7 +110,7 @@ export function WeeklyForecast({
 
   if (embedded) {
     return (
-      <div className={cn("w-full min-w-0 shrink-0", className)}>{list}</div>
+      <div className={cn("h-full w-full min-w-0 shrink-0", className)}>{list}</div>
     );
   }
 

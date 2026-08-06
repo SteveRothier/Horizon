@@ -59,6 +59,8 @@ export function AppShell({
   const [collectionsAnchor, setCollectionsAnchor] =
     useState<CollectionsAnchor | null>(null);
   const [mounted, setMounted] = useState(false);
+  /** Delay overflow-y:auto until after first paint — avoids scrollbar flash on refresh. */
+  const [scrollEnabled, setScrollEnabled] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
   const isMobile = useIsMobileUi();
   const { pullPx, refreshing, armed } = usePullToRefresh({
@@ -68,6 +70,10 @@ export function AppShell({
 
   useEffect(() => {
     setMounted(true);
+    const id = requestAnimationFrame(() => {
+      requestAnimationFrame(() => setScrollEnabled(true));
+    });
+    return () => cancelAnimationFrame(id);
   }, []);
 
   function openCollections(
@@ -128,7 +134,11 @@ export function AppShell({
         <main
           ref={mainRef}
           id="main-content"
-          className="relative mx-auto flex min-h-0 w-full min-w-0 max-w-[1440px] flex-1 flex-col overflow-x-hidden overflow-y-auto px-[var(--page-gutter)] py-[var(--page-gutter)]"
+          className={cn(
+            "scrollbar-none relative mx-auto flex min-h-0 w-full min-w-0 max-w-[1440px] flex-1 flex-col overflow-x-hidden px-[var(--page-gutter)] py-[var(--page-gutter)]",
+            scrollEnabled ? "overflow-y-auto" : "overflow-y-hidden",
+          )}
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
           tabIndex={-1}
         >
           {(pullPx > 0 || refreshing) && (
