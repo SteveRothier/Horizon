@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -59,6 +59,8 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
     period: DEFAULT_PERIOD,
   });
   const geoHandlers = useStableGeoHandlers(setGeoError);
+  /** URL slug already applied to the store — prevents URL↔store ping-pong. */
+  const urlSyncedSlugRef = useRef<string | null>(null);
 
   const storeSlug = slugifyCity(location.name);
   const slugQuery = citySlug ? queryFromSlug(citySlug) : "";
@@ -67,16 +69,23 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
   const slugGeocode = useCitySearch(slugQuery, slugGeocodeEnabled);
 
   useEffect(() => {
-    if (!slugGeocodeEnabled) {
+    if (!slugGeocodeEnabled || !citySlug) {
       setSlugError(null);
       return;
     }
     if (slugGeocode.isFetching) return;
 
+    // Already synced this URL slug — don't overwrite a later user pick (search/geo).
+    if (urlSyncedSlugRef.current === citySlug) {
+      setSlugError(null);
+      return;
+    }
+
     if (slugGeocode.isError) {
       setSlugError(
         messageFromApiError(slugGeocode.error, t, "error.slugNotFound"),
       );
+      urlSyncedSlugRef.current = citySlug;
       return;
     }
 
@@ -88,9 +97,11 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
       if (storeSlug !== citySlug || !sameCoords) {
         selectLocation(match);
       }
+      urlSyncedSlugRef.current = citySlug;
       setSlugError(null);
-    } else if (slugGeocode.isSuccess && storeSlug !== citySlug) {
+    } else if (slugGeocode.isSuccess) {
       setSlugError(t("error.slugNotFound"));
+      urlSyncedSlugRef.current = citySlug;
     }
   }, [
     slugGeocodeEnabled,
@@ -106,18 +117,40 @@ export function WeatherDashboard({ citySlug }: WeatherDashboardProps) {
     t,
   ]);
 
+  const awaitingUrlSync =
+    Boolean(citySlug) &&
+    urlSyncedSlugRef.current !== citySlug &&
+    storeSlug !== citySlug;
+
   const slugResolving =
     slugGeocodeEnabled &&
-    (slugGeocode.isFetching || !slugGeocode.isFetched) &&
-    storeSlug !== citySlug;
+    (slugGeocode.isFetching || !slugGeocode.isFetched || awaitingUrlSync);
 
   useEffect(() => {
     if (!hydrated || slugResolving) return;
+
+    // Still applying URL → store for this slug: don't push store back to URL.
+    if (
+      citySlug &&
+      urlSyncedSlugRef.current !== citySlug &&
+      storeSlug !== citySlug
+    ) {
+      return;
+    }
+
     const path = toCityPath(location);
     if (pathname !== path) {
       router.replace(path);
     }
-  }, [hydrated, slugResolving, location, pathname, router]);
+  }, [
+    hydrated,
+    slugResolving,
+    citySlug,
+    storeSlug,
+    location,
+    pathname,
+    router,
+  ]);
 
   const coords =
     hydrated && !slugResolving

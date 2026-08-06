@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import L from "leaflet";
 import {
   AttributionControl,
@@ -13,7 +14,6 @@ import {
 import { GlassCard } from "@/components/ui/GlassCard";
 import { MapControls } from "@/features/map/MapControls";
 import { MapResize } from "@/features/map/MapResize";
-import { flyToSafe } from "@/features/map/flyToSafe";
 import {
   OSM_BASE_ATTRIBUTION,
   OSM_BASE_URL,
@@ -21,7 +21,6 @@ import {
 import { useT } from "@/hooks/useT";
 import type { GeoLocation } from "@/types/weather";
 import { cn } from "@/utils/cn";
-import { coordsFromLocation } from "@/utils/location-match";
 import "leaflet/dist/leaflet.css";
 
 const markerIcon = L.icon({
@@ -67,24 +66,10 @@ function nextFrame(): Promise<void> {
   });
 }
 
-const FALLBACK_LAT = 48.8566;
-const FALLBACK_LON = 2.3522;
-
 function Recenter({ lat, lon }: { lat: number; lon: number }) {
   const map = useMap();
-  const prevRef = useRef<{ lat: number; lon: number } | null>(null);
   useEffect(() => {
-    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
-    const prev = prevRef.current;
-    if (
-      prev &&
-      Math.abs(prev.lat - lat) < 1e-6 &&
-      Math.abs(prev.lon - lon) < 1e-6
-    ) {
-      return;
-    }
-    prevRef.current = { lat, lon };
-    flyToSafe(map, lat, lon, { duration: 0.55 });
+    map.flyTo([lat, lon], Math.max(map.getZoom(), 10), { duration: 0.55 });
   }, [lat, lon, map]);
   return null;
 }
@@ -99,12 +84,10 @@ export default function WeatherMapInner({
   className,
 }: WeatherMapProps) {
   const t = useT();
-  const coords = coordsFromLocation(location);
-  const lat = coords?.lat ?? FALLBACK_LAT;
-  const lon = coords?.lon ?? FALLBACK_LON;
-  const { name, displayName } = location;
+  const { latitude: lat, longitude: lon, name, displayName } = location;
   const [expanded, setExpanded] = useState(false);
   const [resizeTick, setResizeTick] = useState(0);
+  const [mounted, setMounted] = useState(false);
   const [slotRect, setSlotRect] = useState<Rect | null>(null);
   const [shellRect, setShellRect] = useState<Rect | null>(null);
   const [animating, setAnimating] = useState(false);
@@ -112,35 +95,38 @@ export default function WeatherMapInner({
 
   const slotRef = useRef<HTMLDivElement>(null);
   const busyRef = useRef(false);
-  const animTimerRef = useRef(0);
 
-  const measureSlot = useCallback(() => {
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const syncSlotRect = useCallback(() => {
     const el = slotRef.current;
     if (!el) return;
-    setSlotRect(readRect(el));
-  }, []);
+    const next = readRect(el);
+    setSlotRect(next);
+    if (!expanded && !busyRef.current) {
+      setShellRect(next);
+    }
+  }, [expanded]);
 
   useLayoutEffect(() => {
-    measureSlot();
-  }, [measureSlot]);
-
-  useEffect(() => {
-    return () => {
-      if (animTimerRef.current) window.clearTimeout(animTimerRef.current);
-    };
-  }, []);
+    syncSlotRect();
+  }, [syncSlotRect]);
 
   useEffect(() => {
     const el = slotRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => measureSlot());
+    const ro = new ResizeObserver(() => syncSlotRect());
     ro.observe(el);
-    window.addEventListener("resize", measureSlot);
+    window.addEventListener("resize", syncSlotRect);
+    window.addEventListener("scroll", syncSlotRect, true);
     return () => {
       ro.disconnect();
-      window.removeEventListener("resize", measureSlot);
+      window.removeEventListener("resize", syncSlotRect);
+      window.removeEventListener("scroll", syncSlotRect, true);
     };
-  }, [measureSlot]);
+  }, [syncSlotRect]);
 
   const bumpResize = useCallback(() => {
     setResizeTick((n) => n + 1);
@@ -165,9 +151,7 @@ export default function WeatherMapInner({
     await nextFrame();
     setBackdropOn(true);
     setShellRect(expandedRect());
-    if (animTimerRef.current) window.clearTimeout(animTimerRef.current);
-    animTimerRef.current = window.setTimeout(() => {
-      animTimerRef.current = 0;
+    window.setTimeout(() => {
       setAnimating(false);
       busyRef.current = false;
       bumpResize();
@@ -182,7 +166,6 @@ export default function WeatherMapInner({
       setExpanded(false);
       setBackdropOn(false);
       setAnimating(false);
-      setShellRect(null);
       bumpResize();
       return;
     }
@@ -193,13 +176,11 @@ export default function WeatherMapInner({
     setShellRect(shellRect ?? expandedRect());
     await nextFrame();
     setShellRect(to);
-    if (animTimerRef.current) window.clearTimeout(animTimerRef.current);
-    animTimerRef.current = window.setTimeout(() => {
-      animTimerRef.current = 0;
+    window.setTimeout(() => {
       setExpanded(false);
       setAnimating(false);
       busyRef.current = false;
-      setShellRect(null);
+      setShellRect(to);
       bumpResize();
     }, EXPAND_MS + 40);
   }, [bumpResize, expanded, shellRect, slotRect]);
@@ -231,108 +212,108 @@ export default function WeatherMapInner({
     else void expand();
   }
 
-  const flying = expanded || animating;
   const rect = shellRect ?? slotRect;
 
-  return (
-    <div ref={slotRef} className="relative h-full min-h-[10rem] w-full">
-      {/* Same stacking context as shell — avoids backdrop covering/blurring the map. */}
-      {flying ? (
-        <button
-          type="button"
+  const mapShell =
+    mounted && rect ? (
+      <>
+        {(expanded || animating) && (
+          <button
+            type="button"
+            className={cn(
+              "map-backdrop-fly fixed inset-0 z-[55] border-0 bg-black/50 backdrop-blur-sm",
+              backdropOn ? "opacity-100" : "pointer-events-none opacity-0",
+            )}
+            style={{
+              transition: `opacity ${EXPAND_MS}ms ${EXPAND_EASE}`,
+            }}
+            aria-label={t("map.collapse")}
+            onClick={() => void collapse()}
+          />
+        )}
+
+        <div
           className={cn(
-            "map-backdrop-fly fixed inset-0 z-[55] border-0 bg-black/55",
-            backdropOn ? "opacity-100" : "pointer-events-none opacity-0",
+            "pointer-events-auto fixed overflow-hidden rounded-[var(--glass-radius)]",
+            "shadow-[var(--glass-shadow)]",
+            animating && "map-shell-fly",
           )}
           style={{
-            transition: `opacity ${EXPAND_MS}ms ${EXPAND_EASE}`,
+            top: rect.top,
+            left: rect.left,
+            width: rect.width,
+            height: rect.height,
+            zIndex: expanded || animating ? 60 : 40,
+            transition: animating
+              ? `top ${EXPAND_MS}ms ${EXPAND_EASE}, left ${EXPAND_MS}ms ${EXPAND_EASE}, width ${EXPAND_MS}ms ${EXPAND_EASE}, height ${EXPAND_MS}ms ${EXPAND_EASE}`
+              : "none",
+            willChange: animating ? "top, left, width, height" : undefined,
           }}
-          aria-label={t("map.collapse")}
-          onClick={() => void collapse()}
-        />
-      ) : null}
-
-      <div
-        className={cn(
-          "overflow-hidden rounded-[var(--glass-radius)]",
-          "shadow-[var(--glass-shadow)]",
-          flying ? "fixed z-[60]" : "absolute inset-0 z-0",
-          animating && "map-shell-fly",
-        )}
-        style={
-          flying && rect
-            ? {
-                top: rect.top,
-                left: rect.left,
-                width: rect.width,
-                height: rect.height,
-                transition: animating
-                  ? `top ${EXPAND_MS}ms ${EXPAND_EASE}, left ${EXPAND_MS}ms ${EXPAND_EASE}, width ${EXPAND_MS}ms ${EXPAND_EASE}, height ${EXPAND_MS}ms ${EXPAND_EASE}`
-                  : "none",
-                willChange: animating ? "top, left, width, height" : undefined,
-              }
-            : undefined
-        }
-      >
-        <GlassCard
-          interactive={false}
-          animate={false}
-          id="weather-map"
-          tabIndex={-1}
-          className={cn(
-            "flex h-full min-h-0 flex-col overflow-hidden p-0 outline-none !shadow-none",
-            flying &&
-              "![backdrop-filter:none] ![-webkit-backdrop-filter:none] bg-[rgba(12,18,28,0.97)]",
-            className,
-          )}
         >
-          <div
-            className="relative h-full min-h-0 w-full flex-1 overflow-hidden rounded-[inherit]"
-            role="img"
-            aria-label={t("map.label", { name })}
+          <GlassCard
+            interactive={false}
+            animate={false}
+            id="weather-map"
+            tabIndex={-1}
+            className={cn(
+              "flex h-full min-h-0 flex-col overflow-hidden p-0 outline-none !shadow-none",
+              className,
+            )}
           >
-            <MapContainer
-              center={[lat, lon]}
-              zoom={10}
-              zoomControl={false}
-              attributionControl={false}
-              scrollWheelZoom
-              touchZoom
-              doubleClickZoom={false}
-              zoomAnimation
-              fadeAnimation={false}
-              markerZoomAnimation={false}
-              className="h-full min-h-0 w-full [&_.leaflet-container]:h-full [&_.leaflet-container]:w-full [&_.leaflet-control-attribution]:text-[0.55rem] [&_.leaflet-control-attribution]:bg-black/40 [&_.leaflet-control-attribution]:text-white/80"
-              style={{ background: "transparent" }}
+            <div
+              className="relative min-h-0 flex-1 overflow-hidden rounded-[inherit]"
+              role="img"
+              aria-label={t("map.label", { name })}
             >
-              <AttributionControl position="bottomright" />
-              <TileLayer
-                attribution={OSM_BASE_ATTRIBUTION}
-                url={OSM_BASE_URL}
-              />
-              <Recenter lat={lat} lon={lon} />
-              <MapResize
-                expanded={expanded}
-                resizeTick={resizeTick}
-                animating={animating}
-              />
-              <MapControls
-                expanded={expanded}
-                onToggleExpand={toggleExpand}
-                lat={lat}
-                lon={lon}
-              />
-              <Marker position={[lat, lon]} icon={markerIcon}>
-                <Popup>
-                  <strong>{name}</strong>
-                  <br />
-                  <span className="text-xs">{displayName}</span>
-                </Popup>
-              </Marker>
-            </MapContainer>
-          </div>
-        </GlassCard>
-      </div>
-    </div>
+              <MapContainer
+                center={[lat, lon]}
+                zoom={10}
+                zoomControl={false}
+                attributionControl={false}
+                scrollWheelZoom
+                touchZoom
+                doubleClickZoom={false}
+                zoomAnimation
+                fadeAnimation
+                markerZoomAnimation
+                className="h-full min-h-[10rem] w-full [&_.leaflet-control-attribution]:text-[0.55rem] [&_.leaflet-control-attribution]:bg-black/40 [&_.leaflet-control-attribution]:text-white/80"
+                style={{ background: "transparent" }}
+              >
+                <AttributionControl position="bottomright" />
+                <TileLayer
+                  attribution={OSM_BASE_ATTRIBUTION}
+                  url={OSM_BASE_URL}
+                />
+                <Recenter lat={lat} lon={lon} />
+                <MapResize
+                  expanded={expanded}
+                  resizeTick={resizeTick}
+                  animating={animating}
+                />
+                <MapControls
+                  expanded={expanded}
+                  onToggleExpand={toggleExpand}
+                  lat={lat}
+                  lon={lon}
+                />
+                <Marker position={[lat, lon]} icon={markerIcon}>
+                  <Popup>
+                    <strong>{name}</strong>
+                    <br />
+                    <span className="text-xs">{displayName}</span>
+                  </Popup>
+                </Marker>
+              </MapContainer>
+            </div>
+          </GlassCard>
+        </div>
+      </>
+    ) : null;
+
+  return (
+    <>
+      <div ref={slotRef} className="h-full min-h-[10rem] w-full" aria-hidden />
+      {mounted ? createPortal(mapShell, document.body) : null}
+    </>
   );
 }
