@@ -22,6 +22,11 @@ export async function generateMetadata({
       description: `Prévisions météo pour ${name}`,
       type: "website",
     },
+    twitter: {
+      card: "summary_large_image",
+      title: `Météo ${name} | Horizon`,
+      description: `Prévisions météo pour ${name}`,
+    },
   };
 }
 

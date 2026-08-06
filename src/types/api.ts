@@ -5,6 +5,7 @@ export type ApiErrorCode =
   | "OFFLINE"
   | "TIMEOUT"
   | "BAD_REQUEST"
+  | "RATE_LIMITED"
   | "UNKNOWN";
 
 export type ApiErrorBody = {

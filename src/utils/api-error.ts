@@ -8,6 +8,7 @@ const CODE_TO_KEY: Partial<Record<ApiErrorCode, MessageKey>> = {
   API_UNAVAILABLE: "error.apiUnavailable",
   GEOLOCATION_DENIED: "geo.denied",
   BAD_REQUEST: "error.badRequest",
+  RATE_LIMITED: "error.rateLimited",
 };
 
 type Translate = (

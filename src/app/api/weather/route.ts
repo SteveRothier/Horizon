@@ -4,6 +4,7 @@ import { AppApiError } from "@/types/api";
 import type { GeoLocation } from "@/types/weather";
 import { cachedJson } from "@/utils/api-cache";
 import { jsonError, parseCoord } from "@/utils/api-response";
+import { assertRateLimit } from "@/utils/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -13,6 +14,8 @@ export const runtime = "nodejs";
  */
 export async function GET(request: Request) {
   try {
+    assertRateLimit(request, "weather", 60, 60_000);
+
     const { searchParams } = new URL(request.url);
     const q = searchParams.get("q");
     const lat = searchParams.get("lat");

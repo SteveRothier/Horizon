@@ -39,22 +39,51 @@ async function copyUrl(url: string): Promise<boolean> {
 
 export function ShareButton({ className }: ShareButtonProps) {
   const t = useT();
-  const [copied, setCopied] = useState(false);
+  const [done, setDone] = useState(false);
+  const [tip, setTip] = useState<"copied" | "shared" | null>(null);
   const [bumpKey, setBumpKey] = useState(0);
 
   useEffect(() => {
-    if (!copied) return;
-    const timer = window.setTimeout(() => setCopied(false), 2000);
+    if (!done) return;
+    const timer = window.setTimeout(() => {
+      setDone(false);
+      setTip(null);
+    }, 2000);
     return () => window.clearTimeout(timer);
-  }, [copied]);
+  }, [done]);
 
   async function onShare() {
     const url = window.location.href;
+    const title = document.title || "Horizon";
+
+    if (typeof navigator.share === "function") {
+      try {
+        await navigator.share({ title, url, text: title });
+        setTip("shared");
+        setDone(true);
+        setBumpKey((n) => n + 1);
+        return;
+      } catch (error) {
+        // User cancelled share sheet — do not fall through to clipboard.
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+      }
+    }
+
     const ok = await copyUrl(url);
     if (!ok) return;
-    setCopied(true);
+    setTip("copied");
+    setDone(true);
     setBumpKey((n) => n + 1);
   }
+
+  const tipLabel =
+    tip === "shared"
+      ? t("share.shared")
+      : tip === "copied"
+        ? t("share.copied")
+        : t("share.label");
 
   return (
     <div className="relative z-10 flex flex-col items-center overflow-visible">
@@ -63,19 +92,19 @@ export function ShareButton({ className }: ShareButtonProps) {
         onClick={() => void onShare()}
         className={cn(
           "glass glass-sm flex h-9 w-9 shrink-0 items-center justify-center transition-colors",
-          copied
+          done
             ? "text-[var(--accent)]"
             : "text-[var(--text-muted)] hover:text-[var(--text-primary)]",
           className,
         )}
-        aria-label={copied ? t("share.copied") : t("share.label")}
-        title={copied ? t("share.copied") : t("share.label")}
+        aria-label={done ? tipLabel : t("share.label")}
+        title={done ? tipLabel : t("share.label")}
       >
         <span
           key={bumpKey}
           className={cn("inline-flex", bumpKey > 0 && "action-bounce")}
         >
-          {copied ? (
+          {done ? (
             <Check className="h-4 w-4" aria-hidden />
           ) : (
             <Share2 className="h-4 w-4" aria-hidden />
@@ -84,9 +113,9 @@ export function ShareButton({ className }: ShareButtonProps) {
       </button>
 
       <AnimatePresence>
-        {copied ? (
+        {done && tip ? (
           <m.span
-            key="copied-tip"
+            key="share-tip"
             role="status"
             aria-live="polite"
             initial={{ opacity: 0, x: "-50%", y: -6 }}
@@ -95,7 +124,7 @@ export function ShareButton({ className }: ShareButtonProps) {
             transition={{ duration: 0.22, ease: tipEase }}
             className="glass-menu-tip pointer-events-none absolute top-[calc(100%+0.35rem)] left-1/2 z-20 whitespace-nowrap px-2.5 py-1 text-[0.65rem] text-[var(--text-primary)]"
           >
-            {t("share.copied")}
+            {tipLabel}
           </m.span>
         ) : null}
       </AnimatePresence>
