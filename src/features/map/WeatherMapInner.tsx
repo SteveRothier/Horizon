@@ -66,6 +66,13 @@ function nextFrame(): Promise<void> {
   });
 }
 
+function applyShellRectDom(el: HTMLElement, rect: Rect) {
+  el.style.top = `${rect.top}px`;
+  el.style.left = `${rect.left}px`;
+  el.style.width = `${rect.width}px`;
+  el.style.height = `${rect.height}px`;
+}
+
 function Recenter({ lat, lon }: { lat: number; lon: number }) {
   const map = useMap();
   useEffect(() => {
@@ -79,6 +86,11 @@ type WeatherMapProps = {
   className?: string;
 };
 
+/**
+ * Always portal + fixed. Collapsed position follows the slot via rAF DOM
+ * writes (no React setState on scroll) to avoid compositor lag / jiggle.
+ * Expand/collapse still uses React state for CSS transitions.
+ */
 export default function WeatherMapInner({
   location,
   className,
@@ -88,45 +100,72 @@ export default function WeatherMapInner({
   const [expanded, setExpanded] = useState(false);
   const [resizeTick, setResizeTick] = useState(0);
   const [mounted, setMounted] = useState(false);
-  const [slotRect, setSlotRect] = useState<Rect | null>(null);
+  const [shellReady, setShellReady] = useState(false);
   const [shellRect, setShellRect] = useState<Rect | null>(null);
   const [animating, setAnimating] = useState(false);
   const [backdropOn, setBackdropOn] = useState(false);
 
   const slotRef = useRef<HTMLDivElement>(null);
+  const shellRef = useRef<HTMLDivElement>(null);
+  const slotRectRef = useRef<Rect | null>(null);
   const busyRef = useRef(false);
+  const flyingRef = useRef(false);
+  const rafRef = useRef(0);
+
+  const flying = expanded || animating;
+  flyingRef.current = flying;
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const syncSlotRect = useCallback(() => {
-    const el = slotRef.current;
-    if (!el) return;
-    const next = readRect(el);
-    setSlotRect(next);
-    if (!expanded && !busyRef.current) {
-      setShellRect(next);
-    }
-  }, [expanded]);
+  const syncShellToSlot = useCallback(() => {
+    const slot = slotRef.current;
+    const shell = shellRef.current;
+    if (!slot || !shell) return;
+    if (flyingRef.current || busyRef.current) return;
+    const next = readRect(slot);
+    slotRectRef.current = next;
+    applyShellRectDom(shell, next);
+  }, []);
+
+  const scheduleSync = useCallback(() => {
+    if (rafRef.current) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = 0;
+      syncShellToSlot();
+    });
+  }, [syncShellToSlot]);
 
   useLayoutEffect(() => {
-    syncSlotRect();
-  }, [syncSlotRect]);
+    if (!mounted) return;
+    setShellReady(true);
+  }, [mounted]);
+
+  // Apply slot rect once the portaled shell exists (and on every collapsed resume).
+  useLayoutEffect(() => {
+    if (!shellReady || flying) return;
+    syncShellToSlot();
+  }, [shellReady, flying, syncShellToSlot]);
 
   useEffect(() => {
+    if (!mounted || !shellReady) return;
     const el = slotRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => syncSlotRect());
+
+    const ro = new ResizeObserver(() => scheduleSync());
     ro.observe(el);
-    window.addEventListener("resize", syncSlotRect);
-    window.addEventListener("scroll", syncSlotRect, true);
+    window.addEventListener("resize", scheduleSync);
+    window.addEventListener("scroll", scheduleSync, true);
+
     return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      rafRef.current = 0;
       ro.disconnect();
-      window.removeEventListener("resize", syncSlotRect);
-      window.removeEventListener("scroll", syncSlotRect, true);
+      window.removeEventListener("resize", scheduleSync);
+      window.removeEventListener("scroll", scheduleSync, true);
     };
-  }, [syncSlotRect]);
+  }, [mounted, shellReady, scheduleSync]);
 
   const bumpResize = useCallback(() => {
     setResizeTick((n) => n + 1);
@@ -134,7 +173,9 @@ export default function WeatherMapInner({
 
   const expand = useCallback(async () => {
     if (busyRef.current || expanded) return;
-    const from = slotRef.current ? readRect(slotRef.current) : slotRect;
+    const from = slotRef.current
+      ? readRect(slotRef.current)
+      : slotRectRef.current;
     if (!from) {
       setExpanded(true);
       setBackdropOn(true);
@@ -156,34 +197,40 @@ export default function WeatherMapInner({
       busyRef.current = false;
       bumpResize();
     }, EXPAND_MS + 40);
-  }, [bumpResize, expanded, slotRect]);
+  }, [bumpResize, expanded]);
 
   const collapse = useCallback(async () => {
     if (busyRef.current || !expanded) return;
-    const to = slotRef.current ? readRect(slotRef.current) : slotRect;
+    const to = slotRef.current
+      ? readRect(slotRef.current)
+      : slotRectRef.current;
 
     if (!to) {
       setExpanded(false);
       setBackdropOn(false);
       setAnimating(false);
+      setShellRect(null);
       bumpResize();
+      scheduleSync();
       return;
     }
 
     busyRef.current = true;
     setAnimating(true);
     setBackdropOn(false);
-    setShellRect(shellRect ?? expandedRect());
+    setShellRect((prev) => prev ?? expandedRect());
     await nextFrame();
     setShellRect(to);
     window.setTimeout(() => {
       setExpanded(false);
       setAnimating(false);
       busyRef.current = false;
-      setShellRect(to);
+      setShellRect(null);
       bumpResize();
+      // Resume DOM sync after React releases style ownership.
+      requestAnimationFrame(() => scheduleSync());
     }, EXPAND_MS + 40);
-  }, [bumpResize, expanded, shellRect, slotRect]);
+  }, [bumpResize, expanded, scheduleSync]);
 
   useEffect(() => {
     if (!expanded) return;
@@ -212,12 +259,10 @@ export default function WeatherMapInner({
     else void expand();
   }
 
-  const rect = shellRect ?? slotRect;
-
   const mapShell =
-    mounted && rect ? (
+    mounted && shellReady ? (
       <>
-        {(expanded || animating) && (
+        {flying && (
           <button
             type="button"
             className={cn(
@@ -233,22 +278,32 @@ export default function WeatherMapInner({
         )}
 
         <div
+          ref={shellRef}
           className={cn(
             "pointer-events-auto fixed overflow-hidden rounded-[var(--glass-radius)]",
             "shadow-[var(--glass-shadow)]",
             animating && "map-shell-fly",
           )}
-          style={{
-            top: rect.top,
-            left: rect.left,
-            width: rect.width,
-            height: rect.height,
-            zIndex: expanded || animating ? 60 : 40,
-            transition: animating
-              ? `top ${EXPAND_MS}ms ${EXPAND_EASE}, left ${EXPAND_MS}ms ${EXPAND_EASE}, width ${EXPAND_MS}ms ${EXPAND_EASE}, height ${EXPAND_MS}ms ${EXPAND_EASE}`
-              : "none",
-            willChange: animating ? "top, left, width, height" : undefined,
-          }}
+          style={
+            flying && shellRect
+              ? {
+                  top: shellRect.top,
+                  left: shellRect.left,
+                  width: shellRect.width,
+                  height: shellRect.height,
+                  zIndex: 60,
+                  transition: animating
+                    ? `top ${EXPAND_MS}ms ${EXPAND_EASE}, left ${EXPAND_MS}ms ${EXPAND_EASE}, width ${EXPAND_MS}ms ${EXPAND_EASE}, height ${EXPAND_MS}ms ${EXPAND_EASE}`
+                    : "none",
+                  willChange: animating
+                    ? "top, left, width, height"
+                    : undefined,
+                }
+              : {
+                  zIndex: 40,
+                  transition: "none",
+                }
+          }
         >
           <GlassCard
             interactive={false}
@@ -257,6 +312,8 @@ export default function WeatherMapInner({
             tabIndex={-1}
             className={cn(
               "flex h-full min-h-0 flex-col overflow-hidden p-0 outline-none !shadow-none",
+              flying &&
+                "![backdrop-filter:none] ![-webkit-backdrop-filter:none] bg-[rgba(12,18,28,0.97)]",
               className,
             )}
           >
