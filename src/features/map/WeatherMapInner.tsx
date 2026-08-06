@@ -39,14 +39,6 @@ const FADE_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 const MAP_CLASS =
   "h-full min-h-0 w-full [&_.leaflet-container]:h-full [&_.leaflet-container]:w-full [&_.leaflet-control-attribution]:text-[0.55rem] [&_.leaflet-control-attribution]:bg-black/40 [&_.leaflet-control-attribution]:text-white/80";
 
-/** Preview: gestures go to page scroll; toolbar stays clickable. */
-const PREVIEW_MAP_CLASS = cn(
-  MAP_CLASS,
-  "[touch-action:pan-y]",
-  "[&_.leaflet-pane]:!pointer-events-none",
-  "[&_.leaflet-control]:!pointer-events-auto",
-);
-
 function Recenter({ lat, lon }: { lat: number; lon: number }) {
   const map = useMap();
   useEffect(() => {
@@ -61,10 +53,8 @@ type MapBodyProps = {
   name: string;
   displayName: string;
   expanded: boolean;
-  interactive: boolean;
   onToggleExpand: () => void;
   resizeTick?: number;
-  className?: string;
 };
 
 function MapBody({
@@ -73,10 +63,8 @@ function MapBody({
   name,
   displayName,
   expanded,
-  interactive,
   onToggleExpand,
   resizeTick = 0,
-  className,
 }: MapBodyProps) {
   return (
     <MapContainer
@@ -84,20 +72,14 @@ function MapBody({
       zoom={10}
       zoomControl={false}
       attributionControl={false}
-      dragging={interactive}
-      scrollWheelZoom={interactive}
-      touchZoom={interactive}
+      scrollWheelZoom
+      touchZoom
       doubleClickZoom={false}
-      boxZoom={interactive}
-      keyboard={interactive}
       zoomAnimation
       fadeAnimation
       markerZoomAnimation
-      className={cn(interactive ? MAP_CLASS : PREVIEW_MAP_CLASS, className)}
-      style={{
-        background: "transparent",
-        touchAction: interactive ? undefined : "pan-y",
-      }}
+      className={MAP_CLASS}
+      style={{ background: "transparent" }}
     >
       <AttributionControl position="bottomright" />
       <TileLayer attribution={OSM_BASE_ATTRIBUTION} url={OSM_BASE_URL} />
@@ -126,8 +108,8 @@ type WeatherMapProps = {
 };
 
 /**
- * Collapsed: in-flow preview (non-interactive Leaflet — native page scroll).
- * Expanded: separate fullscreen portal instance (interactive), preview untouched.
+ * Collapsed: in-flow map (drag / zoom like before — native scroll layout).
+ * Expanded: separate fullscreen portal instance; preview stays untouched.
  */
 export default function WeatherMapInner({
   location,
@@ -233,7 +215,6 @@ export default function WeatherMapInner({
                   <MapBody
                     {...mapProps}
                     expanded
-                    interactive
                     onToggleExpand={collapse}
                     resizeTick={overlayTick}
                   />
@@ -265,14 +246,13 @@ export default function WeatherMapInner({
             )}
           >
             <div
-              className="relative h-full min-h-0 w-full flex-1 overflow-hidden rounded-[inherit] [touch-action:pan-y]"
+              className="relative h-full min-h-0 w-full flex-1 overflow-hidden rounded-[inherit]"
               role="img"
               aria-label={t("map.label", { name })}
             >
               <MapBody
                 {...mapProps}
                 expanded={false}
-                interactive={false}
                 onToggleExpand={expand}
               />
             </div>
