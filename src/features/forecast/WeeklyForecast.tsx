@@ -41,13 +41,16 @@ export function WeeklyForecast({
   const pillRefs = useRef(new Map<string, HTMLLIElement>());
 
   useEffect(() => {
+    const list = listRef.current;
     const pill = pillRefs.current.get(selectedDate);
-    if (!pill) return;
-    pill.scrollIntoView({
-      behavior: "smooth",
-      inline: "center",
-      block: "nearest",
-    });
+    if (!list || !pill) return;
+
+    const target =
+      pill.offsetLeft - (list.clientWidth - pill.clientWidth) / 2;
+    const max = Math.max(0, list.scrollWidth - list.clientWidth);
+    const left = Math.max(0, Math.min(max, target));
+
+    list.scrollTo({ left, behavior: "smooth" });
   }, [selectedDate]);
 
   const list = (

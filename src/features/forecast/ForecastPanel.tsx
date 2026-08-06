@@ -46,7 +46,12 @@ export function ForecastPanel({
       interactive={false}
       className={cn(dashboardCardClass, className)}
     >
-      <h2 className={cn(dashboardCardTitleClass, "mb-0.5 sm:mb-1")}>
+      <h2
+        className={cn(
+          dashboardCardTitleClass,
+          "mb-0.5 truncate whitespace-nowrap sm:mb-1",
+        )}
+      >
         {t("forecast.title")}
         <span ref={dayLabelRef} className="text-[var(--text-muted)]">
           {" "}

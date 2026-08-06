@@ -495,7 +495,7 @@ const MetaStrip = memo(function MetaStrip({
   }
 
   return (
-    <div className="grid gap-y-0.5" style={gridStyle}>
+    <div className="grid min-h-[2.75rem] gap-y-0.5" style={gridStyle}>
       {cells.map((item, i) => {
         const index = start + i;
         return (

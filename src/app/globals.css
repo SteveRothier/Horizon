@@ -677,11 +677,6 @@ body::-webkit-scrollbar {
   flex-direction: column;
 }
 
-.hourly-meta-cell {
-  content-visibility: auto;
-  contain-intrinsic-size: 56px 14px;
-}
-
 /* Scene particle animations (CSS instead of Framer per-particle) */
 @keyframes scene-twinkle {
   0%,
