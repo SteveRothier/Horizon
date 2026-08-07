@@ -24,6 +24,13 @@ export const metadata: Metadata = {
   },
   description:
     "Application météo moderne — expérience immersive glassmorphism",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+  },
 };
 
 /** Inlined so it paints before any CSS chunk (App Router may drop a manual <head>). */

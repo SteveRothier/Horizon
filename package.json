@@ -11,7 +11,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.4",
