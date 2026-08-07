@@ -8,6 +8,9 @@ const root = path.join(__dirname, "..");
 const sourceSvg = path.join(root, "src", "assets", "icon.svg");
 const publicDir = path.join(root, "public");
 
+/** PWA / launcher sizes (any purpose). */
+const ICON_SIZES = [48, 72, 96, 128, 144, 152, 192, 256, 384, 512];
+
 /**
  * Pack PNG buffers into a multi-size .ico (PNG-compressed entries).
  * @param {{ png: Buffer, width: number, height: number }[]} images
@@ -29,7 +32,6 @@ function pngsToIco(images) {
 
   entries.forEach((entry, i) => {
     const o = 6 + i * 16;
-    // ICO: 0 means 256; for 16/32 write the real size.
     out.writeUInt8(entry.width >= 256 ? 0 : entry.width, o);
     out.writeUInt8(entry.height >= 256 ? 0 : entry.height, o + 1);
     out.writeUInt8(0, o + 2);
@@ -55,21 +57,46 @@ async function raster(size) {
     .toBuffer();
 }
 
+/** Maskable: solid bg + mark at ~80% (Android safe zone). */
+async function rasterMaskable(size) {
+  const markSize = Math.round(size * 0.8);
+  const mark = await raster(markSize);
+  const offset = Math.round((size - markSize) / 2);
+
+  return sharp({
+    create: {
+      width: size,
+      height: size,
+      channels: 4,
+      background: { r: 11, g: 18, b: 38, alpha: 1 }, // #0b1226
+    },
+  })
+    .composite([{ input: mark, left: offset, top: offset }])
+    .png()
+    .toBuffer();
+}
+
 async function main() {
   mkdirSync(publicDir, { recursive: true });
 
   copyFileSync(sourceSvg, path.join(publicDir, "icon.svg"));
 
-  const sizes = [
-    ["apple-touch-icon.png", 180],
-    ["icon-192.png", 192],
-    ["icon-512.png", 512],
-  ];
-
-  for (const [name, size] of sizes) {
+  for (const size of ICON_SIZES) {
     const buf = await raster(size);
+    const name = `icon-${size}.png`;
     writeFileSync(path.join(publicDir, name), buf);
     console.log(`wrote public/${name} (${size}x${size})`);
+  }
+
+  const apple = await raster(180);
+  writeFileSync(path.join(publicDir, "apple-touch-icon.png"), apple);
+  console.log("wrote public/apple-touch-icon.png (180x180)");
+
+  for (const size of [192, 512]) {
+    const buf = await rasterMaskable(size);
+    const name = `icon-${size}-maskable.png`;
+    writeFileSync(path.join(publicDir, name), buf);
+    console.log(`wrote public/${name} (${size}x${size} maskable)`);
   }
 
   const png16 = await raster(16);
