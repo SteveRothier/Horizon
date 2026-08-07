@@ -26,6 +26,7 @@ export const metadata: Metadata = {
     "Application météo moderne — expérience immersive glassmorphism",
   icons: {
     icon: [
+      { url: "/favicon-32.png", type: "image/png", sizes: "32x32" },
       { url: "/favicon.ico", sizes: "any" },
       { url: "/icon.svg", type: "image/svg+xml" },
     ],
