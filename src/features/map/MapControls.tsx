@@ -1,11 +1,26 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import L from "leaflet";
-import { Crosshair, Maximize2, Minimize2, Minus, Plus } from "lucide-react";
+import {
+  Crosshair,
+  LoaderCircle,
+  LocateFixed,
+  Maximize2,
+  Minimize2,
+  Minus,
+  Plus,
+} from "lucide-react";
 import { useMap } from "react-leaflet";
+import { useFetchReverseGeocode } from "@/hooks/useGeocode";
 import { useT } from "@/hooks/useT";
+import { AppApiError } from "@/types/api";
 import { cn } from "@/utils/cn";
+import {
+  isGeolocationError,
+  locateUserPosition,
+} from "@/utils/locate-user";
+import { selectLocation } from "@/utils/selectLocation";
 
 const ZOOM_DURATION_S = 0.35;
 
@@ -14,24 +29,28 @@ type MapControlsProps = {
   onToggleExpand: () => void;
   lat: number;
   lon: number;
+  onOpenCity?: () => void;
 };
 
 function MapControlButton({
   label,
   onClick,
+  disabled,
   children,
 }: {
   label: string;
   onClick: () => void;
+  disabled?: boolean;
   children: ReactNode;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       className={cn(
         "glass-control flex h-9 w-9 items-center justify-center",
-        "text-[var(--text-primary)]",
+        "text-[var(--text-primary)] disabled:opacity-60",
       )}
       aria-label={label}
       title={label}
@@ -46,13 +65,15 @@ export function MapControls({
   onToggleExpand,
   lat,
   lon,
+  onOpenCity,
 }: MapControlsProps) {
   const map = useMap();
   const t = useT();
+  const fetchReverse = useFetchReverseGeocode();
   const toolbarRef = useRef<HTMLDivElement>(null);
-  /** Accumulated zoom while Leaflet ignores setZoom mid-animation. */
   const targetZoomRef = useRef<number | null>(null);
   const animatingRef = useRef(false);
+  const [locating, setLocating] = useState(false);
 
   useEffect(() => {
     const el = toolbarRef.current;
@@ -101,6 +122,29 @@ export function MapControls({
     map.setZoom(next, { animate: true, duration: ZOOM_DURATION_S });
   }
 
+  async function locate() {
+    if (locating) return;
+    setLocating(true);
+    try {
+      const location = await locateUserPosition(fetchReverse);
+      selectLocation(location);
+      map.flyTo([location.latitude, location.longitude], Math.max(map.getZoom(), 11), {
+        duration: 0.75,
+      });
+      onOpenCity?.();
+    } catch (err) {
+      if (isGeolocationError(err) && err.code === -1) {
+        console.warn(t("geo.unsupported"));
+      } else if (err instanceof AppApiError) {
+        console.warn(err.message);
+      } else {
+        console.warn(t("geo.failed"));
+      }
+    } finally {
+      setLocating(false);
+    }
+  }
+
   return (
     <div
       ref={toolbarRef}
@@ -129,6 +173,17 @@ export function MapControls({
           }}
         >
           <Crosshair className="h-4 w-4" strokeWidth={2.5} aria-hidden />
+        </MapControlButton>
+        <MapControlButton
+          label={t("map.locate")}
+          onClick={() => void locate()}
+          disabled={locating}
+        >
+          {locating ? (
+            <LoaderCircle className="h-4 w-4 search-spinner" aria-hidden />
+          ) : (
+            <LocateFixed className="h-4 w-4" strokeWidth={2.5} aria-hidden />
+          )}
         </MapControlButton>
         <MapControlButton
           label={expanded ? t("map.collapse") : t("map.expand")}

@@ -6,6 +6,10 @@ import { useFetchReverseGeocode } from "@/hooks/useGeocode";
 import { useT } from "@/hooks/useT";
 import { AppApiError } from "@/types/api";
 import { cn } from "@/utils/cn";
+import {
+  isGeolocationError,
+  locateUserPosition,
+} from "@/utils/locate-user";
 import { selectLocation } from "@/utils/selectLocation";
 
 type GeolocationButtonProps = {
@@ -13,17 +17,6 @@ type GeolocationButtonProps = {
   onError?: (message: string) => void;
   onSuccess?: () => void;
 };
-
-function isGeolocationError(
-  err: unknown,
-): err is { code: number; PERMISSION_DENIED?: number; TIMEOUT?: number } {
-  return (
-    typeof err === "object" &&
-    err !== null &&
-    "code" in err &&
-    typeof (err as { code: unknown }).code === "number"
-  );
-}
 
 export function GeolocationButton({
   className,
@@ -35,31 +28,16 @@ export function GeolocationButton({
   const [loading, setLoading] = useState(false);
 
   async function locate() {
-    if (!navigator.geolocation) {
-      onError?.(t("geo.unsupported"));
-      return;
-    }
-
     setLoading(true);
     try {
-      const position = await new Promise<GeolocationPosition>(
-        (resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: false,
-            timeout: 20_000,
-            maximumAge: 120_000,
-          });
-        },
-      );
-
-      const { latitude, longitude } = position.coords;
-      const location = await fetchReverse(latitude, longitude);
+      const location = await locateUserPosition(fetchReverse);
       selectLocation(location);
       onSuccess?.();
     } catch (err) {
       if (isGeolocationError(err)) {
-        // W3C codes — avoid instanceof (unreliable on Safari)
-        if (err.code === 1) {
+        if (err.code === -1) {
+          onError?.(t("geo.unsupported"));
+        } else if (err.code === 1) {
           onError?.(t("geo.denied"));
         } else if (err.code === 3) {
           onError?.(t("geo.timeout"));
@@ -79,7 +57,7 @@ export function GeolocationButton({
   return (
     <button
       type="button"
-      onClick={locate}
+      onClick={() => void locate()}
       disabled={loading}
       className={cn(
         "glass glass-sm flex h-9 w-9 shrink-0 items-center justify-center",

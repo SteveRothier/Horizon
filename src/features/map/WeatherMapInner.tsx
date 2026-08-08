@@ -2,42 +2,35 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import L from "leaflet";
 import {
   AttributionControl,
   MapContainer,
   Marker,
-  Popup,
   TileLayer,
   useMap,
 } from "react-leaflet";
 import { GlassCard } from "@/components/ui/GlassCard";
+import { MapActiveCityPopup } from "@/features/map/MapActiveCityPopup";
+import {
+  MapClickPreview,
+  type MapPinCoords,
+} from "@/features/map/MapClickPreview";
 import { MapControls } from "@/features/map/MapControls";
+import { MapFavoriteMarkers } from "@/features/map/MapFavoriteMarkers";
+import { MapPinScale } from "@/features/map/MapPinScale";
 import { MapResize } from "@/features/map/MapResize";
 import {
   OSM_BASE_ATTRIBUTION,
   OSM_BASE_URL,
 } from "@/features/map/map-layers";
+import { horizonActiveIcon } from "@/features/map/map-markers";
 import { useT } from "@/hooks/useT";
 import type { GeoLocation } from "@/types/weather";
 import { cn } from "@/utils/cn";
 import "leaflet/dist/leaflet.css";
 
-const markerIcon = L.icon({
-  iconUrl: "/leaflet/marker-icon.png",
-  iconRetinaUrl: "/leaflet/marker-icon-2x.png",
-  shadowUrl: "/leaflet/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
-
 const FADE_MS = 240;
 const FADE_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
-
-const MAP_CLASS =
-  "h-full min-h-0 w-full [&_.leaflet-container]:h-full [&_.leaflet-container]:w-full [&_.leaflet-control-attribution]:text-[0.55rem] [&_.leaflet-control-attribution]:bg-black/40 [&_.leaflet-control-attribution]:text-white/80";
 
 function Recenter({ lat, lon }: { lat: number; lon: number }) {
   const map = useMap();
@@ -48,24 +41,26 @@ function Recenter({ lat, lon }: { lat: number; lon: number }) {
 }
 
 type MapBodyProps = {
-  lat: number;
-  lon: number;
-  name: string;
-  displayName: string;
+  location: GeoLocation;
   expanded: boolean;
   onToggleExpand: () => void;
+  onOpenPinnedCity?: () => void;
   resizeTick?: number;
 };
 
 function MapBody({
-  lat,
-  lon,
-  name,
-  displayName,
+  location,
   expanded,
   onToggleExpand,
+  onOpenPinnedCity,
   resizeTick = 0,
 }: MapBodyProps) {
+  const { latitude: lat, longitude: lon } = location;
+  const [previewPin, setPreviewPin] = useState<MapPinCoords | null>(null);
+  const onPinChange = useCallback((pin: MapPinCoords | null) => {
+    setPreviewPin(pin);
+  }, []);
+
   return (
     <MapContainer
       center={[lat, lon]}
@@ -78,25 +73,34 @@ function MapBody({
       zoomAnimation
       fadeAnimation
       markerZoomAnimation
-      className={MAP_CLASS}
+      className={cn(
+        "map-leaflet h-full min-h-0 w-full",
+        "[&_.leaflet-container]:h-full [&_.leaflet-container]:w-full",
+        expanded ? "map-leaflet-expanded" : "map-leaflet-collapsed",
+      )}
       style={{ background: "transparent" }}
     >
       <AttributionControl position="bottomright" />
       <TileLayer attribution={OSM_BASE_ATTRIBUTION} url={OSM_BASE_URL} />
       <Recenter lat={lat} lon={lon} />
       <MapResize resizeTick={resizeTick} />
+      <MapPinScale />
       <MapControls
         expanded={expanded}
         onToggleExpand={onToggleExpand}
         lat={lat}
         lon={lon}
+        onOpenCity={onOpenPinnedCity}
       />
-      <Marker position={[lat, lon]} icon={markerIcon}>
-        <Popup>
-          <strong>{name}</strong>
-          <br />
-          <span className="text-xs">{displayName}</span>
-        </Popup>
+      <MapFavoriteMarkers active={location} onSelectPin={onPinChange} />
+      <MapClickPreview
+        pin={previewPin}
+        onPinChange={onPinChange}
+        onOpenCity={onOpenPinnedCity}
+        expanded={expanded}
+      />
+      <Marker position={[lat, lon]} icon={horizonActiveIcon}>
+        <MapActiveCityPopup location={location} />
       </Marker>
     </MapContainer>
   );
@@ -116,7 +120,7 @@ export default function WeatherMapInner({
   className,
 }: WeatherMapProps) {
   const t = useT();
-  const { latitude: lat, longitude: lon, name, displayName } = location;
+  const { name } = location;
   const [expanded, setExpanded] = useState(false);
   const [overlayVisible, setOverlayVisible] = useState(false);
   const [overlayTick, setOverlayTick] = useState(0);
@@ -167,13 +171,6 @@ export default function WeatherMapInner({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [expanded, collapse]);
 
-  const mapProps = {
-    lat,
-    lon,
-    name,
-    displayName,
-  };
-
   const overlay =
     mounted && expanded
       ? createPortal(
@@ -213,9 +210,10 @@ export default function WeatherMapInner({
                   aria-label={t("map.label", { name })}
                 >
                   <MapBody
-                    {...mapProps}
+                    location={location}
                     expanded
                     onToggleExpand={collapse}
+                    onOpenPinnedCity={collapse}
                     resizeTick={overlayTick}
                   />
                 </div>
@@ -251,7 +249,7 @@ export default function WeatherMapInner({
               aria-label={t("map.label", { name })}
             >
               <MapBody
-                {...mapProps}
+                location={location}
                 expanded={false}
                 onToggleExpand={expand}
               />
