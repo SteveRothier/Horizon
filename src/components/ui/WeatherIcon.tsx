@@ -6,8 +6,10 @@ import {
   Cloud,
   CloudFog,
   CloudLightning,
+  CloudMoon,
   CloudRain,
   CloudSnow,
+  CloudSun,
   Moon,
   Sun,
 } from "lucide-react";
@@ -38,6 +40,12 @@ export const WeatherIcon = memo(function WeatherIcon({
         <Sun {...props} className={cn(props.className, "text-amber-200")} />
       ) : (
         <Moon {...props} className={cn(props.className, "text-slate-100")} />
+      );
+    case "partly":
+      return isDay ? (
+        <CloudSun {...props} className={cn(props.className, "text-amber-100")} />
+      ) : (
+        <CloudMoon {...props} className={cn(props.className, "text-slate-100")} />
       );
     case "cloudy":
       return <Cloud {...props} className={cn(props.className, "text-white/90")} />;

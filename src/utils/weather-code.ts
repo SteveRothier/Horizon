@@ -5,7 +5,8 @@ import { translate, type MessageKey } from "@/i18n/messages";
 /** Map WMO weather interpretation codes (Open-Meteo) to app conditions */
 export function conditionFromWeatherCode(code: number): WeatherCondition {
   if (code === 0) return "clear";
-  if (code === 1 || code === 2 || code === 3) return "cloudy";
+  if (code === 1 || code === 2) return "partly";
+  if (code === 3) return "cloudy";
   if (code === 45 || code === 48) return "fog";
   if (
     code === 51 ||

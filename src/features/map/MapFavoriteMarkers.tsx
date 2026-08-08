@@ -8,9 +8,6 @@ import type { MapPinCoords } from "@/features/map/MapClickPreview";
 import { useFavoritesStore } from "@/stores/favoritesStore";
 import type { GeoLocation } from "@/types/weather";
 import { sameLocation } from "@/utils/location-match";
-import "leaflet.markercluster";
-import "leaflet.markercluster/dist/MarkerCluster.css";
-import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 
 type MapFavoriteMarkersProps = {
   active: GeoLocation;
@@ -25,11 +22,7 @@ export function MapFavoriteMarkers({
   const favorites = useFavoritesStore((s) => s.favorites);
 
   useEffect(() => {
-    const cluster = L.markerClusterGroup({
-      showCoverageOnHover: false,
-      maxClusterRadius: 40,
-      spiderfyOnMaxZoom: true,
-    });
+    const group = L.layerGroup();
 
     for (const fav of favorites) {
       if (sameLocation(fav, active)) continue;
@@ -41,13 +34,13 @@ export function MapFavoriteMarkers({
         L.DomEvent.stopPropagation(event);
         onSelectPin({ lat: fav.latitude, lon: fav.longitude });
       });
-      cluster.addLayer(marker);
+      group.addLayer(marker);
     }
 
-    map.addLayer(cluster);
+    map.addLayer(group);
     return () => {
-      map.removeLayer(cluster);
-      cluster.clearLayers();
+      map.removeLayer(group);
+      group.clearLayers();
     };
   }, [map, favorites, active, onSelectPin]);
 

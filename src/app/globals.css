@@ -793,20 +793,6 @@ body::-webkit-scrollbar {
   transform-origin: center;
 }
 
-.marker-cluster-small,
-.marker-cluster-medium,
-.marker-cluster-large {
-  background-color: rgba(245, 197, 66, 0.35);
-}
-
-.marker-cluster-small div,
-.marker-cluster-medium div,
-.marker-cluster-large div {
-  background-color: rgba(240, 168, 48, 0.92);
-  color: #0b1226;
-  font-weight: 600;
-}
-
 .hourly-chart-strip {
   display: flex;
   min-height: 100%;

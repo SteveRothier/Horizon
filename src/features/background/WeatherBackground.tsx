@@ -67,7 +67,8 @@ export function WeatherBackground({
             <NightSky reduceMotion={reduceMotion} light={isMobile} />
           ) : null}
 
-          {(condition === "cloudy" ||
+          {(condition === "partly" ||
+            condition === "cloudy" ||
             condition === "rain" ||
             condition === "storm" ||
             condition === "snow" ||
@@ -79,7 +80,7 @@ export function WeatherBackground({
                   ? "light"
                   : condition === "storm"
                     ? "heavy"
-                    : condition === "clear"
+                    : condition === "clear" || condition === "partly"
                       ? "light"
                       : "medium"
               }
@@ -111,7 +112,9 @@ export function WeatherBackground({
             <Fog reduceMotion={reduceMotion} />
           ) : null}
 
-          {condition === "clear" && period === "day" && !isMobile ? (
+          {(condition === "clear" || condition === "partly") &&
+          period === "day" &&
+          !isMobile ? (
             <GoldenParticles reduceMotion={reduceMotion} />
           ) : null}
         </>

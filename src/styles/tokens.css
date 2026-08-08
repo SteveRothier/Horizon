@@ -82,6 +82,28 @@
   --accent-cool: #7dd3ff;
 }
 
+[data-weather="partly"][data-period="day"] {
+  --scene-from: #4a8fc4;
+  --scene-via: #7aabcc;
+  --scene-to: #e0b070;
+  --scene-atmo-a: rgba(140, 190, 230, 0.12);
+  --scene-atmo-b: rgba(230, 185, 100, 0.09);
+  --scene-atmo-c: rgba(255, 255, 255, 0.05);
+  --accent: #f0c060;
+  --accent-cool: #1a86d4;
+}
+
+[data-weather="partly"][data-period="night"] {
+  --scene-from: #101828;
+  --scene-via: #1e2c44;
+  --scene-to: #344560;
+  --scene-atmo-a: rgba(100, 130, 180, 0.09);
+  --scene-atmo-b: rgba(50, 70, 110, 0.08);
+  --scene-atmo-c: rgba(170, 190, 230, 0.03);
+  --accent: #b0c4e0;
+  --accent-cool: #7dd3ff;
+}
+
 [data-weather="cloudy"] {
   --scene-from: #5a6f86;
   --scene-via: #7d8fa3;

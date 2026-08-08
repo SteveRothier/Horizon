@@ -88,5 +88,5 @@ L’app fonctionne **sans** `OPENWEATHER_API_KEY` (Open-Meteo seul).
 - Skip link, focus visible, combobox recherche au clavier
 - Favoris, historique et réglages via flyouts header (`Escape` pour fermer)
 - Breakpoints cibles : ~390 / 768 / 1280 / 1440
-- Carte Leaflet responsive (agrandie au besoin) avec pins, favoris clusterisés et radar RainViewer
+- Carte Leaflet responsive (agrandie au besoin) avec pins, favoris et radar RainViewer
 - Attribution OSM + RainViewer sur la carte

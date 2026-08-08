@@ -1,5 +1,6 @@
 export type WeatherCondition =
   | "clear"
+  | "partly"
   | "cloudy"
   | "rain"
   | "storm"
