@@ -63,14 +63,19 @@ export function WeatherBackground({
 
       {mounted ? (
         <>
-          {period === "night" && condition !== "storm" ? (
+          {period === "night" &&
+          condition !== "storm" &&
+          condition !== "hail" ? (
             <NightSky reduceMotion={reduceMotion} light={isMobile} />
           ) : null}
 
           {(condition === "partly" ||
             condition === "cloudy" ||
+            condition === "drizzle" ||
             condition === "rain" ||
+            condition === "freezing" ||
             condition === "storm" ||
+            condition === "hail" ||
             condition === "snow" ||
             (condition === "clear" && period === "day")) && (
             <Clouds
@@ -78,34 +83,46 @@ export function WeatherBackground({
               density={
                 isMobile
                   ? "light"
-                  : condition === "storm"
+                  : condition === "storm" || condition === "hail"
                     ? "heavy"
-                    : condition === "clear" || condition === "partly"
+                    : condition === "clear" ||
+                        condition === "partly" ||
+                        condition === "drizzle"
                       ? "light"
                       : "medium"
               }
               dark={
                 condition === "storm" ||
+                condition === "hail" ||
                 condition === "rain" ||
+                condition === "freezing" ||
+                condition === "drizzle" ||
                 period === "night"
               }
             />
           )}
 
-          {condition === "rain" || condition === "storm" ? (
+          {condition === "drizzle" ||
+          condition === "rain" ||
+          condition === "freezing" ||
+          condition === "storm" ||
+          condition === "hail" ? (
             <Rain
               reduceMotion={reduceMotion}
-              heavy={condition === "storm"}
-              light={isMobile}
+              heavy={condition === "storm" || condition === "hail"}
+              light={isMobile || condition === "drizzle"}
             />
           ) : null}
 
-          {condition === "storm" && !isMobile ? (
+          {(condition === "storm" || condition === "hail") && !isMobile ? (
             <Lightning reduceMotion={reduceMotion} />
           ) : null}
 
-          {condition === "snow" ? (
-            <Snow reduceMotion={reduceMotion} light={isMobile} />
+          {condition === "snow" || condition === "freezing" ? (
+            <Snow
+              reduceMotion={reduceMotion}
+              light={isMobile || condition === "freezing"}
+            />
           ) : null}
 
           {condition === "fog" ? (

@@ -4,7 +4,9 @@ import type { WeatherCondition } from "@/types/weather";
 import { cn } from "@/utils/cn";
 import {
   Cloud,
+  CloudDrizzle,
   CloudFog,
+  CloudHail,
   CloudLightning,
   CloudMoon,
   CloudRain,
@@ -49,15 +51,36 @@ export const WeatherIcon = memo(function WeatherIcon({
       );
     case "cloudy":
       return <Cloud {...props} className={cn(props.className, "text-white/90")} />;
+    case "drizzle":
+      return (
+        <CloudDrizzle
+          {...props}
+          className={cn(props.className, "text-sky-100/90")}
+        />
+      );
     case "rain":
       return (
         <CloudRain {...props} className={cn(props.className, "text-sky-200")} />
+      );
+    case "freezing":
+      return (
+        <CloudHail
+          {...props}
+          className={cn(props.className, "text-cyan-100")}
+        />
       );
     case "storm":
       return (
         <CloudLightning
           {...props}
           className={cn(props.className, "text-violet-200")}
+        />
+      );
+    case "hail":
+      return (
+        <CloudHail
+          {...props}
+          className={cn(props.className, "text-orange-100")}
         />
       );
     case "snow":

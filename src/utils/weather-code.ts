@@ -8,17 +8,14 @@ export function conditionFromWeatherCode(code: number): WeatherCondition {
   if (code === 1 || code === 2) return "partly";
   if (code === 3) return "cloudy";
   if (code === 45 || code === 48) return "fog";
+  if (code === 51 || code === 53 || code === 55) return "drizzle";
+  if (code === 56 || code === 57 || code === 66 || code === 67) {
+    return "freezing";
+  }
   if (
-    code === 51 ||
-    code === 53 ||
-    code === 55 ||
-    code === 56 ||
-    code === 57 ||
     code === 61 ||
     code === 63 ||
     code === 65 ||
-    code === 66 ||
-    code === 67 ||
     code === 80 ||
     code === 81 ||
     code === 82
@@ -35,7 +32,8 @@ export function conditionFromWeatherCode(code: number): WeatherCondition {
   ) {
     return "snow";
   }
-  if (code === 95 || code === 96 || code === 99) return "storm";
+  if (code === 96 || code === 99) return "hail";
+  if (code === 95) return "storm";
   return "cloudy";
 }
 

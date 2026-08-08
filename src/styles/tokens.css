@@ -126,6 +126,28 @@
   --accent-cool: #6ec8ff;
 }
 
+[data-weather="drizzle"] {
+  --scene-from: #3a5568;
+  --scene-via: #5a7388;
+  --scene-to: #8aa0b0;
+  --scene-atmo-a: rgba(140, 190, 210, 0.09);
+  --scene-atmo-b: rgba(90, 120, 140, 0.07);
+  --scene-atmo-c: rgba(180, 210, 230, 0.03);
+  --accent: #9ed4f0;
+  --accent-cool: #6ec8ff;
+}
+
+[data-weather="freezing"] {
+  --scene-from: #2a4050;
+  --scene-via: #3d5a6a;
+  --scene-to: #6a8a98;
+  --scene-atmo-a: rgba(140, 220, 230, 0.1);
+  --scene-atmo-b: rgba(80, 140, 160, 0.08);
+  --scene-atmo-c: rgba(200, 240, 245, 0.04);
+  --accent: #9ef0f0;
+  --accent-cool: #6ec8ff;
+}
+
 [data-weather="storm"] {
   --scene-from: #0d1020;
   --scene-via: #1e1635;
@@ -135,6 +157,17 @@
   --scene-atmo-c: transparent;
   --accent: #b8a4ff;
   --accent-cool: #6ec8ff;
+}
+
+[data-weather="hail"] {
+  --scene-from: #12141f;
+  --scene-via: #241e38;
+  --scene-to: #3a3450;
+  --scene-atmo-a: rgba(180, 120, 80, 0.08);
+  --scene-atmo-b: rgba(90, 70, 160, 0.09);
+  --scene-atmo-c: rgba(255, 190, 120, 0.03);
+  --accent: #ffbe7a;
+  --accent-cool: #b8a4ff;
 }
 
 [data-weather="snow"] {
@@ -181,6 +214,28 @@
   --accent-cool: #7dd3ff;
 }
 
+[data-weather="drizzle"][data-period="night"] {
+  --scene-from: #152028;
+  --scene-via: #243440;
+  --scene-to: #354858;
+  --scene-atmo-a: rgba(90, 140, 170, 0.07);
+  --scene-atmo-b: rgba(40, 60, 80, 0.08);
+  --scene-atmo-c: rgba(140, 180, 200, 0.02);
+  --accent: #7ec8e8;
+  --accent-cool: #7dd3ff;
+}
+
+[data-weather="freezing"][data-period="night"] {
+  --scene-from: #0e1c24;
+  --scene-via: #1a3038;
+  --scene-to: #2a4850;
+  --scene-atmo-a: rgba(80, 180, 190, 0.08);
+  --scene-atmo-b: rgba(30, 70, 85, 0.09);
+  --scene-atmo-c: rgba(150, 220, 230, 0.03);
+  --accent: #7ee8e8;
+  --accent-cool: #7dd3ff;
+}
+
 [data-weather="storm"][data-period="night"] {
   --scene-from: #08060f;
   --scene-via: #140e22;
@@ -190,6 +245,17 @@
   --scene-atmo-c: transparent;
   --accent: #a894ff;
   --accent-cool: #7dd3ff;
+}
+
+[data-weather="hail"][data-period="night"] {
+  --scene-from: #09080e;
+  --scene-via: #16121f;
+  --scene-to: #221c2e;
+  --scene-atmo-a: rgba(160, 100, 60, 0.07);
+  --scene-atmo-b: rgba(70, 50, 120, 0.09);
+  --scene-atmo-c: rgba(220, 160, 90, 0.02);
+  --accent: #e8a868;
+  --accent-cool: #a894ff;
 }
 
 [data-weather="snow"][data-period="night"] {

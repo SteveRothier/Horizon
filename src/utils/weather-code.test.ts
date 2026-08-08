@@ -9,10 +9,18 @@ describe("conditionFromWeatherCode", () => {
     expect(conditionFromWeatherCode(3)).toBe("cloudy");
   });
 
-  it("maps precip and fog codes", () => {
-    expect(conditionFromWeatherCode(45)).toBe("fog");
+  it("maps drizzle / rain / freezing distinctly", () => {
+    expect(conditionFromWeatherCode(51)).toBe("drizzle");
     expect(conditionFromWeatherCode(61)).toBe("rain");
+    expect(conditionFromWeatherCode(56)).toBe("freezing");
+    expect(conditionFromWeatherCode(66)).toBe("freezing");
+  });
+
+  it("maps fog, snow, storm and hail", () => {
+    expect(conditionFromWeatherCode(45)).toBe("fog");
     expect(conditionFromWeatherCode(71)).toBe("snow");
     expect(conditionFromWeatherCode(95)).toBe("storm");
+    expect(conditionFromWeatherCode(96)).toBe("hail");
+    expect(conditionFromWeatherCode(99)).toBe("hail");
   });
 });

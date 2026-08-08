@@ -2,9 +2,12 @@ export type WeatherCondition =
   | "clear"
   | "partly"
   | "cloudy"
+  | "drizzle"
   | "rain"
-  | "storm"
+  | "freezing"
   | "snow"
+  | "storm"
+  | "hail"
   | "fog";
 
 export type DayPeriod = "day" | "night";
