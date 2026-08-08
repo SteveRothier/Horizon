@@ -26,15 +26,12 @@ type MapClickPreviewProps = {
   onPinChange: (pin: MapPinCoords | null) => void;
   /** Called after selecting the pinned city (e.g. collapse expanded map). */
   onOpenCity?: () => void;
-  /** When true, Escape is handled by the parent (expanded map collapse). */
-  expanded?: boolean;
 };
 
 export function MapClickPreview({
   pin,
   onPinChange,
   onOpenCity,
-  expanded = false,
 }: MapClickPreviewProps) {
   const t = useT();
   const locale = useLocale();
@@ -169,16 +166,17 @@ export function MapClickPreview({
   }, [map]);
 
   useEffect(() => {
-    if (!pin || expanded) return;
+    if (!pin) return;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onPinChange(null);
-      }
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      onPinChange(null);
     };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [pin, expanded, onPinChange]);
+    // Capture so expanded map collapse waits for a second Escape.
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
+  }, [pin, onPinChange]);
 
   useEffect(() => {
     if (!pin) return;

@@ -9,6 +9,7 @@ Application météo moderne (portfolio) — expérience glassmorphism immersive 
 - **TanStack Query**, **Zustand** (favoris, historique, settings + `localStorage`)
 - **Framer Motion**, **Leaflet** / **react-leaflet**
 - APIs : **Open-Meteo** (principal), **OpenWeather** (fallback optionnel), **Nominatim** (géocodage)
+- Carte : tuiles OSM + overlay radar précipitations **RainViewer** (toggle, sans clé)
 
 ## Démarrage
 
@@ -87,4 +88,5 @@ L’app fonctionne **sans** `OPENWEATHER_API_KEY` (Open-Meteo seul).
 - Skip link, focus visible, combobox recherche au clavier
 - Favoris, historique et réglages via flyouts header (`Escape` pour fermer)
 - Breakpoints cibles : ~390 / 768 / 1280 / 1440
-- Carte Leaflet responsive (agrandie au besoin)
+- Carte Leaflet responsive (agrandie au besoin) avec pins, favoris clusterisés et radar RainViewer
+- Attribution OSM + RainViewer sur la carte

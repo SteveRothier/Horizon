@@ -2,15 +2,7 @@
 
 import { useEffect } from "react";
 import { useMap } from "react-leaflet";
-
-/** Scale factor for map pins from Leaflet zoom (smaller when zoomed out). */
-function pinScaleForZoom(zoom: number): number {
-  if (zoom >= 12) return 1;
-  if (zoom >= 10) return 0.9;
-  if (zoom >= 8) return 0.78;
-  if (zoom >= 6) return 0.65;
-  return 0.52;
-}
+import { pinScaleForZoom } from "@/features/map/map-pin-scale";
 
 /** Keeps `--map-pin-scale` in sync with map zoom. */
 export function MapPinScale() {

@@ -18,6 +18,7 @@ import {
 import { MapControls } from "@/features/map/MapControls";
 import { MapFavoriteMarkers } from "@/features/map/MapFavoriteMarkers";
 import { MapPinScale } from "@/features/map/MapPinScale";
+import { MapRadarLayer } from "@/features/map/MapRadarLayer";
 import { MapResize } from "@/features/map/MapResize";
 import {
   OSM_BASE_ATTRIBUTION,
@@ -57,6 +58,7 @@ function MapBody({
 }: MapBodyProps) {
   const { latitude: lat, longitude: lon } = location;
   const [previewPin, setPreviewPin] = useState<MapPinCoords | null>(null);
+  const [radarEnabled, setRadarEnabled] = useState(false);
   const onPinChange = useCallback((pin: MapPinCoords | null) => {
     setPreviewPin(pin);
   }, []);
@@ -82,6 +84,7 @@ function MapBody({
     >
       <AttributionControl position="bottomright" />
       <TileLayer attribution={OSM_BASE_ATTRIBUTION} url={OSM_BASE_URL} />
+      <MapRadarLayer enabled={radarEnabled} />
       <Recenter lat={lat} lon={lon} />
       <MapResize resizeTick={resizeTick} />
       <MapPinScale />
@@ -90,14 +93,14 @@ function MapBody({
         onToggleExpand={onToggleExpand}
         lat={lat}
         lon={lon}
-        onOpenCity={onOpenPinnedCity}
+        radarEnabled={radarEnabled}
+        onToggleRadar={() => setRadarEnabled((v) => !v)}
       />
       <MapFavoriteMarkers active={location} onSelectPin={onPinChange} />
       <MapClickPreview
         pin={previewPin}
         onPinChange={onPinChange}
         onOpenCity={onOpenPinnedCity}
-        expanded={expanded}
       />
       <Marker position={[lat, lon]} icon={horizonActiveIcon}>
         <MapActiveCityPopup location={location} />

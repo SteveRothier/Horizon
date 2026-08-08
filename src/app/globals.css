@@ -715,16 +715,16 @@ body::-webkit-scrollbar {
 
 /* Leaflet attribution: quieter when collapsed, clearer when expanded */
 .map-leaflet-collapsed .leaflet-control-attribution {
-  font-size: 0.5rem !important;
-  background: rgba(0, 0, 0, 0.28) !important;
-  color: rgba(255, 255, 255, 0.55) !important;
-  opacity: 0.65;
+  font-size: 0.55rem !important;
+  background: rgba(0, 0, 0, 0.42) !important;
+  color: rgba(255, 255, 255, 0.78) !important;
+  opacity: 0.9;
 }
 
 .map-leaflet-expanded .leaflet-control-attribution {
-  font-size: 0.6rem !important;
-  background: rgba(0, 0, 0, 0.45) !important;
-  color: rgba(255, 255, 255, 0.85) !important;
+  font-size: 0.65rem !important;
+  background: rgba(0, 0, 0, 0.5) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
   opacity: 1;
 }
 
