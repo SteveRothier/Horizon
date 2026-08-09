@@ -1,15 +1,43 @@
 # Horizon
 
-Application météo moderne (portfolio) — expérience glassmorphism immersive avec fonds dynamiques, prévisions, qualité de l’air et carte interactive.
+Application météo web: dashboard immersif, prévisions, qualité de l’air et carte interactive avec radar de précipitations.
+
+[Déployer sur Vercel](https://vercel.com/new/clone?repository-url=https://github.com/SteveRothier/Horizon) · [Dépôt GitHub](https://github.com/SteveRothier/Horizon)
+
+## Fonctionnalités
+
+- Météo actuelle avec fond et icônes liés aux conditions WMO
+- Prévisions horaires et sur 7 jours
+- Indices AQI et UV
+- Carte OSM : pins favoris, aperçu au clic, radar RainViewer
+- Recherche de villes, géolocalisation, favoris et historique (persistance locale)
+- Unités °C/°F et km/h·mph, interface FR / EN
+- URLs partageables `/weather/[city]`, partage natif / presse-papiers
+- PWA installable (manifest + icônes)
 
 ## Stack
 
-- **Next.js 15** (App Router) + **React 19** + **TypeScript**
-- **Tailwind CSS** + tokens CSS (scènes météo jour/nuit)
-- **TanStack Query**, **Zustand** (favoris, historique, settings + `localStorage`)
-- **Framer Motion**, **Leaflet** / **react-leaflet**
-- APIs : **Open-Meteo** (principal), **OpenWeather** (fallback optionnel), **Nominatim** (géocodage)
-- Carte : tuiles OSM + overlay radar précipitations **RainViewer** (toggle, sans clé)
+| Couche | Technologies |
+| ------ | ------------ |
+| App | Next.js 15 (App Router), React 19, TypeScript |
+| UI | Tailwind CSS, Framer Motion, tokens de scènes météo |
+| Données client | TanStack Query, Zustand + `localStorage` |
+| Carte | Leaflet, react-leaflet, RainViewer |
+| APIs | Open-Meteo, Nominatim, OpenWeather (fallback optionnel) |
+
+## Décisions techniques
+
+- **Open-Meteo en premier** — météo, AQI et UV sans clé API ; OpenWeather uniquement en secours optionnel.
+- **Radar sur Leaflet** — tuiles RainViewer (gratuites, sans clé) plutôt qu’une migration MapLibre ; `maxNativeZoom` 7 pour rester dans le plafond du tier free.
+- **État 100 % client** — favoris, historique et réglages en `localStorage` ; pas d’auth ni de sync cloud.
+- **PWA légère** — installable via manifest ; pas de service worker offline-first.
+- **Conditions WMO détaillées** — mapping fin pour aligner hero, icônes et fonds sur le ciel réel.
+
+## Aperçu
+
+![Dashboard Horizon](docs/Dashboard.png)
+
+![Carte et radar](docs/map-radar.png)
 
 ## Démarrage
 
@@ -19,74 +47,43 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Ouvre [http://localhost:3000](http://localhost:3000).
-
-La clé OpenWeather est **optionnelle** : sans elle, Horizon tourne uniquement sur Open-Meteo.
-
-## Variables d’environnement
+Ouvrir [http://localhost:3000](http://localhost:3000).
 
 | Variable | Obligatoire | Description |
 | -------- | ----------- | ----------- |
-| `OPENWEATHER_API_KEY` | Non | Clé [OpenWeather](https://openweathermap.org/api) pour le fallback météo / AQI si Open-Meteo échoue |
+| `OPENWEATHER_API_KEY` | Non | Fallback météo / AQI si Open-Meteo échoue |
 
-Voir `.env.example`.
+Sans cette variable, l’application fonctionne uniquement avec Open-Meteo.
 
 ## Architecture
 
 ```
 UI (dashboard, carte, favoris)
   → TanStack Query  →  /api/weather | /api/geocode | /api/air-quality
-  → Zustand         →  localStorage (settings, favoris, historique, ville)
+  → Zustand         →  localStorage
+
 API routes
-  → Nominatim (ville ↔ coords)
+  → Nominatim (géocodage)
   → Open-Meteo (current, hourly, daily, UV, AQI)
-  → OpenWeather (fallback si clé présente)
-```
-
-- URLs SEO partageables : `/weather/[city]` (ex. `/weather/paris`)
-- Unités : °C/°F, km/h·mph (visibilité km/mi)
-- i18n UI : FR / EN (store `locale`)
-
-## Structure
-
-```
-src/
-  app/           # routes App Router + API + /weather/[city]
-  components/    # layout, UI, providers
-  features/      # weather, forecast, map, favorites, history, background…
-  hooks/
-  i18n/          # dictionnaires FR/EN
-  services/      # Open-Meteo, OpenWeather, Nominatim, client-api
-  stores/        # Zustand + persist
-  types/
-  utils/
-  constants/
-  styles/
+  → OpenWeather (fallback optionnel)
 ```
 
 ## Scripts
 
-| Commande        | Description        |
-| --------------- | ------------------ |
-| `npm run dev`   | Dev (Turbopack)    |
-| `npm run build` | Build production   |
-| `npm run start` | Serveur prod       |
-| `npm run lint`  | ESLint             |
+| Commande | Description |
+| -------- | ----------- |
+| `npm run dev` | Serveur de développement (Turbopack) |
+| `npm run build` | Build de production |
+| `npm run start` | Serveur de production |
+| `npm run lint` | ESLint |
+| `npm test` | Vitest (utilitaires et routes API) |
 
-## Déploiement Vercel
+## Déploiement
 
-1. Importer le dépôt sur [Vercel](https://vercel.com).
-2. Framework : **Next.js** (détecté automatiquement).
-3. Dans **Project Settings → Environment Variables**, ajouter si besoin :
-   - `OPENWEATHER_API_KEY` = votre clé (Production / Preview / Development selon besoin)
-4. Déployer. Aucune config `vercel.json` n’est requise.
+Importer le dépôt sur [Vercel](https://vercel.com) (framework Next.js détecté automatiquement). Aucun `vercel.json` requis. Définir `OPENWEATHER_API_KEY` seulement si le fallback OpenWeather est souhaité.
 
-L’app fonctionne **sans** `OPENWEATHER_API_KEY` (Open-Meteo seul).
+Un modèle de workflow GitHub Actions (lint, test, build) est fourni dans [`docs/ci.workflow.yml`](docs/ci.workflow.yml) — à placer sous `.github/workflows/` lorsque le token GitHub dispose du scope `workflow`.
 
-## Accessibilité & responsive
+## Licence
 
-- Skip link, focus visible, combobox recherche au clavier
-- Favoris, historique et réglages via flyouts header (`Escape` pour fermer)
-- Breakpoints cibles : ~390 / 768 / 1280 / 1440
-- Carte Leaflet responsive (agrandie au besoin) avec pins, favoris et radar RainViewer
-- Attribution OSM + RainViewer sur la carte
+Projet portfolio privé, destiné à la démonstration. Tous droits réservés.
