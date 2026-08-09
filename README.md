@@ -2,6 +2,8 @@
 
 Application météo web: dashboard immersif, prévisions, qualité de l’air et carte interactive avec radar de précipitations.
 
+**Démo :** [horizonmeteo.vercel.app](https://horizonmeteo.vercel.app)
+
 [Déployer sur Vercel](https://vercel.com/new/clone?repository-url=https://github.com/SteveRothier/Horizon) · [Dépôt GitHub](https://github.com/SteveRothier/Horizon)
 
 ## Fonctionnalités
